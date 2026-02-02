@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-01-31",
+  "updated": "2026-02-01",
   "tools": [
     {
       "command": "7-zip",
@@ -767,6 +767,13 @@
     },
     {
       "command": "opencode",
+      "name": "opencode",
+      "category": "Use Artificial Intelligence",
+      "description": "Configure opencode with REMnux MCP servers.",
+      "website": "https://opencode.ai"
+    },
+    {
+      "command": "opencode",
       "name": "OpenCode",
       "category": "Use Artificial Intelligence",
       "description": "Open-source AI coding agent for the terminal.",
@@ -960,6 +967,13 @@
       "category": "General Utilities",
       "description": "Install and update the REMnux distro.",
       "website": "https://github.com/REMnux/distro/blob/master/files/remnux-installer.sh"
+    },
+    {
+      "command": "remnux-mcp-server",
+      "name": "REMnux MCP Server",
+      "category": "Use Artificial Intelligence",
+      "description": "MCP server for using REMnux malware analysis tools via AI assistants.",
+      "website": "https://github.com/REMnux/remnux-mcp-server"
     },
     {
       "command": "rhino-debugger",
