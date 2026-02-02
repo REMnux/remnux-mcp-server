@@ -1,0 +1,14 @@
+# Binary files - don't diff or convert line endings
+*.7z binary
+*.zip binary
+*.rar binary
+*.exe binary
+*.dll binary
+
+# Force LF line endings for shell scripts
+*.sh text eol=lf
+
+# Keep TypeScript/JS consistent
+*.ts text eol=lf
+*.js text eol=lf
+*.json text eol=lf

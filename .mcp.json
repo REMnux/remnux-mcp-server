@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "remnux": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["dist/cli.js", "--mode=docker", "--container=remnux"]
+    }
+  }
+}

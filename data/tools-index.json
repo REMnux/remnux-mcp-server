@@ -1,0 +1,1357 @@
+{
+  "version": "1.0.0",
+  "updated": "2026-01-31",
+  "tools": [
+    {
+      "command": "7-zip",
+      "name": "7-Zip",
+      "category": "General Utilities",
+      "description": "Compress and decompress files using a variety of algorithms.",
+      "website": "https://www.7-zip.org"
+    },
+    {
+      "command": "accept-all-ips",
+      "name": "accept-all-ips",
+      "category": "Explore Network Interactions: Services",
+      "description": "Accept connections to all IPv4 and IPv6 addresses and redirect it to the corresponding local port.",
+      "website": "https://github.com/REMnux/distro/blob/master/files/accept-all-ips"
+    },
+    {
+      "command": "aeskeyfinder",
+      "name": "AESKeyFinder",
+      "category": "Perform Memory Forensics",
+      "description": "Find 128-bit and 256-bit AES keys in a memory image.",
+      "website": "https://citp.princeton.edu/our-work/memory/"
+    },
+    {
+      "command": "androguard",
+      "name": "androguard",
+      "category": "Statically Analyze Code: Android",
+      "description": "Examine Android files.",
+      "website": "https://github.com/androguard/androguard"
+    },
+    {
+      "command": "androidprojectcreator",
+      "name": "AndroidProjectCreator",
+      "category": "Statically Analyze Code: Android",
+      "description": "Convert an Android APK application file into an Android Studio project for easier analysis.",
+      "website": "https://maxkersten.nl/projects/androidprojectcreator"
+    },
+    {
+      "command": "anomy",
+      "name": "Anomy",
+      "category": "Explore Network Interactions: Connecting",
+      "description": "A wrapper around wget, ssh, sftp, ftp, and telnet to route these connections through Tor to anonymize your traffic.",
+      "website": "https://github.com/izm1chael/Anomy"
+    },
+    {
+      "command": "apktool",
+      "name": "apktool",
+      "category": "Statically Analyze Code: Android",
+      "description": "Reverse-engineer Android APK files.",
+      "website": "https://ibotpeaches.github.io/Apktool/"
+    },
+    {
+      "command": "automater",
+      "name": "Automater",
+      "category": "Gather and Analyze Data",
+      "description": "Gather OSINT data about IPs, domains, and hashes.",
+      "website": "https://github.com/digitalsleuth/TekDefense-Automater"
+    },
+    {
+      "command": "baksmali",
+      "name": "baksmali",
+      "category": "Statically Analyze Code: Android",
+      "description": "Disassembler for the dex format used by Dalvik, Android's Java VM implementation.",
+      "website": "https://bitbucket.org/JesusFreke/smali"
+    },
+    {
+      "command": "balbuzard",
+      "name": "Balbuzard",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Extract and deobfuscate patterns from suspicious files.",
+      "website": "https://github.com/digitalsleuth/balbuzard"
+    },
+    {
+      "command": "bearparser",
+      "name": "bearparser",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Parse PE file contents.",
+      "website": "https://github.com/hasherezade/bearparser/wiki"
+    },
+    {
+      "command": "binee-binary-emulation-environment",
+      "name": "binee (Binary Emulation Environment)",
+      "category": "Statically Analyze Code: PE Files",
+      "description": "Analyze I/O operations of a suspicious PE file by emulating its execution.",
+      "website": "https://github.com/carbonblack/binee"
+    },
+    {
+      "command": "binnavi",
+      "name": "BinNavi",
+      "category": "Statically Analyze Code: General",
+      "description": "IDE that allows to inspect, navigate, edit and annotate control flow graphs and call graphs of disassembled code.",
+      "website": "https://github.com/google/binnavi"
+    },
+    {
+      "command": "binwalk",
+      "name": "binwalk",
+      "category": "Examine Static Properties: General",
+      "description": "Extract and analyze firmware images.",
+      "website": "https://github.com/ReFirmLabs/binwalk"
+    },
+    {
+      "command": "box-js",
+      "name": "box-js",
+      "category": "Dynamically Reverse-Engineer Code: Scripts",
+      "description": "Analyze suspicious JavaScript scripts.",
+      "website": "https://github.com/CapacitorSet/box-js"
+    },
+    {
+      "command": "brxorpy",
+      "name": "brxor.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Bruteforce XOR'ed strings to find those that are English words.",
+      "website": "https://github.com/REMnux/distro/blob/master/files/brxor.py"
+    },
+    {
+      "command": "bulkextractor",
+      "name": "bulk_extractor",
+      "category": "Examine Static Properties: General",
+      "description": "Extract interesting strings from binary files.",
+      "website": "https://github.com/simsong/bulk_extractor/"
+    },
+    {
+      "command": "burp-suite-community-edition",
+      "name": "Burp Suite Community Edition",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Investigate website interactions using this web proxy.",
+      "website": "https://portswigger.net"
+    },
+    {
+      "command": "bytehist",
+      "name": "Bytehist",
+      "category": "Statically Analyze Code: Unpacking",
+      "description": "Generate byte-usage-histograms for all types of files with a focus PE files.",
+      "website": "https://www.cert.at/downloads/software/bytehist_en.html"
+    },
+    {
+      "command": "cabextract",
+      "name": "cabextract",
+      "category": "General Utilities",
+      "description": "Extract Microsoft cabinet (cab) files.",
+      "website": "https://www.cabextract.org.uk"
+    },
+    {
+      "command": "capa",
+      "name": "capa",
+      "category": "Statically Analyze Code: PE Files",
+      "description": "Detect suspicious capabilities in PE files.",
+      "website": "https://github.com/fireeye/capa"
+    },
+    {
+      "command": "captipper",
+      "name": "CapTipper",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Analyze HTTP traffic and extract embedded artifacts.",
+      "website": "https://github.com/omriher/CapTipper/tree/python3_support"
+    },
+    {
+      "command": "cast",
+      "name": "Cast",
+      "category": "General Utilities",
+      "description": "Install and manage SaltStack-based Linux distributions, including REMnux.",
+      "website": "https://github.com/ekristen/cast"
+    },
+    {
+      "command": "cfr",
+      "name": "cfr",
+      "category": "Statically Analyze Code: Java",
+      "description": "Java decompiler.",
+      "website": "https://www.benf.org/other/cfr/"
+    },
+    {
+      "command": "chepy",
+      "name": "Chepy",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Decode and otherwise analyze data using this command-line tool and Python library.",
+      "website": "https://github.com/securisec/chepy"
+    },
+    {
+      "command": "clamav",
+      "name": "ClamAV",
+      "category": "Examine Static Properties: General",
+      "description": "Scan files for malware signatures.",
+      "website": "https://www.clamav.net"
+    },
+    {
+      "command": "cobalt-strike-configuration-extractor-csce-and-parser",
+      "name": "Cobalt Strike Configuration Extractor (CSCE) and Parser",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Analyze Cobalt Strike beacons.",
+      "website": "https://github.com/strozfriedberg/cobaltstrike-config-extractor"
+    },
+    {
+      "command": "curl",
+      "name": "cURL",
+      "category": "General Utilities",
+      "description": "Interact with servers via supported protocols, including HTTP, HTTPS, FTP, IMAP, etc. using this command-line tool.",
+      "website": "https://curl.haxx.se"
+    },
+    {
+      "command": "cutter",
+      "name": "Cutter",
+      "category": "Statically Analyze Code: General",
+      "description": "Reverse engineering platform powered by Rizin.",
+      "website": "https://cutter.re"
+    },
+    {
+      "command": "cyberchef",
+      "name": "CyberChef",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Decode and otherwise analyze data using this browser app.",
+      "website": "https://github.com/gchq/CyberChef/"
+    },
+    {
+      "command": "dc3-mwcp",
+      "name": "DC3-MWCP",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Parsing configuration information from malware.",
+      "website": "https://github.com/Defense-Cyber-Crime-Center/DC3-mwcp"
+    },
+    {
+      "command": "debloat",
+      "name": "debloat",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Remove junk contents from bloated Windows executables.",
+      "website": "https://github.com/Squiblydoo/debloat"
+    },
+    {
+      "command": "decompyle",
+      "name": "Decompyle++",
+      "category": "Statically Analyze Code: Python",
+      "description": "Python bytecode disassembler and decompiler.",
+      "website": "https://github.com/zrax/pycdc"
+    },
+    {
+      "command": "detect-it-easy",
+      "name": "Detect-It-Easy",
+      "category": "Examine Static Properties: General",
+      "description": "Determine types of files and examine file properties.",
+      "website": "https://github.com/horsicq/Detect-It-Easy"
+    },
+    {
+      "command": "dex2jar",
+      "name": "dex2jar",
+      "category": "Statically Analyze Code: Android",
+      "description": "Examine Dalvik Executable (dex) files.",
+      "website": "https://github.com/pxb1988/dex2jar"
+    },
+    {
+      "command": "dexray",
+      "name": "DeXRAY",
+      "category": "Gather and Analyze Data",
+      "description": "Extract and decode data from antivirus quarantine files.",
+      "website": "https://www.hexacorn.com/blog/category/software-releases/dexray/"
+    },
+    {
+      "command": "didier-stevens-scripts",
+      "name": "Didier Stevens Scripts",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "A collection of Python scripts for analyzing suspicious files and data from Didier Stevens.",
+      "website": "https://blog.didierstevens.com"
+    },
+    {
+      "command": "dissect",
+      "name": "dissect",
+      "category": "Gather and Analyze Data",
+      "description": "Perform a variety of forensics and incident response tasks using this DFIR framework and toolset.",
+      "website": "https://github.com/fox-it/dissect"
+    },
+    {
+      "command": "dllcharacteristicspy",
+      "name": "dllcharacteristics.py",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Read and set DLL characteristics of a PE file.",
+      "website": "https://github.com/accidentalrebel/dllcharacteristics.py"
+    },
+    {
+      "command": "dnfile",
+      "name": "dnfile",
+      "category": "Examine Static Properties: .NET",
+      "description": "Analyze static properties of .NET files.",
+      "website": "https://github.com/malwarefrank/dnfile"
+    },
+    {
+      "command": "dnslib",
+      "name": "dnslib",
+      "category": "Gather and Analyze Data",
+      "description": "Python library to encode/decode DNS wire-format packets.",
+      "website": "https://github.com/paulc/dnslib"
+    },
+    {
+      "command": "docker",
+      "name": "Docker",
+      "category": "General Utilities",
+      "description": "Run and manage containers.",
+      "website": "https://www.docker.com"
+    },
+    {
+      "command": "dos2unix",
+      "name": "dos2unix",
+      "category": "View or Edit Files",
+      "description": "Convert text files with Windows or macOS line breaks to Unix line breaks and vice versa.",
+      "website": "https://waterlan.home.xs4all.nl/dos2unix.html"
+    },
+    {
+      "command": "dotnetfile",
+      "name": "dotnetfile",
+      "category": "Examine Static Properties: .NET",
+      "description": "Analyze static properties of .NET files.",
+      "website": "https://github.com/pan-unit42/dotnetfile"
+    },
+    {
+      "command": "droidlysis",
+      "name": "DroidLysis",
+      "category": "Statically Analyze Code: Android",
+      "description": "Perform static analysis of Android applications.",
+      "website": "https://github.com/cryptax/droidlysis"
+    },
+    {
+      "command": "edb",
+      "name": "edb",
+      "category": "Dynamically Reverse-Engineer Code: ELF Files",
+      "description": "An AArch32/x86/x86-64 debugger, well suited for debugging ELF files.",
+      "website": "https://github.com/eteran/edb-debugger"
+    },
+    {
+      "command": "epic-irc-client",
+      "name": "EPIC IRC Client",
+      "category": "Explore Network Interactions: Connecting",
+      "description": "Examine IRC activities with this IRC client.",
+      "website": "http://www.epicsol.org/"
+    },
+    {
+      "command": "evilclippy",
+      "name": "EvilClippy",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Modify aspects of Microsoft Office documents.",
+      "website": "https://github.com/outflanknl/EvilClippy"
+    },
+    {
+      "command": "evince",
+      "name": "Evince",
+      "category": "View or Edit Files",
+      "description": "View documents in a variety of formats, including PDF.",
+      "website": "https://wiki.gnome.org/Apps/Evince"
+    },
+    {
+      "command": "exiftool",
+      "name": "ExifTool",
+      "category": "Examine Static Properties: General",
+      "description": "Tool to read from, write to, and edit EXIF metadata of various file types.",
+      "website": "https://exiftool.org/"
+    },
+    {
+      "command": "expexorpy",
+      "name": "ex_pe_xor.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Search an XOR'ed file for indications of executable binaries.",
+      "website": "http://hooked-on-mnemonics.blogspot.com/2014/04/expexorpy.html"
+    },
+    {
+      "command": "extractswf",
+      "name": "extract_swf",
+      "category": "Statically Analyze Code: Flash",
+      "description": "Extract potential SWF files from Flash Projector binaries.",
+      "website": "https://github.com/digitalsleuth/extract_swf"
+    },
+    {
+      "command": "fakedns",
+      "name": "fakedns",
+      "category": "Explore Network Interactions: Services",
+      "description": "Respond to DNS queries with the specified IP address.",
+      "website": "https://github.com/SocialExploits/fakedns/blob/main/fakedns.py"
+    },
+    {
+      "command": "fakemail",
+      "name": "fakemail",
+      "category": "Explore Network Interactions: Services",
+      "description": "Intercept and examine SMTP email activity with this fake SMTP server.",
+      "website": "https://hg.sr.ht/~olly/fakemail"
+    },
+    {
+      "command": "fakenet-ng",
+      "name": "FakeNet-NG",
+      "category": "Explore Network Interactions: Services",
+      "description": "Emulate common network services and interact with malware.",
+      "website": "https://github.com/fireeye/flare-fakenet-ng"
+    },
+    {
+      "command": "feh",
+      "name": "feh",
+      "category": "View or Edit Files",
+      "description": "View images.",
+      "website": "https://feh.finalrewind.org"
+    },
+    {
+      "command": "file",
+      "name": "file",
+      "category": "Examine Static Properties: General",
+      "description": "Identify file type using \"magic\" numbers.",
+      "website": "http://astron.com/pub/file/README"
+    },
+    {
+      "command": "firefox",
+      "name": "Firefox",
+      "category": "General Utilities",
+      "description": "Web browser.",
+      "website": "https://www.mozilla.org/firefox/"
+    },
+    {
+      "command": "flare",
+      "name": "Flare",
+      "category": "Statically Analyze Code: Flash",
+      "description": "Extract and decompile ActionScript from Flash (SWF) files.",
+      "website": "http://www.nowrap.de/flare.html"
+    },
+    {
+      "command": "flasm",
+      "name": "Flasm",
+      "category": "Statically Analyze Code: Flash",
+      "description": "Extract and disassemble ActionScript from Flash (SWF) files.",
+      "website": "http://www.nowrap.de/flasm.html"
+    },
+    {
+      "command": "floss",
+      "name": "FLOSS",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Extract and deobfuscate strings from PE executables.",
+      "website": "https://github.com/mandiant/flare-floss"
+    },
+    {
+      "command": "frida",
+      "name": "Frida",
+      "category": "Dynamically Reverse-Engineer Code: General",
+      "description": "Trace the execution of a process to analyze its behavior.",
+      "website": "https://frida.re"
+    },
+    {
+      "command": "ghidra",
+      "name": "Ghidra",
+      "category": "Statically Analyze Code: General",
+      "description": "Software reverse engineering tool suite.",
+      "website": "https://ghidra-sre.org"
+    },
+    {
+      "command": "gnome-calculator",
+      "name": "GNOME Calculator",
+      "category": "General Utilities",
+      "description": "Calculator.",
+      "website": "https://wiki.gnome.org/Apps/Calculator"
+    },
+    {
+      "command": "gnu-project-debugger",
+      "name": "GNU Project Debugger",
+      "category": "Dynamically Reverse-Engineer Code: ELF Files",
+      "description": "Multi-language debugger.",
+      "website": "https://www.sourceware.org/gdb/"
+    },
+    {
+      "command": "gnu-wget",
+      "name": "GNU Wget",
+      "category": "Explore Network Interactions: Connecting",
+      "description": "Interact with servers via HTTP, HTTPS, FTP, and FTPS using this command-line tool.",
+      "website": "https://www.gnu.org/software/wget/"
+    },
+    {
+      "command": "hachoir",
+      "name": "Hachoir",
+      "category": "Examine Static Properties: General",
+      "description": "View, edit, and carve contents of various binary file types.",
+      "website": "https://github.com/vstinner/hachoir"
+    },
+    {
+      "command": "hash-id",
+      "name": "Hash ID",
+      "category": "Examine Static Properties: General",
+      "description": "Identify dfferent types of hashes.",
+      "website": "https://github.com/blackploit/hash-identifier"
+    },
+    {
+      "command": "ibus",
+      "name": "IBus",
+      "category": "General Utilities",
+      "description": "Adjust input methods for the GUI.",
+      "website": "https://github.com/ibus/ibus"
+    },
+    {
+      "command": "ilspy",
+      "name": "ILSpy",
+      "category": "Statically Analyze Code: .NET",
+      "description": "Examine and decompile .NET programs.",
+      "website": "https://github.com/icsharpcode/ILSpy"
+    },
+    {
+      "command": "imagemagick",
+      "name": "ImageMagick",
+      "category": "View or Edit Files",
+      "description": "View and manipulate image and related files.",
+      "website": "https://imagemagick.org/"
+    },
+    {
+      "command": "inetsim",
+      "name": "INetSim",
+      "category": "Explore Network Interactions: Services",
+      "description": "Emulate common network services and interact with malware.",
+      "website": "https://www.inetsim.org/"
+    },
+    {
+      "command": "info-zip",
+      "name": "Info-ZIP",
+      "category": "General Utilities",
+      "description": "Compress and decompress files using the zip algorithm.",
+      "website": "http://infozip.sourceforge.net"
+    },
+    {
+      "command": "inspircd-3",
+      "name": "inspircd 3",
+      "category": "Explore Network Interactions: Services",
+      "description": "Examine IRC activity with this IRC server.",
+      "website": "https://www.inspircd.org/"
+    },
+    {
+      "command": "iocparser",
+      "name": "ioc_parser",
+      "category": "Gather and Analyze Data",
+      "description": "Extract IOCs from security report PDFs.",
+      "website": "https://github.com/buffer/ioc_parser"
+    },
+    {
+      "command": "ipwhois",
+      "name": "ipwhois",
+      "category": "Gather and Analyze Data",
+      "description": "Retrieve and parse whois data for IP addresses.",
+      "website": "https://github.com/secynic/ipwhois"
+    },
+    {
+      "command": "jad-java-decompiler",
+      "name": "JAD Java Decompiler",
+      "category": "Statically Analyze Code: Java",
+      "description": "Java decompiler and analysis tool.",
+      "website": "Unknown"
+    },
+    {
+      "command": "jadx",
+      "name": "JADX",
+      "category": "Statically Analyze Code: Android",
+      "description": "Generate Java source code from Dalvik Executable (dex) and Android APK files.",
+      "website": "https://github.com/skylot/jadx"
+    },
+    {
+      "command": "java-idx-parser",
+      "name": "Java IDX Parser",
+      "category": "Statically Analyze Code: Java",
+      "description": "Analyze Java IDX files.",
+      "website": "https://github.com/digitalsleuth/Java_IDX_Parser"
+    },
+    {
+      "command": "javassist",
+      "name": "Javassist",
+      "category": "Statically Analyze Code: Java",
+      "description": "Java bytecode engineering toolkit/library.",
+      "website": "https://www.javassist.org/"
+    },
+    {
+      "command": "jd-gui-java-decompiler",
+      "name": "JD-GUI Java Decompiler",
+      "category": "Statically Analyze Code: Java",
+      "description": "Java decompiler with GUI.",
+      "website": "https://java-decompiler.github.io/"
+    },
+    {
+      "command": "js-beautifier",
+      "name": "JS Beautifier",
+      "category": "Statically Analyze Code: Scripts",
+      "description": "Reformat JavaScript scripts for easier analysis.",
+      "website": "https://beautifier.io/"
+    },
+    {
+      "command": "jstillery",
+      "name": "JStillery",
+      "category": "Dynamically Reverse-Engineer Code: Scripts",
+      "description": "Deobfuscate JavaScript scripts using AST and Partial Evaluation techniques.",
+      "website": "https://github.com/mindedsecurity/jstillery"
+    },
+    {
+      "command": "libemu",
+      "name": "libemu",
+      "category": "Dynamically Reverse-Engineer Code: Shellcode",
+      "description": "A library for x86 code emulation and shellcode detection.",
+      "website": "https://github.com/buffer/libemu"
+    },
+    {
+      "command": "libolecf",
+      "name": "libolecf",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Microsoft Office OLE2 compound documents.",
+      "website": "https://github.com/libyal/libolecf"
+    },
+    {
+      "command": "ltrace",
+      "name": "ltrace",
+      "category": "Dynamically Reverse-Engineer Code: ELF Files",
+      "description": "Trace library calls and signals.",
+      "website": "https://ltrace.org"
+    },
+    {
+      "command": "magika",
+      "name": "Magika",
+      "category": "Examine Static Properties: General",
+      "description": "Identify file type using signatures.",
+      "website": "https://google.github.io/magika"
+    },
+    {
+      "command": "mail-parser",
+      "name": "mail-parser",
+      "category": "Analyze Documents: Email Messages",
+      "description": "Parse raw SMTP and .MSG email messages and generate a parsed object from them.",
+      "website": "https://github.com/SpamScope/mail-parser"
+    },
+    {
+      "command": "malchive",
+      "name": "Malchive",
+      "category": "Statically Analyze Code: PE Files",
+      "description": "Perform static analysis of various aspects of malicious code.",
+      "website": "https://github.com/MITRECND/malchive"
+    },
+    {
+      "command": "malwoverview",
+      "name": "malwoverview",
+      "category": "Gather and Analyze Data",
+      "description": "Query public repositories of malware data (e.g., VirusTotal, HybridAnalysis).",
+      "website": "https://github.com/alexandreborges/malwoverview"
+    },
+    {
+      "command": "manalyze",
+      "name": "Manalyze",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Perform static analysis of suspicious PE files.",
+      "website": "https://github.com/JusticeRage/Manalyze"
+    },
+    {
+      "command": "mitmproxy",
+      "name": "mitmproxy",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Investigate website interactions using this web proxy.",
+      "website": "https://mitmproxy.org/"
+    },
+    {
+      "command": "msg-extractor",
+      "name": "msg-extractor",
+      "category": "Analyze Documents: Email Messages",
+      "description": "Extract emails and attachments from MSG files.",
+      "website": "https://github.com/TeamMsgExtractor/msg-extractor"
+    },
+    {
+      "command": "msgconvert",
+      "name": "msgconvert",
+      "category": "Analyze Documents: Email Messages",
+      "description": "Convert MSG files to MBOX files.",
+      "website": "https://www.matijs.net/software/msgconv/"
+    },
+    {
+      "command": "msitools",
+      "name": "msitools",
+      "category": "Examine Static Properties: General",
+      "description": "Create, inspect and extract Windows Installer (.msi) files.",
+      "website": "https://wiki.gnome.org/msitools"
+    },
+    {
+      "command": "msoffcrypto-tool",
+      "name": "msoffcrypto-tool",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Decrypt a Microsoft Office file with password, intermediate key, or private key which generated its escrow key.",
+      "website": "https://github.com/nolze/msoffcrypto-tool"
+    },
+    {
+      "command": "msoffice-crypt",
+      "name": "msoffice-crypt",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Encrypt and decrypt OOXML Microsoft Office documents.",
+      "website": "https://github.com/herumi/msoffice"
+    },
+    {
+      "command": "myip",
+      "name": "myip",
+      "category": "General Utilities",
+      "description": "Determine the IP address of the default network interface.",
+      "website": "https://github.com/REMnux/distro/blob/master/files/myip"
+    },
+    {
+      "command": "name-that-hash",
+      "name": "Name-That-Hash",
+      "category": "Examine Static Properties: General",
+      "description": "Identify dfferent types of hashes.",
+      "website": "https://github.com/HashPals/Name-That-Hash"
+    },
+    {
+      "command": "nasm",
+      "name": "nasm",
+      "category": "General Utilities",
+      "description": "An x86-64 assembler.",
+      "website": "https://www.nasm.us"
+    },
+    {
+      "command": "nautilus",
+      "name": "Nautilus",
+      "category": "General Utilities",
+      "description": "Graphical file manager.",
+      "website": "https://gitlab.gnome.org/GNOME/nautilus"
+    },
+    {
+      "command": "netcat",
+      "name": "netcat",
+      "category": "Explore Network Interactions: Services",
+      "description": "Read and write data across network connections.",
+      "website": "https://nc110.sourceforge.io/"
+    },
+    {
+      "command": "network-miner-free-edition",
+      "name": "Network Miner Free Edition",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Examine network traffic and carve PCAP capture files.",
+      "website": "https://www.netresec.com/"
+    },
+    {
+      "command": "nginx",
+      "name": "Nginx",
+      "category": "Explore Network Interactions: Services",
+      "description": "Web server.",
+      "website": "https://nginx.org"
+    },
+    {
+      "command": "ngrep",
+      "name": "ngrep",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Look for patterns in network traffic.",
+      "website": "https://github.com/jpr5/ngrep/"
+    },
+    {
+      "command": "nomorexorpy",
+      "name": "NoMoreXOR.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Help guess a file's 256-byte XOR by using frequency analysis.",
+      "website": "https://github.com/digitalsleuth/NoMoreXOR"
+    },
+    {
+      "command": "objdump",
+      "name": "objdump",
+      "category": "Statically Analyze Code: General",
+      "description": "Disassemble binary files.",
+      "website": "https://en.wikipedia.org/wiki/Objdump"
+    },
+    {
+      "command": "olefile",
+      "name": "olefile",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Python package to parse, read and write MS OLE2 files.",
+      "website": "https://github.com/decalage2/olefile"
+    },
+    {
+      "command": "oletools",
+      "name": "oletools",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Microsoft Office OLE2 compound documents.",
+      "website": "http://www.decalage.info/python/oletools"
+    },
+    {
+      "command": "opencode",
+      "name": "OpenCode",
+      "category": "Use Artificial Intelligence",
+      "description": "Open-source AI coding agent for the terminal.",
+      "website": "https://opencode.ai"
+    },
+    {
+      "command": "openssh",
+      "name": "OpenSSH",
+      "category": "General Utilities",
+      "description": "Initiate and receive SSH and SFTP connections.",
+      "website": "https://www.openssh.com"
+    },
+    {
+      "command": "origami",
+      "name": "Origami",
+      "category": "Analyze Documents: PDF",
+      "description": "Parse, modify, generate PDF files.",
+      "website": "https://github.com/gdelugre/origami"
+    },
+    {
+      "command": "pcode2code",
+      "name": "pcode2code",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Decompile VBA macro p-code from Microsoft Office documents.",
+      "website": "https://github.com/Big5-sec/pcode2code"
+    },
+    {
+      "command": "pcodedmp",
+      "name": "pcodedmp",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Disassemble VBA p-code.",
+      "website": "https://github.com/bontchev/pcodedmp"
+    },
+    {
+      "command": "pdfresurrect",
+      "name": "pdfresurrect",
+      "category": "Analyze Documents: PDF",
+      "description": "Extract previous versions of content from PDF files.",
+      "website": "https://github.com/enferex/pdfresurrect"
+    },
+    {
+      "command": "pdftk-java",
+      "name": "pdftk-java",
+      "category": "Analyze Documents: PDF",
+      "description": "Edit, create, and examine PDF files.",
+      "website": "https://gitlab.com/pdftk-java/pdftk"
+    },
+    {
+      "command": "pdnstool",
+      "name": "pdnstool",
+      "category": "Gather and Analyze Data",
+      "description": "Query passive DNS databases for DNS data.",
+      "website": "https://github.com/chrislee35/passivedns-client"
+    },
+    {
+      "command": "pe-tree",
+      "name": "PE Tree",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Examine contents and structure of PE files.",
+      "website": "https://github.com/blackberry/pe_tree"
+    },
+    {
+      "command": "pedump",
+      "name": "pedump",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Statically analyze PE files and extract their components (e.g., resources).",
+      "website": "https://github.com/zed-0xff/pedump"
+    },
+    {
+      "command": "peepdf-3",
+      "name": "peepdf-3",
+      "category": "Analyze Documents: PDF",
+      "description": "Examine elements of the PDF file.",
+      "website": "https://github.com/digitalsleuth/peepdf-3"
+    },
+    {
+      "command": "pefile",
+      "name": "pefile",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Python library for analyzing static properties of PE files.",
+      "website": "https://github.com/erocarrera/pefile"
+    },
+    {
+      "command": "peframe",
+      "name": "PEframe",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Statically analyze PE and Microsoft Office files.",
+      "website": "https://github.com/digitalsleuth/peframe"
+    },
+    {
+      "command": "polarproxy",
+      "name": "PolarProxy",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Intercept and decrypt TLS traffic.",
+      "website": "https://www.netresec.com/"
+    },
+    {
+      "command": "portex",
+      "name": "PortEx",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Statically analyze PE files.",
+      "website": "https://github.com/katjahahn/PortEx"
+    },
+    {
+      "command": "postgresql",
+      "name": "PostgreSQL",
+      "category": "General Utilities",
+      "description": "Relational Database.",
+      "website": "https://www.postgresql.org"
+    },
+    {
+      "command": "powershell-core",
+      "name": "PowerShell  Core",
+      "category": "Dynamically Reverse-Engineer Code: Scripts",
+      "description": "Run PowerShell scripts and commands.",
+      "website": "https://github.com/powershell/powershell"
+    },
+    {
+      "command": "procyon",
+      "name": "Procyon",
+      "category": "Statically Analyze Code: Java",
+      "description": "Java decompiler.",
+      "website": "https://github.com/mstrobel/procyon"
+    },
+    {
+      "command": "pyelftools",
+      "name": "pyelftools",
+      "category": "Examine Static Properties: ELF Files",
+      "description": "Python library for parsing and analyzing ELF files and DWARF debugging information.",
+      "website": "https://github.com/eliben/pyelftools"
+    },
+    {
+      "command": "pyinstaller-extractor",
+      "name": "PyInstaller Extractor",
+      "category": "Statically Analyze Code: Python",
+      "description": "Extract contents of a PyInstaller-generated PE files.",
+      "website": "https://github.com/extremecoders-re/pyinstxtractor"
+    },
+    {
+      "command": "qiling",
+      "name": "Qiling",
+      "category": "Statically Analyze Code: General",
+      "description": "Emulate code execution of PE files, shellcode, etc. for a variety of OS and hardware platforms.",
+      "website": "https://www.qiling.io"
+    },
+    {
+      "command": "qpdf",
+      "name": "qpdf",
+      "category": "Analyze Documents: PDF",
+      "description": "Manipulate (merge, convert, transform) PDF files.",
+      "website": "http://qpdf.sourceforge.net/"
+    },
+    {
+      "command": "r2pipe",
+      "name": "r2pipe",
+      "category": "Dynamically Reverse-Engineer Code: General",
+      "description": "Examine binary files, including disassembling and debugging.",
+      "website": "https://rada.re/n/r2pipe.html"
+    },
+    {
+      "command": "radare2",
+      "name": "radare2",
+      "category": "Dynamically Reverse-Engineer Code: General",
+      "description": "Examine binary files, including disassembling and debugging.",
+      "website": "https://www.radare.org/n/radare2.html"
+    },
+    {
+      "command": "rar",
+      "name": "RAR",
+      "category": "General Utilities",
+      "description": "Compress and decompress files using a variety of algorithms.",
+      "website": "https://www.rarlab.com"
+    },
+    {
+      "command": "ratdecoders",
+      "name": "RATDecoders",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Python3 Decoders for Remote Access Trojans.",
+      "website": "https://github.com/kevthehermit/RATDecoders"
+    },
+    {
+      "command": "readpe-formerly-pev",
+      "name": "readpe (formerly pev)",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Analyze PE files and extract strings from them.",
+      "website": "https://github.com/mentebinaria/readpe"
+    },
+    {
+      "command": "remnux-installer",
+      "name": "REMnux Installer",
+      "category": "General Utilities",
+      "description": "Install and update the REMnux distro.",
+      "website": "https://github.com/REMnux/distro/blob/master/files/remnux-installer.sh"
+    },
+    {
+      "command": "rhino-debugger",
+      "name": "Rhino Debugger",
+      "category": "Dynamically Reverse-Engineer Code: Scripts",
+      "description": "GUI JavaScript debugger.",
+      "website": "https://developer.mozilla.org/en-US/docs/Mozilla/Projects/Rhino/Debugger"
+    },
+    {
+      "command": "rsakeyfinder",
+      "name": "RSAKeyFinder",
+      "category": "Perform Memory Forensics",
+      "description": "Find BER-encoded RSA private keys in a memory image.",
+      "website": "https://citp.princeton.edu/our-work/memory/"
+    },
+    {
+      "command": "runsc",
+      "name": "runsc",
+      "category": "Dynamically Reverse-Engineer Code: Shellcode",
+      "description": "Run shellcode to trace and analyze its execution.",
+      "website": "https://github.com/edygert/runsc"
+    },
+    {
+      "command": "sandfly-processdecloak",
+      "name": "sandfly-processdecloak",
+      "category": "Investigate System Interactions",
+      "description": "Find hidden processes on the local Linux system.",
+      "website": "https://github.com/sandflysecurity/sandfly-processdecloak"
+    },
+    {
+      "command": "scalpel",
+      "name": "Scalpel",
+      "category": "Gather and Analyze Data",
+      "description": "Carve contents out of binary files, such as partitions.",
+      "website": "https://github.com/sleuthkit/scalpel"
+    },
+    {
+      "command": "scdbg",
+      "name": "scdbg",
+      "category": "Dynamically Reverse-Engineer Code: Shellcode",
+      "description": "Analyze shellcode by emulating its execution.",
+      "website": "http://sandsprite.com/blogs/index.php?uid=7&pid=152"
+    },
+    {
+      "command": "scite",
+      "name": "SciTE",
+      "category": "View or Edit Files",
+      "description": "Edit text files.",
+      "website": "https://www.scintilla.org/SciTE.html"
+    },
+    {
+      "command": "shcode2exe",
+      "name": "shcode2exe",
+      "category": "Dynamically Reverse-Engineer Code: Shellcode",
+      "description": "Convert 32 and 64-bit shellcode to a Windows executable file.",
+      "website": "https://github.com/accidentalrebel/shcode2exe"
+    },
+    {
+      "command": "shellcode2exebat",
+      "name": "shellcode2exe.bat",
+      "category": "Dynamically Reverse-Engineer Code: Shellcode",
+      "description": "Convert 32 and 64-bit shellcode to a Windows executable file.",
+      "website": "https://github.com/repnz/shellcode2exe"
+    },
+    {
+      "command": "shodan",
+      "name": "shodan",
+      "category": "Gather and Analyze Data",
+      "description": "Query Shodan, a search engine for internet-connected devices.",
+      "website": "https://github.com/achillean/shodan-python/"
+    },
+    {
+      "command": "signsrch",
+      "name": "signsrch",
+      "category": "Examine Static Properties: General",
+      "description": "Find patterns of common encryption, compression, or encoding algorithms.",
+      "website": "http://aluigi.altervista.org/mytoolz.htm"
+    },
+    {
+      "command": "sleuth-kit",
+      "name": "Sleuth Kit",
+      "category": "Examine Static Properties: General",
+      "description": "Analyze disk images and recover files from them.",
+      "website": "https://www.sleuthkit.org/sleuthkit"
+    },
+    {
+      "command": "speakeasy",
+      "name": "Speakeasy",
+      "category": "Statically Analyze Code: PE Files",
+      "description": "Emulate code execution, including shellcode, Windows drivers, and Windows PE files.",
+      "website": "https://github.com/fireeye/speakeasy"
+    },
+    {
+      "command": "spidermonkey",
+      "name": "SpiderMonkey",
+      "category": "Dynamically Reverse-Engineer Code: Scripts",
+      "description": "Execute and deobfuscate JavaScript using Mozilla's standalone JavaScript engine.",
+      "website": "https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey"
+    },
+    {
+      "command": "spidermonkey-patched",
+      "name": "SpiderMonkey (Patched)",
+      "category": "Dynamically Reverse-Engineer Code: Scripts",
+      "description": "Execute and deobfuscate JavaScript using a patched version of Mozilla's standalone JavaScript engine.",
+      "website": "https://blog.didierstevens.com/2018/04/19/update-patched-spidermonkey/"
+    },
+    {
+      "command": "sqlite",
+      "name": "SQLite",
+      "category": "General Utilities",
+      "description": "Manage and interact with SQL database files.",
+      "website": "http://www.sqlite.org"
+    },
+    {
+      "command": "ssdeep",
+      "name": "ssdeep",
+      "category": "Examine Static Properties: General",
+      "description": "Compute Context Triggered Piecewise Hashes (CTPH), also known as fuzzy hashes.",
+      "website": "https://ssdeep-project.github.io/ssdeep/index.html"
+    },
+    {
+      "command": "ssview",
+      "name": "SSView",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Analyze OLE2 Structured Storage files.",
+      "website": "https://www.mitec.cz/ssv.html"
+    },
+    {
+      "command": "stpyv8",
+      "name": "STPyV8",
+      "category": "Dynamically Reverse-Engineer Code: Scripts",
+      "description": "Python3 and JavaScript interop engine, fork of the original PyV8 project.",
+      "website": "https://github.com/cloudflare/stpyv8"
+    },
+    {
+      "command": "strace",
+      "name": "strace",
+      "category": "Dynamically Reverse-Engineer Code: ELF Files",
+      "description": "Trace process' system calls and signals.",
+      "website": "https://strace.io"
+    },
+    {
+      "command": "strdeobpl",
+      "name": "strdeob.pl",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Locate and decode stack strings in executable files.",
+      "website": "https://github.com/REMnux/distro/blob/master/files/strdeob.pl"
+    },
+    {
+      "command": "swf-tools",
+      "name": "SWF Tools",
+      "category": "Statically Analyze Code: Flash",
+      "description": "Examine and convert Flash (SWF) files.",
+      "website": "http://swftools.org"
+    },
+    {
+      "command": "tcpdump",
+      "name": "tcpdump",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Capture and analyze network traffic with this command-line sniffer.",
+      "website": "https://www.tcpdump.org/"
+    },
+    {
+      "command": "tcpflow",
+      "name": "tcpflow",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Analyze the flow of network traffic.",
+      "website": "http://downloads.digitalcorpora.org/downloads/tcpflow/"
+    },
+    {
+      "command": "tcpick",
+      "name": "tcpick",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Capture and analyze network traffic with this command-line sniffer.",
+      "website": "http://tcpick.sourceforge.net"
+    },
+    {
+      "command": "tcpxtract",
+      "name": "tcpxtract",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Extract files from network traffic.",
+      "website": "http://tcpxtract.sourceforge.net/"
+    },
+    {
+      "command": "tesseract-ocr",
+      "name": "Tesseract OCR",
+      "category": "Analyze Documents: General",
+      "description": "Examine images to identify and extract text using optical character recognition (OCR).",
+      "website": "https://github.com/tesseract-ocr/tesseract"
+    },
+    {
+      "command": "thefuzz",
+      "name": "thefuzz",
+      "category": "Examine Static Properties: General",
+      "description": "Fuzzy String Matching in Python.",
+      "website": "https://github.com/seatgeek/thefuzz"
+    },
+    {
+      "command": "thug",
+      "name": "thug",
+      "category": "Explore Network Interactions: Connecting",
+      "description": "Examine suspicious website using this low-interaction honeyclient.",
+      "website": "https://github.com/buffer/thug"
+    },
+    {
+      "command": "time-decode",
+      "name": "time-decode",
+      "category": "Gather and Analyze Data",
+      "description": "Decode and encode date and timestamps.",
+      "website": "https://github.com/digitalsleuth/time_decode"
+    },
+    {
+      "command": "tor",
+      "name": "tor",
+      "category": "Explore Network Interactions: Connecting",
+      "description": "Obfuscate your origins by routing traffic through a network of anonymizing nodes.",
+      "website": "https://www.torproject.org"
+    },
+    {
+      "command": "trid",
+      "name": "TrID",
+      "category": "Examine Static Properties: General",
+      "description": "Identify file type using signatures.",
+      "website": "https://mark0.net/soft-trid-e.html"
+    },
+    {
+      "command": "tshark",
+      "name": "tshark",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Capture and analyze network traffic with this console-based sniffer.",
+      "website": "https://www.wireshark.org"
+    },
+    {
+      "command": "unfurl",
+      "name": "Unfurl",
+      "category": "Explore Network Interactions: Connecting",
+      "description": "Deconstruct and decode data from a URL.",
+      "website": "https://github.com/obsidianforensics/unfurl"
+    },
+    {
+      "command": "unhide",
+      "name": "Unhide",
+      "category": "Investigate System Interactions",
+      "description": "Find hidden processes or connections on the local Linux system.",
+      "website": "http://www.unhide-forensics.info"
+    },
+    {
+      "command": "unicode",
+      "name": "unicode",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Display Unicode character properties.",
+      "website": "https://github.com/garabik/unicode"
+    },
+    {
+      "command": "unrar-free",
+      "name": "unrar-free",
+      "category": "General Utilities",
+      "description": "Decompress files using a variety of algorithms.",
+      "website": "https://www.rarlab.com"
+    },
+    {
+      "command": "unxor",
+      "name": "unXOR",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Deobfuscate XOR'ed files.",
+      "website": "https://github.com/tomchop/unxor/"
+    },
+    {
+      "command": "upx",
+      "name": "UPX",
+      "category": "Statically Analyze Code: Unpacking",
+      "description": "Pack and unpack PE files.",
+      "website": "https://upx.github.io"
+    },
+    {
+      "command": "vbindiff",
+      "name": "VBinDiff",
+      "category": "View or Edit Files",
+      "description": "Compare binary files.",
+      "website": "https://www.cjmweb.net/vbindiff/"
+    },
+    {
+      "command": "vipermonkey",
+      "name": "ViperMonkey",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "A VBA parser and emulation engine to analyze malicious macros.",
+      "website": "https://www.decalage.info/en/vba_emulation"
+    },
+    {
+      "command": "virustotal-api",
+      "name": "VirusTotal API",
+      "category": "Gather and Analyze Data",
+      "description": "Query and interact with VirusTotal using a command-line interface.",
+      "website": "https://github.com/VirusTotal/vt-py"
+    },
+    {
+      "command": "visual-studio-code",
+      "name": "Visual Studio Code",
+      "category": "View or Edit Files",
+      "description": "Powerful source code editor.",
+      "website": "https://code.visualstudio.com/"
+    },
+    {
+      "command": "vivisect",
+      "name": "Vivisect",
+      "category": "Statically Analyze Code: General",
+      "description": "Statically examine and emulate binary files.",
+      "website": "https://github.com/vivisect/vivisect"
+    },
+    {
+      "command": "volatility-framework",
+      "name": "Volatility Framework",
+      "category": "Perform Memory Forensics",
+      "description": "Memory forensics tool and framework.",
+      "website": "https://github.com/volatilityfoundation/volatility3"
+    },
+    {
+      "command": "wine",
+      "name": "Wine",
+      "category": "Dynamically Reverse-Engineer Code: General",
+      "description": "Run Windows applications.",
+      "website": "https://www.winehq.org"
+    },
+    {
+      "command": "wireshark",
+      "name": "wireshark",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Capture and analyze network traffic with this sniffer.",
+      "website": "https://www.wireshark.org"
+    },
+    {
+      "command": "wxhexeditor",
+      "name": "wxHexEditor",
+      "category": "View or Edit Files",
+      "description": "Hex editor.",
+      "website": "https://sourceforge.net/projects/wxhexeditor/"
+    },
+    {
+      "command": "xlmmacrodeobfuscator",
+      "name": "XLMMacroDeobfuscator",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Deobfuscate XLM macros (also known as Excel 4.0 macros) from Microsoft Office files.",
+      "website": "https://github.com/DissectMalware/XLMMacroDeobfuscator"
+    },
+    {
+      "command": "xorbruteforcerpy",
+      "name": "xorBruteForcer.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Bruteforce an XOR-encoded file.",
+      "website": "https://eternal-todo.com/category/bruteforcer"
+    },
+    {
+      "command": "xorsearch",
+      "name": "XORSearch",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Locate and decode strings obfuscated using common techniques.",
+      "website": "https://blog.didierstevens.com/programs/xorsearch/"
+    },
+    {
+      "command": "xorstrings",
+      "name": "XORStrings",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Search for XOR encoded strings in a file.",
+      "website": "https://blog.didierstevens.com/2013/04/15/new-tool-xorstrings/"
+    },
+    {
+      "command": "xortool",
+      "name": "xortool",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Analyze XOR-encoded data.",
+      "website": "https://github.com/hellman/xortool"
+    },
+    {
+      "command": "xxxswf",
+      "name": "xxxswf",
+      "category": "Statically Analyze Code: Flash",
+      "description": "Analyze Flash SWF files.",
+      "website": "https://github.com/viper-framework/xxxswf"
+    },
+    {
+      "command": "yara",
+      "name": "Yara",
+      "category": "Gather and Analyze Data",
+      "description": "Identify and classify malware samples using Yara rules.",
+      "website": "https://virustotal.github.io/yara/"
+    },
+    {
+      "command": "yara-rules",
+      "name": "Yara Rules",
+      "category": "Examine Static Properties: General",
+      "description": "Statically scan a file to identify common malicious capabilities.",
+      "website": "https://github.com/Yara-Rules/rules"
+    }
+  ]
+}
