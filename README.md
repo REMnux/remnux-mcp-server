@@ -46,30 +46,30 @@ Two deployment models are supported depending on where the MCP server runs.
 The MCP server runs on the analyst's workstation and connects to REMnux over Docker exec or SSH. Best when the AI assistant runs on the same machine.
 
 ```
-+------------------------------------------------------------------------+
-|  Analyst's Machine                                                     |
-|                                                                        |
-|  +----------------+     +------------------------------------------+   |
-|  |  AI Assistant  |---->|  remnux-mcp-server (npm package)         |   |
-|  | (Claude Code,  | MCP |                                          |   |
-|  |  Cursor, etc)  |     |  - Blocked command patterns              |   |
-|  +----------------+     |  - Dangerous pipe blocking               |   |
-|                         |  - Path sandboxing (opt-in)              |   |
-|                         +------|----------------|------------------+   |
-|                                |                |                      |
-|                    +-----------+-----+----------+----------+          |
-|                    v                 v                      v          |
-|            +--------------+  +--------------+  +--------------+       |
-|            | Docker Exec  |  |     SSH      |  |    Local     |       |
-|            | (container)  |  |    (VM)      |  |  (native)    |       |
-|            +------+-------+  +------+-------+  +--------------+       |
-|                   |                 |                                  |
-+-------------------|-----------------|----------------------------------+
-                    v                 v
-             +-----------+    +-----------+
-             |  REMnux   |    |  REMnux   |
-             | Container |    |    VM     |
-             +-----------+    +-----------+
++--------------------------------------------------------------------+
+|  Analyst's Machine                                                 |
+|                                                                    |
+|  +----------------+     +--------------------------------------+   |
+|  |  AI Assistant  |---->|  remnux-mcp-server (npm package)     |   |
+|  | (Claude Code,  | MCP |                                      |   |
+|  |  Cursor, etc)  |     |  - Blocked command patterns          |   |
+|  +----------------+     |  - Dangerous pipe blocking           |   |
+|                         |  - Path sandboxing (opt-in)          |   |
+|                         +------|--------------|----------------+   |
+|                                |              |                    |
+|                    +-----------+-+------------+----------+         |
+|                    v             v                       v         |
+|            +--------------+ +--------------+ +--------------+      |
+|            | Docker Exec  | |     SSH      | |    Local     |      |
+|            | (container)  | |    (VM)      | |  (native)    |      |
+|            +------+-------+ +------+-------+ +--------------+      |
+|                   |                |                               |
++-------------------|----------------|-------------------------------+
+                    v                v
+             +-----------+   +-----------+
+             |  REMnux   |   |  REMnux   |
+             | Container |   |    VM     |
+             +-----------+   +-----------+
 ```
 
 ### Model B: Server Inside REMnux
@@ -154,14 +154,15 @@ MCP settings JSON:
 {
   "mcpServers": {
     "remnux": {
-      "command": "remnux-mcp-server",
-      "args": ["--mode=local"]
+      "command": "remnux-mcp-server"
     }
   }
 }
 ```
 
-The default paths (`/home/remnux/files/samples` and `/home/remnux/files/output`) match the REMnux filesystem layout, so no additional configuration is needed.
+Local mode is the default — no `--mode` flag needed. The default paths (`/home/remnux/files/samples` and `/home/remnux/files/output`) match the REMnux filesystem layout, so no additional configuration is needed.
+
+In local mode, analysis tools also accept absolute file paths, so you can reference files anywhere on the filesystem without uploading them first.
 
 ### Scenario 3: AI Tool on Your Machine, MCP Server on REMnux (HTTP)
 
@@ -213,8 +214,8 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--mode` | Connection mode: `docker`, `ssh`, or `local` | `docker` |
-| `--container` | Docker container name/ID | `remnux` |
+| `--mode` | Connection mode: `local`, `docker`, or `ssh` | `local` |
+| `--container` | Docker container name/ID (for docker mode) | `remnux` |
 | `--host` | SSH host (for ssh mode) | - |
 | `--user` | SSH user (for ssh mode) | `remnux` |
 | `--port` | SSH port (for ssh mode) | `22` |

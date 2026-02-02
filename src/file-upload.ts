@@ -102,7 +102,8 @@ export async function uploadSampleFromHost(
   samplesDir: string,
   hostPath: string,
   filename?: string,
-  overwrite: boolean = false
+  overwrite: boolean = false,
+  mode: "docker" | "ssh" | "local" = "docker",
 ): Promise<UploadResult> {
   // Validate host path
   const pathValidation = validateHostPath(hostPath);
@@ -130,13 +131,17 @@ export async function uploadSampleFromHost(
   if (stat.size > MAX_FILE_SIZE) {
     const sizeMB = (stat.size / 1024 / 1024).toFixed(0);
     const limitMB = MAX_FILE_SIZE / 1024 / 1024;
+    const advice =
+      mode === "local"
+        ? `Use absolute paths in analysis tools to reference the file directly without uploading.`
+        : mode === "ssh"
+        ? `Place large files directly in the samples directory on the remote host via scp/sftp.`
+        : `For large files such as memory images, mount a host directory into the container instead:\n` +
+          `  docker run -v /path/to/evidence:/home/remnux/files/samples/evidence remnux/remnux-distro\n` +
+          `Then reference files as: evidence/<filename>`;
     return {
       success: false,
-      error:
-        `File size (${sizeMB}MB) exceeds the ${limitMB}MB upload limit. ` +
-        `For large files such as memory images, mount a host directory into the container instead:\n` +
-        `  docker run -v /path/to/evidence:/home/remnux/files/samples/evidence remnux/remnux-distro\n` +
-        `Then reference files as: evidence/<filename>`,
+      error: `File size (${sizeMB}MB) exceeds the ${limitMB}MB upload limit. ${advice}`,
     };
   }
 

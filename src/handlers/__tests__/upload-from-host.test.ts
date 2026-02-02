@@ -61,7 +61,8 @@ describe("handleUploadFromHost", () => {
       "/samples",
       "/tmp/test.exe",
       undefined,
-      true
+      true,
+      "docker",
     );
   });
 
@@ -85,7 +86,8 @@ describe("handleUploadFromHost", () => {
       "/samples",
       "/tmp/test.exe",
       "renamed.exe",
-      false
+      false,
+      "docker",
     );
   });
 

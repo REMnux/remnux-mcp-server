@@ -113,15 +113,32 @@ export async function createServer(config: ServerConfig) {
   );
 
   // Tool: upload_from_host - Upload a file from the host filesystem
+  const uploadDescription = (() => {
+    const base = "Upload a file from the host filesystem to the samples directory for analysis. " +
+      "Accepts an absolute host path — the MCP server reads the file locally and transfers it. " +
+      "Maximum file size: 200MB. ";
+    switch (config.mode) {
+      case "local":
+        return base +
+          "Files can also be referenced by absolute path in analysis tools, bypassing the need to upload. " +
+          "For files outside the samples directory, pass the full path to get_file_info, analyze_file, or run_tool.";
+      case "ssh":
+        return base +
+          "For larger files (memory images, disk images, PCAPs), " +
+          "place them directly in the samples directory on the remote host via scp/sftp, " +
+          "then use list_files to confirm.";
+      default:
+        return base +
+          "For larger files (memory images, disk images, PCAPs), " +
+          "use a Docker bind mount instead: " +
+          "docker run -v /host/evidence:/home/remnux/files/samples/evidence remnux/remnux-distro. " +
+          "For HTTP transport deployments, use scp/sftp to place files in the samples directory directly, " +
+          "then use list_files to confirm.";
+    }
+  })();
   server.tool(
     "upload_from_host",
-    "Upload a file from the host filesystem to the samples directory for analysis. " +
-    "Accepts an absolute host path — the MCP server reads the file locally and transfers it. " +
-    "Maximum file size: 200MB. For larger files (memory images, disk images, PCAPs), " +
-    "use a Docker bind mount instead: " +
-    "docker run -v /host/evidence:/home/remnux/files/samples/evidence remnux/remnux-distro. " +
-    "For HTTP transport deployments, use scp/sftp to place files in the samples directory directly, " +
-    "then use list_files to confirm.",
+    uploadDescription,
     uploadFromHostSchema.shape,
     (args) => handleUploadFromHost(deps, args)
   );

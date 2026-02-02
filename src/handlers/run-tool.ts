@@ -32,7 +32,8 @@ export async function handleRunTool(
     // Append quoted file path to command (single-quotes prevent shell expansion)
     // Escape any single quotes in the path as defense-in-depth (isPathSafe also rejects them)
     const escapedFile = args.input_file.replace(/'/g, "'\\''");
-    fullCommand = `${args.command} '${config.samplesDir}/${escapedFile}'`;
+    const resolvedInputFile = (config.mode === "local" && args.input_file.startsWith("/")) ? escapedFile : `${config.samplesDir}/${escapedFile}`;
+    fullCommand = `${args.command} '${resolvedInputFile}'`;
   }
 
   // Security: Validate command against blocklist
@@ -98,7 +99,7 @@ export async function handleRunTool(
       ...(findings && { findings, parsed_metadata: parsedMetadata }),
     }, startTime);
   } catch (error) {
-    return formatError("run_tool", toREMnuxError(error), startTime);
+    return formatError("run_tool", toREMnuxError(error, config.mode), startTime);
   }
 }
 

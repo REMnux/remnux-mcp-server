@@ -26,7 +26,7 @@ export async function handleGetFileInfo(
     }
   }
 
-  const filePath = `${config.samplesDir}/${args.file}`;
+  const filePath = (config.mode === "local" && args.file.startsWith("/")) ? args.file : `${config.samplesDir}/${args.file}`;
   let fileType = "";
   let sha256 = "";
   let md5 = "";
@@ -37,7 +37,7 @@ export async function handleGetFileInfo(
     const result = await connector.execute(["file", filePath], { timeout: 30000 });
     if (result.stdout) fileType = result.stdout.trim();
   } catch (error) {
-    const mapped = toREMnuxError(error);
+    const mapped = toREMnuxError(error, config.mode);
     if (mapped.code === "CONNECTION_FAILED") {
       return formatError("get_file_info", mapped, startTime);
     }
@@ -97,6 +97,6 @@ export async function handleGetFileInfo(
     ...(sizeBytes !== null ? { size_bytes: sizeBytes } : {}),
   }, startTime);
   } catch (error) {
-    return formatError("get_file_info", toREMnuxError(error), startTime);
+    return formatError("get_file_info", toREMnuxError(error, deps.config.mode), startTime);
   }
 }

@@ -5,8 +5,7 @@ import { startServer, type ServerConfig } from "./index.js";
 function parseArgs(): ServerConfig {
   const args = process.argv.slice(2);
   const config: ServerConfig = {
-    mode: "docker",
-    container: "remnux",
+    mode: "local",
     samplesDir: "/home/remnux/files/samples",
     outputDir: "/home/remnux/files/output",
     timeout: 300,
@@ -119,8 +118,8 @@ USAGE:
   npx @remnux/mcp-server [OPTIONS]
 
 OPTIONS:
-  --mode <mode>           Connection mode: docker, ssh, or local (default: docker)
-  --container <name>      Docker container name/ID (default: remnux)
+  --mode <mode>           Connection mode: local, docker, or ssh (default: local)
+  --container <name>      Docker container name/ID (for docker mode)
   --host <host>           SSH host (for ssh mode)
   --user <user>           SSH user (default: remnux)
   --port <port>           SSH port (default: 22)
@@ -138,14 +137,17 @@ OPTIONS:
   -v, --version           Show version
 
 EXAMPLES:
-  # Docker mode (default, stdio transport)
+  # Local mode (default — run directly on REMnux)
+  npx @remnux/mcp-server
+
+  # Docker mode (REMnux in a container)
   npx @remnux/mcp-server --mode=docker --container=remnux
 
-  # SSH mode
+  # SSH mode (remote REMnux host)
   npx @remnux/mcp-server --mode=ssh --host=192.168.1.100 --user=remnux
 
-  # HTTP transport (Model B: server inside REMnux)
-  npx @remnux/mcp-server --mode=local --transport=http --http-token=SECRET
+  # HTTP transport (server inside REMnux)
+  npx @remnux/mcp-server --transport=http --http-token=SECRET
 
   # Add to Claude Code (stdio)
   claude mcp add remnux -- npx @remnux/mcp-server

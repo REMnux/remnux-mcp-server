@@ -42,7 +42,8 @@ export async function handleUploadFile(
       config.samplesDir,
       args.host_path,
       args.filename,
-      args.overwrite
+      args.overwrite,
+      config.mode,
     );
 
     if (result.success) {
@@ -56,6 +57,6 @@ export async function handleUploadFile(
       ), startTime);
     }
   } catch (error) {
-    return formatError("upload_file", toREMnuxError(error), startTime);
+    return formatError("upload_file", toREMnuxError(error, config.mode), startTime);
   }
 }

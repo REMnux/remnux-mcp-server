@@ -61,7 +61,7 @@ export async function handleAnalyzeFile(
     }
   }
 
-  const filePath = `${config.samplesDir}/${args.file}`;
+  const filePath = (config.mode === "local" && args.file.startsWith("/")) ? args.file : `${config.samplesDir}/${args.file}`;
   const perToolTimeout = (args.timeout_per_tool || 60) * 1000;
 
   // Step 1: Detect file type
@@ -191,6 +191,6 @@ export async function handleAnalyzeFile(
     tools_skipped: toolsSkipped,
   }, startTime);
   } catch (error) {
-    return formatError("analyze_file", toREMnuxError(error), startTime);
+    return formatError("analyze_file", toREMnuxError(error, deps.config.mode), startTime);
   }
 }

@@ -179,7 +179,7 @@ export async function handleSuggestTools(
     }
   }
 
-  const filePath = `${config.samplesDir}/${args.file}`;
+  const filePath = (config.mode === "local" && args.file.startsWith("/")) ? args.file : `${config.samplesDir}/${args.file}`;
 
   // Detect file type
   let fileOutput: string;
@@ -251,6 +251,6 @@ export async function handleSuggestTools(
     analysis_hints: generateHints(category.name, fileOutput),
   }, startTime);
   } catch (error) {
-    return formatError("suggest_tools", toREMnuxError(error), startTime);
+    return formatError("suggest_tools", toREMnuxError(error, deps.config.mode), startTime);
   }
 }

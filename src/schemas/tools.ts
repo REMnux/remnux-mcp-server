@@ -2,13 +2,13 @@ import { z } from "zod";
 
 export const runToolSchema = z.object({
   command: z.string().describe("Command to execute (can include pipes, e.g., 'strings sample.exe | grep -i password')"),
-  input_file: z.string().optional().describe("Input file path (relative to samples dir) - appended to command"),
+  input_file: z.string().optional().describe("Input file path (relative to samples dir, or absolute path in local mode) - appended to command"),
   timeout: z.number().optional().describe("Timeout in seconds (default: 300)"),
 });
 export type RunToolArgs = z.infer<typeof runToolSchema>;
 
 export const getFileInfoSchema = z.object({
-  file: z.string().describe("File path relative to samples directory"),
+  file: z.string().describe("File path relative to samples directory, or absolute path in local mode"),
 });
 export type GetFileInfoArgs = z.infer<typeof getFileInfoSchema>;
 
@@ -42,7 +42,7 @@ export const downloadFileSchema = z.object({
 export type DownloadFileArgs = z.input<typeof downloadFileSchema>;
 
 export const analyzeFileSchema = z.object({
-  file: z.string().describe("Filename relative to samples directory"),
+  file: z.string().describe("Filename relative to samples directory, or absolute path in local mode"),
   timeout_per_tool: z.number().optional().describe("Timeout per tool in seconds (default: 60)"),
   depth: z.enum(["quick", "standard", "deep"]).optional().default("standard").describe(
     "Analysis depth: 'quick' (fast triage tools only), 'standard' (default, all category tools), 'deep' (standard + expensive tools like full decompilation)"
@@ -54,7 +54,7 @@ export const checkToolsSchema = z.object({});
 export type CheckToolsArgs = z.infer<typeof checkToolsSchema>;
 
 export const suggestToolsSchema = z.object({
-  file: z.string().describe("Filename relative to samples directory"),
+  file: z.string().describe("Filename relative to samples directory, or absolute path in local mode"),
   depth: z.enum(["quick", "standard", "deep"]).optional().default("standard").describe(
     "Filter recommendations by depth tier: 'quick' (triage only), 'standard' (default), 'deep' (all tools)"
   ),

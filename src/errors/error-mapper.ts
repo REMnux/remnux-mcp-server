@@ -7,7 +7,7 @@
 
 import { REMnuxError } from "./remnux-error.js";
 
-export function toREMnuxError(raw: unknown): REMnuxError {
+export function toREMnuxError(raw: unknown, mode?: "docker" | "ssh" | "local"): REMnuxError {
   if (raw instanceof REMnuxError) {
     return raw;
   }
@@ -15,11 +15,15 @@ export function toREMnuxError(raw: unknown): REMnuxError {
   const msg = raw instanceof Error ? raw.message : String(raw);
 
   if (/is not running|not running/i.test(msg)) {
+    const remediation =
+      mode === "ssh" ? "Check SSH connectivity to the REMnux host" :
+      mode === "local" ? "Check that the command exists and PATH is correct" :
+      "Run `docker start remnux` or check the container status";
     return new REMnuxError(
       msg,
       "CONNECTION_FAILED",
       "connection",
-      "Run `docker start remnux` or check the container status",
+      remediation,
     );
   }
 
