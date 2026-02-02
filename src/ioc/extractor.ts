@@ -22,6 +22,7 @@ export interface IOCResult {
     total: number;
     noise_filtered: number;
     by_type: Record<string, number>;
+    truncated?: string[];
   };
 }
 
@@ -99,19 +100,40 @@ export function extractIOCs(text: string): IOCResult {
     }
   }
 
+  // 4b. Cap per-type to prevent hash floods (e.g., 397 MD5s from hex output)
+  const MAX_PER_TYPE = 25;
+  const byTypeCount: Record<string, number> = {};
+  const truncatedTypes: string[] = [];
+  const cappedIocs: IOCEntry[] = [];
+
+  for (const entry of iocs) {
+    const count = byTypeCount[entry.type] || 0;
+    if (count < MAX_PER_TYPE) {
+      cappedIocs.push(entry);
+    }
+    byTypeCount[entry.type] = count + 1;
+  }
+
+  for (const [type, count] of Object.entries(byTypeCount)) {
+    if (count > MAX_PER_TYPE) {
+      truncatedTypes.push(`${type}: showing ${MAX_PER_TYPE} of ${count}`);
+    }
+  }
+
   // 5. Build summary
   const byType: Record<string, number> = {};
-  for (const entry of iocs) {
+  for (const entry of cappedIocs) {
     byType[entry.type] = (byType[entry.type] || 0) + 1;
   }
 
   return {
-    iocs,
+    iocs: cappedIocs,
     noise,
     summary: {
-      total: iocs.length,
+      total: cappedIocs.length,
       noise_filtered: noise.length,
       by_type: byType,
+      ...(truncatedTypes.length > 0 && { truncated: truncatedTypes }),
     },
   };
 }

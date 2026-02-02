@@ -26,7 +26,7 @@ This server enables AI assistants (Claude Code, OpenCode, Cursor, etc.) to execu
 2. **AI tool and MCP server both on REMnux** — everything runs locally on the same REMnux system (simplest setup)
 3. **AI tool on your machine, MCP server on REMnux** — MCP server runs inside REMnux, your AI tool connects over HTTP
 
-**For tool discovery and documentation**, use the [REMnux docs MCP server](https://docs.remnux.org/~gitbook/mcp). This server focuses purely on execution.
+The server includes built-in tool guidance via `suggest_tools` (file-type-aware recommendations) and `get_tool_help` (usage flags for any installed tool). For additional tool documentation, you can optionally enable the [REMnux docs MCP server](https://docs.remnux.org/~gitbook/mcp).
 
 ## What This Server Provides
 
@@ -123,7 +123,7 @@ The MCP server runs inside the REMnux VM or container using the Local connector.
 
 **Prerequisites:** Node.js >= 18, plus Docker (for container mode) or SSH access (for VM mode).
 
-**Recommended:** Also enable the [REMnux docs MCP server](https://docs.remnux.org/~gitbook/mcp) alongside this one. It gives your AI tool documentation about available REMnux tools — what they do, their flags, and when to use them — so it can make better use of `run_tool` and `analyze_file`.
+**Optional:** For additional tool documentation beyond what `suggest_tools` and `get_tool_help` provide, you can enable the [REMnux docs MCP server](https://docs.remnux.org/~gitbook/mcp) alongside this one.
 
 Choose the scenario that matches your setup.
 
@@ -264,6 +264,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `analyze_file` | Auto-select and run REMnux tools based on detected file type |
 | `extract_iocs` | Extract IOCs (IPs, domains, URLs, hashes, registry keys, etc.) from text with confidence scoring |
 | `suggest_tools` | Detect file type and return recommended tools with analysis hints (no execution) |
+| `get_tool_help` | Get usage help (`--help` output) for any installed REMnux tool |
 | `check_tools` | Check which REMnux analysis tools are installed and available |
 
 #### Example: Using run_tool
@@ -665,11 +666,9 @@ LOCAL_LIVE_TEST=1 npx vitest run src/__tests__/local-live-integration.test.ts
 - **Simple deployment**: `npx` just works
 - **Flexible backends**: Docker, SSH, or local execution
 
-### Why separate discovery and execution?
+### Why is the docs MCP server optional?
 
-- **Discovery**: GitBook MCP at `docs.remnux.org/~gitbook/mcp` provides rich documentation
-- **Execution**: This server focuses on secure tool execution
-- **Simpler security**: Execution server has smaller attack surface
+This server is self-sufficient for most workflows: `suggest_tools` recommends the right tools for each file type, `get_tool_help` retrieves usage flags for any installed tool, and `analyze_file` runs entire tool chains automatically. The [REMnux docs MCP server](https://docs.remnux.org/~gitbook/mcp) provides richer prose documentation and can serve as optional enrichment.
 
 ### Why blocklist-only (no allowlist)?
 

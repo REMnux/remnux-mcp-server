@@ -83,6 +83,13 @@ export const downloadFromUrlSchema = z.object({
 });
 export type DownloadFromUrlArgs = z.input<typeof downloadFromUrlSchema>;
 
+export const getToolHelpSchema = z.object({
+  tool: z.string().describe(
+    "Tool name (e.g., 'capa', 'pdfid.py', 'olevba'). Returns the tool's --help output."
+  ),
+});
+export type GetToolHelpArgs = z.infer<typeof getToolHelpSchema>;
+
 export const extractIOCsSchema = z.object({
   text: z.string().describe("Text to extract IOCs from (e.g., output from run_tool or analyze_file)"),
   include_noise: z.boolean().optional().default(false).describe("Include low-confidence known-good IOCs"),

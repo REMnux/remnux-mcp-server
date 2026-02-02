@@ -9,7 +9,7 @@ import type { ParsedToolOutput, Finding } from "./types.js";
 
 export function parseCapaOutput(rawOutput: string): ParsedToolOutput {
   const result: ParsedToolOutput = {
-    tool: "capa-json",
+    tool: "capa",
     parsed: false,
     findings: [],
     metadata: {},

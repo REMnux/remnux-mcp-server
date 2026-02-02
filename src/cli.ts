@@ -170,8 +170,8 @@ EXAMPLES:
   # Add to Claude Code (stdio)
   claude mcp add remnux -- npx @remnux/mcp-server
 
-For tool discovery and documentation, use the REMnux docs MCP:
-  https://docs.remnux.org/~gitbook/mcp
+Built-in tool guidance: suggest_tools, get_tool_help, analyze_file
+Optional docs MCP: https://docs.remnux.org/~gitbook/mcp
 `);
 }
 

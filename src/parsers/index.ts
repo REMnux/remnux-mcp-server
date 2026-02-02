@@ -20,7 +20,6 @@ import { parseYaraOutput } from "./yara.js";
 /** Map of tool name → parser function. */
 const PARSERS: Record<string, ToolOutputParser> = {
   "capa": parseCapaOutput,
-  "capa-json": parseCapaOutput,
   "diec": parseDiecOutput,
   "pdfid": parsePdfidOutput,
   "pdf-parser": parsePdfParserOutput,

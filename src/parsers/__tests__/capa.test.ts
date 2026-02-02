@@ -21,7 +21,7 @@ describe("parseCapaOutput", () => {
 
     const result = parseCapaOutput(input);
     expect(result.parsed).toBe(true);
-    expect(result.tool).toBe("capa-json");
+    expect(result.tool).toBe("capa");
     expect(result.metadata.sample).toEqual({ md5: "abc123" });
     expect(result.metadata.analysis).toEqual({ format: "pe" });
     expect(result.findings).toHaveLength(2);

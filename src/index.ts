@@ -20,6 +20,7 @@ import {
   suggestToolsSchema,
   extractIOCsSchema,
   checkToolsSchema,
+  getToolHelpSchema,
 } from "./schemas/tools.js";
 import { SessionState, DEFAULT_ARCHIVE_PASSWORD } from "./state/session.js";
 import type { HandlerDeps } from "./handlers/types.js";
@@ -34,6 +35,7 @@ import { handleAnalyzeFile } from "./handlers/analyze-file.js";
 import { handleExtractIOCs } from "./handlers/extract-iocs.js";
 import { handleCheckTools } from "./handlers/check-tools.js";
 import { handleSuggestTools } from "./handlers/suggest-tools.js";
+import { handleGetToolHelp } from "./handlers/get-tool-help.js";
 import { toolRegistry } from "./tools/registry.js";
 
 export interface ServerConfig extends ConnectorConfig {
@@ -198,6 +200,15 @@ export async function createServer(config: ServerConfig) {
     "Returns deduplicated IOCs with confidence scores.",
     extractIOCsSchema.shape,
     (args) => handleExtractIOCs(deps, args)
+  );
+
+  // Tool: get_tool_help - Get usage help for a REMnux tool
+  server.tool(
+    "get_tool_help",
+    "Get usage help for a REMnux tool. Returns the tool's --help output " +
+    "so you can understand available flags, options, and usage patterns.",
+    getToolHelpSchema.shape,
+    (args) => handleGetToolHelp(deps, args)
   );
 
   // Tool: check_tools - Check tool availability

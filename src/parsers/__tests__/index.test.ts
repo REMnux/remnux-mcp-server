@@ -20,7 +20,7 @@ describe("hasParser", () => {
   it("returns true for registered parsers", () => {
     expect(hasParser("diec")).toBe(true);
     expect(hasParser("pdfid")).toBe(true);
-    expect(hasParser("capa-json")).toBe(true);
+    expect(hasParser("capa")).toBe(true);
   });
 
   it("returns false for unregistered tools", () => {

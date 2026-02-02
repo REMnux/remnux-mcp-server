@@ -58,6 +58,14 @@ const METADATA_DOMAIN_NOISE = new Set([
   "xmp.id", "xmp.did", "xmp.iid",
 ]);
 
+/** REMnux tool script filenames that look like domains (e.g., "numbers-to-string.py"). */
+const TOOL_SCRIPT_NAMES = new Set([
+  "numbers-to-string.py", "re-search.py", "base64dump.py",
+  "translate.py", "file-magic.py", "xorsearch.py",
+  "oledump.py", "rtfdump.py", "zipdump.py", "pdfid.py",
+  "pdf-parser.py", "emldump.py", "dotnetfile_dump.py",
+]);
+
 /**
  * File extensions misidentified as TLDs when URL path components are extracted as domains.
  * E.g., "debug.zip", "payload.dll", "config.json".
@@ -101,6 +109,10 @@ export function isNoise(value: string, type: string): boolean {
     if (MIME_FRAGMENTS.has(lower)) return true;
     // Reject known metadata fragments (xmp.id, etc.)
     if (METADATA_DOMAIN_NOISE.has(lower)) return true;
+    // Reject REMnux tool script filenames (e.g., "numbers-to-string.py")
+    if (TOOL_SCRIPT_NAMES.has(lower)) return true;
+    // Reject any "domain" that looks like a script filename (e.g., "deobfuscator.py")
+    if (/\.(py|pl|rb|sh|ps1)$/i.test(lower)) return true;
     // Reject file-like "domains" — URL path components misidentified as domains
     if (FILE_EXTENSION_RE.test(lower)) return true;
     // Reject single-label "domains" that look like file references (e.g., "CpaConfigDownList.data")

@@ -6,6 +6,7 @@ import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
 import { parseToolOutput, hasParser } from "../parsers/index.js";
 import { toolRegistry } from "../tools/registry.js";
+import { filterStderrNoise } from "../utils/stderr-filter.js";
 
 export async function handleRunTool(
   deps: HandlerDeps,
@@ -59,8 +60,7 @@ export async function handleRunTool(
     let stdout = result.stdout || "";
     let stderr = result.stderr || "";
 
-    // Filter Volatility 3 progress bar noise from stderr
-    stderr = stderr.replace(/^Progress:\s+[\d.]+\s+.*$/gm, "").trim();
+    stderr = filterStderrNoise(stderr);
 
     let truncated = false;
     const fullStdoutLength = stdout.length;

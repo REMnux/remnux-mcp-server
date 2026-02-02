@@ -11,6 +11,7 @@ import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
 import { extractIOCs } from "../ioc/extractor.js";
+import { filterStderrNoise } from "../utils/stderr-filter.js";
 
 interface ToolRun {
   name: string;
@@ -25,18 +26,25 @@ interface ToolRun {
 interface ToolFailed { name: string; command: string; error: string }
 interface ToolSkipped { name: string; command: string; reason: string }
 
-const DEFAULT_OUTPUT_BUDGET = 80 * 1024; // 80KB default
-const TOTAL_RESPONSE_BUDGET = 200 * 1024; // 200KB total across all tools
+const DEFAULT_OUTPUT_BUDGET = 40 * 1024; // 40KB default
+const TOTAL_RESPONSE_BUDGET = 120 * 1024; // 120KB total across all tools
 
 /** Per-tool output budgets — tools known to produce large output get tighter limits. */
 const TOOL_OUTPUT_BUDGETS: Record<string, number> = {
+  capa: 30 * 1024,
+  "capa-vv": 30 * 1024,
   floss: 20 * 1024,
   ilspycmd: 15 * 1024,
+  pcodedmp: 15 * 1024,
+  strings: 15 * 1024,
   rtfdump: 10 * 1024,
   olevba: 30 * 1024,
   oledump: 20 * 1024,
   exiftool: 10 * 1024,
   zipdump: 15 * 1024,
+  base64dump: 15 * 1024,
+  "js-beautify": 15 * 1024,
+  "box-js": 20 * 1024,
 };
 
 export async function handleAnalyzeFile(
@@ -117,6 +125,21 @@ export async function handleAnalyzeFile(
   // Step 3: Run each tool
   for (const tool of tools) {
     const cmd = buildCommandFromDefinition(tool, filePath, config.outputDir);
+
+    // Ensure output directories exist for tools that write to --output-dir
+    if (tool.fixedArgs && config.outputDir) {
+      const dirIdx = tool.fixedArgs.indexOf("--output-dir");
+      if (dirIdx !== -1 && tool.fixedArgs[dirIdx + 1]) {
+        const rawDir = tool.fixedArgs[dirIdx + 1];
+        const resolvedDir = rawDir.startsWith("/tmp/")
+          ? rawDir.replace("/tmp/", config.outputDir + "/")
+          : rawDir;
+        try {
+          await connector.execute(["mkdir", "-p", resolvedDir], { timeout: 5000 });
+        } catch { /* best effort */ }
+      }
+    }
+
     // Use the greater of user-specified timeout and tool's own timeout
     const effectiveTimeout = Math.max(perToolTimeout, (tool.timeout ?? 60) * 1000);
 
@@ -127,10 +150,13 @@ export async function handleAnalyzeFile(
       });
 
       let stderr = result.stderr || "";
-      // Filter Volatility 3 progress bar noise from stderr
-      stderr = stderr.replace(/^Progress:\s+[\d.]+\s+.*$/gm, "").trim();
-      // Detect missing tools by exit code or error messages
-      if (result.exitCode === 127 || stderr.includes("not found") || stderr.includes("No such file or directory")) {
+      stderr = filterStderrNoise(stderr);
+      // Detect missing tools — only match shell "command not found" or exit code 127,
+      // not tool output that happens to contain "not found" (e.g., pescan "section not found")
+      const isNotInstalled = result.exitCode === 127 ||
+        /command not found/i.test(stderr) ||
+        (result.exitCode !== 0 && /^.*: No such file or directory$/m.test(stderr) && stderr.includes(tool.command));
+      if (isNotInstalled) {
         toolsSkipped.push({ name: tool.name, command: cmd, reason: "Tool not installed" });
         continue;
       }
@@ -162,10 +188,11 @@ export async function handleAnalyzeFile(
 
       const parsed = parseToolOutput(tool.name, output);
 
-      // capa exit code 14 = packed file detected
+      // Check for tool-specific exit code hints
       const extraMetadata: Record<string, unknown> = {};
-      if ((tool.name === "capa" || tool.name === "capa-json") && result.exitCode === 14) {
-        extraMetadata.analyst_note = "capa detected a packed file — capabilities analysis may be incomplete. Consider unpacking first.";
+      const hint = tool.exitCodeHints?.[result.exitCode];
+      if (hint) {
+        extraMetadata.analyst_note = hint;
       }
 
       toolsRun.push({
@@ -190,7 +217,8 @@ export async function handleAnalyzeFile(
     }
   }
 
-  const combinedOutput = toolsRun.map(t => t.output).join("\n\n");
+  const combinedOutput = toolsRun.map(t => t.output).join("\n\n")
+    .replace(/^\s*"command":\s*".*"$/gm, "");
   const iocResult = extractIOCs(combinedOutput);
 
   // Filter out the analyzed file's own hashes from IOC results

@@ -15,11 +15,13 @@ const BASE_HINTS: Record<string, string> = {
   DOTNET:
     "Start with peframe and diec for triage. diec detects packers/protectors. " +
     "ilspycmd decompiles .NET to C# source. " +
-    "capa identifies capabilities like C2, persistence, or file manipulation.",
+    "capa identifies capabilities like C2, persistence, or file manipulation. " +
+    "For deep analysis, capa -vv shows matched rule details with addresses.",
   PE:
     "Start with peframe and diec for triage — diec detects packers and compilers. " +
     "capa maps capabilities to MITRE ATT&CK. floss extracts obfuscated strings. " +
-    "For deep analysis, pedump shows raw PE structure and brxor bruteforces XOR-encoded strings.",
+    "For deep analysis, capa -vv shows matched rule details with addresses. " +
+    "pedump shows raw PE structure and brxor bruteforces XOR-encoded strings.",
   PDF:
     "Start with pdfid to identify notable elements (/JS, /JavaScript, /OpenAction, /Launch). " +
     "Use pdf-parser --stats for structural overview. If notable objects found, " +
@@ -43,7 +45,8 @@ const BASE_HINTS: Record<string, string> = {
   ELF:
     "readelf -h shows ELF header (type, arch, entry point). " +
     "readelf -S lists sections — look for unusual section names or sizes. " +
-    "capa detects capabilities in ELF binaries similar to PE analysis.",
+    "capa detects capabilities in ELF binaries similar to PE analysis. " +
+    "For deep analysis, capa -vv shows matched rule details with addresses.",
   Script:
     "strings extracts readable content for quick triage. " +
     "js-beautify reformats and deobfuscates JavaScript — look for eval(), " +

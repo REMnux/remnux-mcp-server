@@ -40,6 +40,8 @@ export interface ToolDefinition {
   tags?: string[];
   /** Minimum depth tier that includes this tool */
   tier: DepthTier;
+  /** Human-readable hints for specific non-zero exit codes */
+  exitCodeHints?: Record<number, string>;
 }
 
 /**

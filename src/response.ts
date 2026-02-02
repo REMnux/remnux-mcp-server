@@ -35,8 +35,11 @@ export function formatResponse(
     data,
     metadata: { elapsed_ms: Date.now() - startTime },
   };
+  const COMPACT_THRESHOLD = 50 * 1024;
+  const compact = JSON.stringify(envelope);
+  const text = compact.length > COMPACT_THRESHOLD ? compact : JSON.stringify(envelope, null, 2);
   return {
-    content: [{ type: "text", text: JSON.stringify(envelope, null, 2) }],
+    content: [{ type: "text", text }],
   };
 }
 
