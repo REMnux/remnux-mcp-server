@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
 import { startServer, type ServerConfig } from "./index.js";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json") as { version: string };
 
 function parseArgs(): ServerConfig {
   const args = process.argv.slice(2);
@@ -97,7 +101,7 @@ function parseArgs(): ServerConfig {
         process.exit(0);
       case "--version":
       case "-v":
-        console.log("@remnux/mcp-server v0.1.4");
+        console.log(`@remnux/mcp-server v${version}`);
         process.exit(0);
     }
   }

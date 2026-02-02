@@ -1,4 +1,5 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
+import { createRequire } from "node:module";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -47,10 +48,12 @@ export interface ServerConfig extends ConnectorConfig {
 }
 
 export async function createServer(config: ServerConfig) {
+  const _require = createRequire(import.meta.url);
+  const { version: pkgVersion } = _require("../package.json") as { version: string };
   const server = new McpServer(
     {
       name: "remnux-mcp-server",
-      version: "0.1.0",
+      version: pkgVersion,
     },
     {
       instructions:
