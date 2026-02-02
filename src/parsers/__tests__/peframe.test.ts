@@ -18,7 +18,7 @@ describe("parsePeframeOutput", () => {
     const output = "imports\n  VirtualAlloc\n  CreateRemoteThread\n  WriteProcessMemory";
     const result = parsePeframeOutput(output);
     expect(result.parsed).toBe(true);
-    const importFindings = result.findings.filter((f) => f.category === "suspicious-import");
+    const importFindings = result.findings.filter((f) => f.category === "notable-import");
     expect(importFindings.length).toBe(3);
   });
 
@@ -26,7 +26,7 @@ describe("parsePeframeOutput", () => {
     const output = "strings\n  http://evil.com/payload.exe\n  C:\\Windows\\temp\\dropper.bat";
     const result = parsePeframeOutput(output);
     expect(result.parsed).toBe(true);
-    const stringFindings = result.findings.filter((f) => f.category === "suspicious-string");
+    const stringFindings = result.findings.filter((f) => f.category === "notable-string");
     expect(stringFindings.length).toBeGreaterThanOrEqual(1);
   });
 

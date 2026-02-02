@@ -21,13 +21,13 @@ const BASE_HINTS: Record<string, string> = {
     "capa maps capabilities to MITRE ATT&CK. floss extracts obfuscated strings. " +
     "For deep analysis, pedump shows raw PE structure and brxor bruteforces XOR-encoded strings.",
   PDF:
-    "Start with pdfid to identify suspicious elements (/JS, /JavaScript, /OpenAction, /Launch). " +
-    "Use pdf-parser --stats for structural overview. If suspicious objects found, " +
+    "Start with pdfid to identify notable elements (/JS, /JavaScript, /OpenAction, /Launch). " +
+    "Use pdf-parser --stats for structural overview. If notable objects found, " +
     "extract them with pdf-parser -o <obj_id> -d. peepdf-3 provides interactive deep analysis. " +
     "qpdf decrypts permission-locked PDFs. pdftk extracts metadata and document info.",
   OLE2:
     "Start with oleid for risk indicators (macros, encryption, external links). " +
-    "olevba extracts and analyzes VBA macros — look for auto-execute triggers and suspicious keywords. " +
+    "olevba extracts and analyzes VBA macros — look for auto-execute triggers and notable keywords. " +
     "oledump lists OLE streams; use -s <stream> -v to dump specific macro streams. " +
     "pcodedmp disassembles VBA p-code (useful when source is stomped). " +
     "xlmdeobfuscator handles Excel 4.0 XLM macros.",
@@ -59,12 +59,12 @@ const BASE_HINTS: Record<string, string> = {
   Email:
     "emldump analyzes EML structure and extracts attachments. " +
     "msgconvert converts Outlook MSG files to EML format for analysis with emldump. " +
-    "Look for suspicious attachments, embedded URLs, and header anomalies. " +
+    "Look for notable attachments, embedded URLs, and header anomalies. " +
     "Extract attachments for further analysis with appropriate tools.",
   APK:
     "apktool decompiles the APK to smali and extracts resources. " +
     "droidlysis performs static analysis identifying permissions, API calls, and risk indicators. " +
-    "Look for excessive permissions, obfuscation, and suspicious network activity.",
+    "Look for excessive permissions, obfuscation, and notable network activity.",
   OneNote:
     "OneNote file detected. No dedicated OneNote tools are currently available in REMnux. " +
     "Use strings and exiftool for basic triage. Use run_tool to manually extract embedded objects. " +

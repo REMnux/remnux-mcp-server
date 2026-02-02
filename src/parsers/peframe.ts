@@ -57,8 +57,8 @@ export function parsePeframeOutput(rawOutput: string): ParsedToolOutput {
     for (const imp of SUSPICIOUS_IMPORTS) {
       if (trimmed.includes(imp)) {
         result.findings.push({
-          description: `Suspicious import: ${imp}`,
-          category: "suspicious-import",
+          description: `Notable import: ${imp}`,
+          category: "notable-import",
           severity: "medium",
           evidence: trimmed,
         });
@@ -69,8 +69,8 @@ export function parsePeframeOutput(rawOutput: string): ParsedToolOutput {
     if (currentSection === "strings" || currentSection === "suspicious") {
       if (/https?:\/\/|\\\\[0-9]|\.exe|\.dll|\.bat|\.ps1/i.test(trimmed)) {
         result.findings.push({
-          description: `Suspicious string: ${trimmed.slice(0, 100)}`,
-          category: "suspicious-string",
+          description: `Notable string: ${trimmed.slice(0, 100)}`,
+          category: "notable-string",
           severity: "low",
           evidence: trimmed.slice(0, 200),
         });

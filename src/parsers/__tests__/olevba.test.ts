@@ -23,8 +23,8 @@ describe("parseOlevbaOutput", () => {
 
     const result = parseOlevbaOutput(output);
     expect(result.parsed).toBe(true);
-    expect(result.metadata.suspicious_keywords).toContain("Shell");
-    expect(result.metadata.suspicious_keywords).toContain("CreateObject");
+    expect(result.metadata.notable_keywords).toContain("Shell");
+    expect(result.metadata.notable_keywords).toContain("CreateObject");
   });
 
   it("extracts AutoExec triggers", () => {

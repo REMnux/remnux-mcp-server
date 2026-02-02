@@ -32,7 +32,7 @@ export function parseOlevbaOutput(rawOutput: string): ParsedToolOutput {
   const lines = rawOutput.split("\n");
   let hasMacros = false;
   let macroCount = 0;
-  const suspiciousKeywords: string[] = [];
+  const notableKeywords: string[] = [];
 
   // Detect macro presence from olevba summary table
   for (const line of lines) {
@@ -45,7 +45,7 @@ export function parseOlevbaOutput(rawOutput: string): ParsedToolOutput {
     // Keywords can be multi-word (e.g. "Attribute VB_Name"), so capture until next pipe
     const tableMatch = line.match(/^\|\s*Suspicious\s*\|\s*(.+?)\s*\|/i);
     if (tableMatch) {
-      suspiciousKeywords.push(tableMatch[1].trim());
+      notableKeywords.push(tableMatch[1].trim());
     }
 
     // Also catch "| AutoExec |" and "| IOC |" rows
@@ -75,7 +75,7 @@ export function parseOlevbaOutput(rawOutput: string): ParsedToolOutput {
     const matches = rawOutput.match(new RegExp(pattern.source, "gi"));
     if (matches) {
       result.findings.push({
-        description: `Suspicious pattern: ${matches[0]}`,
+        description: `Notable pattern: ${matches[0]}`,
         category,
         severity,
         evidence: matches.slice(0, 3).join(", "),
@@ -87,7 +87,7 @@ export function parseOlevbaOutput(rawOutput: string): ParsedToolOutput {
     result.parsed = true;
     result.metadata.has_macros = hasMacros;
     result.metadata.macro_count = macroCount;
-    result.metadata.suspicious_keywords = suspiciousKeywords;
+    result.metadata.notable_keywords = notableKeywords;
   }
 
   return result;

@@ -40,9 +40,9 @@ describe("parsePdfidOutput", () => {
   it("flags suspicious keywords with count > 0", () => {
     const result = parsePdfidOutput(SAMPLE_OUTPUT);
     const descriptions = result.findings.map((f) => f.description);
-    expect(descriptions).toContain("Suspicious keyword /JS found (count: 1)");
-    expect(descriptions).toContain("Suspicious keyword /JavaScript found (count: 1)");
-    expect(descriptions).toContain("Suspicious keyword /OpenAction found (count: 1)");
+    expect(descriptions).toContain("Notable keyword /JS found (count: 1)");
+    expect(descriptions).toContain("Notable keyword /JavaScript found (count: 1)");
+    expect(descriptions).toContain("Notable keyword /OpenAction found (count: 1)");
   });
 
   it("assigns high severity to /JS and /JavaScript", () => {

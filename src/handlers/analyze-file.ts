@@ -181,6 +181,15 @@ export async function handleAnalyzeFile(
     detected_type: fileOutput,
     matched_category: category.name,
     depth,
+    analysis_guidance:
+      "IMPORTANT: Many capabilities flagged by analysis tools (API imports like GetProcAddress/VirtualProtect, " +
+      "memory operations, TLS sections, anti-debug patterns) are common in BOTH malware and legitimate software. " +
+      "Do not assume malicious intent from flagged items alone. For each finding, consider: " +
+      "(1) Is this expected for legitimate software of this type? " +
+      "(2) Do multiple findings together suggest malicious purpose, or are they individually " +
+      "explainable as normal development practices? " +
+      "(3) What concrete evidence distinguishes this from a benign program? " +
+      "State your confidence level (low/medium/high) and what evidence supports or contradicts a malicious verdict.",
     ...(tools.length === 0 && {
       warning: `No tools registered for category "${category.name}" at depth "${depth}". Try depth "deep" or use run_tool directly.`,
     }),

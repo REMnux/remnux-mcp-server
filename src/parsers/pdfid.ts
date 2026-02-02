@@ -45,8 +45,8 @@ export function parsePdfidOutput(rawOutput: string): ParsedToolOutput {
 
       if (count > 0 && SUSPICIOUS_KEYWORDS.has(keyword)) {
         result.findings.push({
-          description: `Suspicious keyword ${keyword} found (count: ${count})`,
-          category: "suspicious-keyword",
+          description: `Notable keyword ${keyword} found (count: ${count})`,
+          category: "notable-keyword",
           severity: keyword === "/JS" || keyword === "/JavaScript" ? "high" : "medium",
           evidence: line.trim(),
         });

@@ -31,7 +31,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "pescan",
-    description: "Scan PE files for anomalies and suspicious indicators.",
+    description: "Scan PE files for anomalies and notable indicators.",
     command: "pescan",
     inputStyle: "positional",
     outputFormat: "text",
@@ -52,7 +52,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "capa",
-    description: "Detect suspicious capabilities in executable files using CAPA rules.",
+    description: "Identify capabilities in executable files using CAPA rules.",
     command: "capa",
     inputStyle: "positional",
     outputFormat: "text",
@@ -62,7 +62,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "capa-json",
-    description: "Detect suspicious capabilities in executable files (JSON output).",
+    description: "Identify capabilities in executable files (JSON output).",
     command: "capa",
     inputStyle: "positional",
     fixedArgs: ["-j"],
@@ -93,7 +93,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "yara-rules",
-    description: "Scan a file with YARA rules to identify common malicious capabilities.",
+    description: "Scan a file with YARA rules to identify notable capabilities.",
     command: "yara-rules",
     inputStyle: "positional",
     outputFormat: "text",
@@ -160,7 +160,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // ── PDF analysis ────────────────────────────────────────────────────────
   {
     name: "pdfid",
-    description: "Identify suspicious elements of a PDF file.",
+    description: "Identify notable elements of a PDF file.",
     command: "pdfid.py",
     inputStyle: "positional",
     outputFormat: "text",
@@ -170,7 +170,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "pdfid-detailed",
-    description: "Identify suspicious elements of a PDF file (detailed names output).",
+    description: "Identify notable elements of a PDF file (detailed names output).",
     command: "pdfid.py",
     inputStyle: "positional",
     fixedArgs: ["-n"],
@@ -192,7 +192,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "peepdf-3",
-    description: "Examine elements of a PDF file for malicious content.",
+    description: "Examine elements of a PDF file for notable content.",
     command: "peepdf-3",
     inputStyle: "positional",
     fixedArgs: ["-f", "-l"],
@@ -306,7 +306,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "rtfdump",
-    description: "Analyze suspicious RTF files for embedded content.",
+    description: "Analyze RTF files for embedded content.",
     command: "rtfdump.py",
     inputStyle: "positional",
     outputFormat: "text",
@@ -362,7 +362,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "box-js",
-    description: "Analyze and deobfuscate JavaScript malware in a sandbox.",
+    description: "Analyze and deobfuscate JavaScript in a sandbox.",
     command: "box-js",
     inputStyle: "positional",
     fixedArgs: ["--output-dir", "/tmp/box-js-out"],
@@ -494,7 +494,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "vol3-malfind",
-    description: "Detect injected code and suspicious memory regions.",
+    description: "Detect injected code and notable memory regions.",
     command: "vol3",
     inputStyle: "flag",
     inputFlag: "-f",

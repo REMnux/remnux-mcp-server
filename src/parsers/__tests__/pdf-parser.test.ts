@@ -34,10 +34,10 @@ describe("parsePdfParserOutput", () => {
   it("flags suspicious keywords with correct severity", () => {
     const result = parsePdfParserOutput(SAMPLE_OUTPUT);
     const descriptions = result.findings.map((f) => f.description);
-    expect(descriptions).toContain("Suspicious keyword /JS found (count: 1)");
-    expect(descriptions).toContain("Suspicious keyword /JavaScript found (count: 1)");
-    expect(descriptions).toContain("Suspicious keyword /OpenAction found (count: 1)");
-    expect(descriptions).toContain("Suspicious keyword /URI found (count: 13)");
+    expect(descriptions).toContain("Notable keyword /JS found (count: 1)");
+    expect(descriptions).toContain("Notable keyword /JavaScript found (count: 1)");
+    expect(descriptions).toContain("Notable keyword /OpenAction found (count: 1)");
+    expect(descriptions).toContain("Notable keyword /URI found (count: 13)");
 
     const js = result.findings.find((f) => f.description.includes("/JS found"));
     expect(js?.severity).toBe("high");
