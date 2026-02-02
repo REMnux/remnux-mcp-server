@@ -10,7 +10,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    environment: npm
     steps:
       - uses: actions/checkout@v4
 
@@ -21,4 +20,9 @@ jobs:
 
       - run: npm install
       - run: npm run build
-      - run: npm publish --provenance --access public
+
+      - name: Upgrade npm and publish
+        run: |
+          npm install -g npm@latest
+          echo "npm version: $(npm --version)"
+          npm publish --access public
