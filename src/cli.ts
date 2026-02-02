@@ -98,7 +98,7 @@ function parseArgs(): ServerConfig {
         process.exit(0);
       case "--version":
       case "-v":
-        console.log("remnux-mcp-server v0.1.0");
+        console.log("@remnux/mcp-server v0.1.4");
         process.exit(0);
     }
   }
@@ -113,10 +113,10 @@ function parseArgs(): ServerConfig {
 
 function printHelp() {
   console.log(`
-remnux-mcp-server - MCP server for REMnux malware analysis tools
+@remnux/mcp-server - MCP server for using the REMnux malware analysis toolkit via AI assistants
 
 USAGE:
-  remnux-mcp-server [OPTIONS]
+  npx @remnux/mcp-server [OPTIONS]
 
 OPTIONS:
   --mode <mode>           Connection mode: docker, ssh, or local (default: docker)
@@ -139,16 +139,16 @@ OPTIONS:
 
 EXAMPLES:
   # Docker mode (default, stdio transport)
-  remnux-mcp-server --mode=docker --container=remnux
+  npx @remnux/mcp-server --mode=docker --container=remnux
 
   # SSH mode
-  remnux-mcp-server --mode=ssh --host=192.168.1.100 --user=remnux
+  npx @remnux/mcp-server --mode=ssh --host=192.168.1.100 --user=remnux
 
   # HTTP transport (Model B: server inside REMnux)
-  remnux-mcp-server --mode=local --transport=http --http-token=SECRET
+  npx @remnux/mcp-server --mode=local --transport=http --http-token=SECRET
 
   # Add to Claude Code (stdio)
-  claude mcp add remnux --transport stdio -- npx remnux-mcp-server
+  claude mcp add remnux -- npx @remnux/mcp-server
 
 For tool discovery and documentation, use the REMnux docs MCP:
   https://docs.remnux.org/~gitbook/mcp

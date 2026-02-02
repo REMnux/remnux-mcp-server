@@ -1,6 +1,6 @@
 # remnux-mcp-server
 
-MCP server for executing [REMnux](https://REMnux.org) malware analysis tools via AI assistants.
+MCP server for using the [REMnux](https://REMnux.org) malware analysis toolkit via AI assistants.
 
 ## Contents
 
