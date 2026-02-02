@@ -965,7 +965,7 @@
       "command": "remnux-mcp-server",
       "name": "REMnux MCP Server",
       "category": "Use Artificial Intelligence",
-      "description": "MCP server for using REMnux malware analysis tools via AI assistants.",
+      "description": "MCP server for using the REMnux malware analysis toolkit via AI assistants.",
       "website": "https://github.com/REMnux/remnux-mcp-server"
     },
     {
