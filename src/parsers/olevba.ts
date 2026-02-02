@@ -70,9 +70,10 @@ export function parseOlevbaOutput(rawOutput: string): ParsedToolOutput {
     }
   }
 
-  // Pattern-based detection across full output
+  // Pattern-based detection across VBA code lines only (exclude summary table rows)
+  const codeOutput = lines.filter((l) => !/^\s*\|/.test(l)).join("\n");
   for (const { pattern, category, severity } of SUSPICIOUS_PATTERNS) {
-    const matches = rawOutput.match(new RegExp(pattern.source, "gi"));
+    const matches = codeOutput.match(new RegExp(pattern.source, "gi"));
     if (matches) {
       result.findings.push({
         description: `Notable pattern: ${matches[0]}`,
@@ -83,7 +84,7 @@ export function parseOlevbaOutput(rawOutput: string): ParsedToolOutput {
     }
   }
 
-  if (hasMacros || result.findings.length > 0) {
+  if (hasMacros || result.findings.length > 0 || notableKeywords.length > 0) {
     result.parsed = true;
     result.metadata.has_macros = hasMacros;
     result.metadata.macro_count = macroCount;

@@ -103,6 +103,6 @@ export async function handleExtractArchive(
       ), startTime);
     }
   } catch (error) {
-    return formatError("extract_archive", toREMnuxError(error), startTime);
+    return formatError("extract_archive", toREMnuxError(error, deps.config.mode), startTime);
   }
 }

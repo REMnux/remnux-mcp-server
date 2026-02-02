@@ -87,6 +87,23 @@ export async function handleAnalyzeFile(
     ), startTime);
   }
 
+  // Compute the file's own hashes so we can filter them from IOC results
+  const ownHashes = new Set<string>();
+  try {
+    const hashResult = await connector.execute(
+      ["sh", "-c", `md5sum '${filePath.replace(/'/g, "'\\''")}' && sha1sum '${filePath.replace(/'/g, "'\\''")}' && sha256sum '${filePath.replace(/'/g, "'\\''")}'`],
+      { timeout: 30000 },
+    );
+    if (hashResult.exitCode === 0) {
+      for (const line of hashResult.stdout.split("\n")) {
+        const hash = line.trim().split(/\s+/)[0];
+        if (hash && /^[a-fA-F0-9]{32,128}$/.test(hash)) {
+          ownHashes.add(hash.toLowerCase());
+        }
+      }
+    }
+  } catch { /* best effort — if hashing fails, we just skip filtering */ }
+
   // Step 2: Match to category and get tools from registry by tag + depth
   const category = matchFileType(fileOutput, args.file);
   const tag = CATEGORY_TAG_MAP[category.name] ?? "fallback";
@@ -99,7 +116,7 @@ export async function handleAnalyzeFile(
 
   // Step 3: Run each tool
   for (const tool of tools) {
-    const cmd = buildCommandFromDefinition(tool, filePath);
+    const cmd = buildCommandFromDefinition(tool, filePath, config.outputDir);
     // Use the greater of user-specified timeout and tool's own timeout
     const effectiveTimeout = Math.max(perToolTimeout, (tool.timeout ?? 60) * 1000);
 
@@ -175,6 +192,11 @@ export async function handleAnalyzeFile(
 
   const combinedOutput = toolsRun.map(t => t.output).join("\n\n");
   const iocResult = extractIOCs(combinedOutput);
+
+  // Filter out the analyzed file's own hashes from IOC results
+  if (ownHashes.size > 0) {
+    iocResult.iocs = iocResult.iocs.filter((ioc) => !ownHashes.has(ioc.value.toLowerCase()));
+  }
 
   return formatResponse("analyze_file", {
     file: args.file,

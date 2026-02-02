@@ -319,6 +319,16 @@ export async function startServer(config: ServerConfig) {
     const transport = new StdioServerTransport();
     await server.connect(transport);
 
+    const shutdown = async () => {
+      try {
+        await server.close();
+      } catch { /* best effort */ }
+      process.exit(0);
+    };
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+
     const warnings = config.noSandbox ? " (WARNING: sandbox disabled)" : "";
     console.error(`REMnux MCP server started${warnings}`);
   }
@@ -353,7 +363,22 @@ async function startHttpServer(config: ServerConfig) {
 
   // Session management: map session ID → transport (capped to prevent memory exhaustion)
   const MAX_SESSIONS = 100;
+  const SESSION_IDLE_TTL_MS = 30 * 60 * 1000; // 30 minutes
   const sessions = new Map<string, StreamableHTTPServerTransport>();
+  const sessionTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  function resetSessionTimer(sessionId: string) {
+    const existing = sessionTimers.get(sessionId);
+    if (existing) clearTimeout(existing);
+    sessionTimers.set(sessionId, setTimeout(() => {
+      const transport = sessions.get(sessionId);
+      if (transport) {
+        transport.close?.();
+        sessions.delete(sessionId);
+      }
+      sessionTimers.delete(sessionId);
+    }, SESSION_IDLE_TTL_MS));
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.all("/mcp", async (req: any, res: any) => {
@@ -363,6 +388,7 @@ async function startHttpServer(config: ServerConfig) {
       // Reuse existing transport for established sessions
       if (sessionId && sessions.has(sessionId)) {
         const transport = sessions.get(sessionId)!;
+        resetSessionTimer(sessionId);
         await transport.handleRequest(req, res, req.body);
         return;
       }
@@ -380,6 +406,11 @@ async function startHttpServer(config: ServerConfig) {
       transport.onclose = () => {
         if (transport.sessionId) {
           sessions.delete(transport.sessionId);
+          const timer = sessionTimers.get(transport.sessionId);
+          if (timer) {
+            clearTimeout(timer);
+            sessionTimers.delete(transport.sessionId);
+          }
         }
       };
 
@@ -391,6 +422,7 @@ async function startHttpServer(config: ServerConfig) {
       // Store session after handling (session ID is set during initialize)
       if (transport.sessionId) {
         sessions.set(transport.sessionId, transport);
+        resetSessionTimer(transport.sessionId);
       }
     } catch (err) {
       console.error("MCP request error:", err);

@@ -172,6 +172,6 @@ export async function handleDownloadFile(
       archived: false,
     }, startTime);
   } catch (error) {
-    return formatError("download_file", toREMnuxError(error), startTime);
+    return formatError("download_file", toREMnuxError(error, deps.config.mode), startTime);
   }
 }

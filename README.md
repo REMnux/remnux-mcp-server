@@ -155,7 +155,7 @@ claude mcp add remnux -- npx @remnux/mcp-server --mode=ssh --host=YOUR_VM_IP --u
   "mcpServers": {
     "remnux": {
       "command": "npx",
-      "args": ["remnux-mcp-server", "--mode=docker", "--container=remnux"]
+      "args": ["@remnux/mcp-server", "--mode=docker", "--container=remnux"]
     }
   }
 }

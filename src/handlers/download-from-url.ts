@@ -214,7 +214,7 @@ export async function handleDownloadFromUrl(
     }, startTime);
 
   } catch (error) {
-    return formatError("download_from_url", toREMnuxError(error), startTime);
+    return formatError("download_from_url", toREMnuxError(error, deps.config.mode), startTime);
   }
 }
 

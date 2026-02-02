@@ -6,6 +6,15 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
 
+function parseIntOrExit(value: string, flag: string): number {
+  const n = parseInt(value, 10);
+  if (Number.isNaN(n)) {
+    console.error(`Error: invalid number for ${flag}: ${value}`);
+    process.exit(1);
+  }
+  return n;
+}
+
 function parseArgs(): ServerConfig {
   const args = process.argv.slice(2);
   const config: ServerConfig = {
@@ -52,7 +61,7 @@ function parseArgs(): ServerConfig {
         consumeValue();
         break;
       case "--port":
-        config.port = parseInt(value, 10);
+        config.port = parseIntOrExit(value, "--port");
         consumeValue();
         break;
       case "--password":
@@ -68,7 +77,7 @@ function parseArgs(): ServerConfig {
         consumeValue();
         break;
       case "--timeout":
-        config.timeout = parseInt(value, 10);
+        config.timeout = parseIntOrExit(value, "--timeout");
         consumeValue();
         break;
       case "--sandbox":
@@ -84,7 +93,7 @@ function parseArgs(): ServerConfig {
         consumeValue();
         break;
       case "--http-port":
-        config.httpPort = parseInt(value, 10);
+        config.httpPort = parseIntOrExit(value, "--http-port");
         consumeValue();
         break;
       case "--http-host":
@@ -103,6 +112,11 @@ function parseArgs(): ServerConfig {
       case "-v":
         console.log(`@remnux/mcp-server v${version}`);
         process.exit(0);
+      default:
+        if (arg.startsWith("-")) {
+          console.error(`Unknown flag: ${arg}`);
+          process.exit(1);
+        }
     }
   }
 

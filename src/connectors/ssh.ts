@@ -21,7 +21,18 @@ export class SSHConnector implements Connector {
   }
 
   private async connect(): Promise<Client> {
-    if (this.client) return this.client;
+    if (this.client) {
+      // Health check: verify the cached connection is still usable
+      // ssh2 Client exposes ._sock (underlying socket) — if it's destroyed, reconnect
+      const sock = (this.client as unknown as Record<string, unknown>)._sock as
+        | { destroyed?: boolean }
+        | undefined;
+      if (sock?.destroyed) {
+        this.client = null;
+      } else {
+        return this.client;
+      }
+    }
 
     return new Promise((resolve, reject) => {
       const client = new Client();
@@ -31,7 +42,14 @@ export class SSHConnector implements Connector {
         resolve(client);
       });
 
-      client.on("error", reject);
+      client.on("error", (err) => {
+        this.client = null;
+        reject(err);
+      });
+
+      client.on("close", () => {
+        this.client = null;
+      });
 
       // Try to connect with private key first, then password
       const connectConfig: Parameters<Client["connect"]>[0] = {

@@ -53,8 +53,8 @@ export function parsePeframeOutput(rawOutput: string): ParsedToolOutput {
       }
     }
 
-    // Suspicious imports
-    for (const imp of SUSPICIOUS_IMPORTS) {
+    // Suspicious imports — only flag within the imports section
+    if (currentSection === "imports") for (const imp of SUSPICIOUS_IMPORTS) {
       if (trimmed.includes(imp)) {
         result.findings.push({
           description: `Notable import: ${imp}`,

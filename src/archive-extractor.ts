@@ -213,6 +213,59 @@ function validateExtractedPaths(files: string[], outputDir: string): string[] {
 }
 
 /**
+ * List entries in an archive WITHOUT extracting, to detect zip-slip before extraction.
+ * Returns entry names as reported by the archive tool.
+ */
+async function listArchiveEntries(
+  connector: Connector,
+  archivePath: string,
+  archiveType: ArchiveType,
+): Promise<string[]> {
+  let cmd: string[];
+  switch (archiveType) {
+    case "zip":
+      cmd = ["zipinfo", "-1", archivePath];
+      break;
+    case "7z":
+      cmd = ["7z", "l", "-slt", archivePath];
+      break;
+    case "rar":
+      cmd = ["unrar", "lb", archivePath];
+      break;
+    default:
+      return [];
+  }
+
+  try {
+    const result = await connector.execute(cmd, { timeout: 30000 });
+    if (result.exitCode !== 0) return [];
+
+    if (archiveType === "7z") {
+      // 7z -slt outputs "Path = filename" lines
+      return result.stdout
+        .split("\n")
+        .filter((l) => l.startsWith("Path = "))
+        .map((l) => l.slice(7).trim());
+    }
+
+    return result.stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Check archive entries for path traversal attempts before extraction.
+ * Returns offending entries, or empty array if safe.
+ */
+function checkEntriesForTraversal(entries: string[]): string[] {
+  return entries.filter((e) => e.includes("..") || e.startsWith("/"));
+}
+
+/**
  * Extract an archive file with automatic password detection
  *
  * @param connector - Connector to execute commands on REMnux
@@ -256,6 +309,20 @@ export async function extractArchive(
       error: `Failed to create output directory: ${mkdirResult.stderr}`,
       outputDir,
     };
+  }
+
+  // Pre-extraction zip-slip check: inspect archive entries before extracting
+  const entries = await listArchiveEntries(connector, archivePath, archiveType);
+  if (entries.length > 0) {
+    const traversalEntries = checkEntriesForTraversal(entries);
+    if (traversalEntries.length > 0) {
+      return {
+        success: false,
+        files: [],
+        error: `Archive contains path traversal entries (zip-slip): ${traversalEntries.slice(0, 3).join(", ")}${traversalEntries.length > 3 ? ` and ${traversalEntries.length - 3} more` : ""}`,
+        outputDir,
+      };
+    }
   }
 
   // Build password list to try

@@ -37,6 +37,7 @@ export const BLOCKED_PATTERNS: BlockedPattern[] = [
   { pattern: /\$\([^)]+\)/, category: "shell escape (command substitution)" },
   { pattern: /\$\{[^}]+\}/, category: "shell escape (variable expansion)" },
   { pattern: /\$[A-Za-z_][A-Za-z0-9_]*/, category: "shell escape (variable expansion)" },
+  { pattern: /\$[0-9?$!@#]/, category: "shell escape (special variable)" },
 
   // Process substitution
   { pattern: /[<>]\s*\(/, category: "process substitution" },

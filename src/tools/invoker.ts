@@ -25,13 +25,22 @@ function shellEscape(value: string): string {
  */
 export function buildCommandFromDefinition(
   tool: ToolDefinition,
-  filePath: string
+  filePath: string,
+  outputDir?: string,
 ): string {
   const escaped = shellEscape(filePath);
   const parts: string[] = [tool.command];
 
+  // Replace /tmp/ in args with outputDir to avoid concurrent analysis collisions
+  const resolveArg = (arg: string): string => {
+    if (outputDir && arg.startsWith("/tmp/")) {
+      return arg.replace("/tmp/", outputDir + "/");
+    }
+    return arg;
+  };
+
   if (tool.fixedArgs) {
-    parts.push(...tool.fixedArgs);
+    parts.push(...tool.fixedArgs.map(resolveArg));
   }
 
   switch (tool.inputStyle) {
@@ -47,7 +56,7 @@ export function buildCommandFromDefinition(
   }
 
   if (tool.suffixArgs) {
-    parts.push(...tool.suffixArgs);
+    parts.push(...tool.suffixArgs.map(resolveArg));
   }
 
   return parts.join(" ");
