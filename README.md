@@ -270,33 +270,33 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 #### Example: Using run_tool
 
 ```jsonc
-// Analyze a PDF for suspicious elements
+// Run capa to detect capabilities in a PE file
 {
-  "command": "pdfid.py --nozero",
-  "input_file": "suspicious.pdf"
-}
-
-// Extract macros from an Office document
-{
-  "command": "olevba -a",
-  "input_file": "malicious.doc"
-}
-
-// Run capa on a PE file
-{
-  "command": "capa -v",
+  "command": "capa -vv",
   "input_file": "sample.exe",
   "timeout": 600
 }
 
-// Use piped commands for filtering
+// Analyze network traffic conversations
 {
-  "command": "oledump.py sample.doc | grep -i macro | head -20"
+  "command": "tshark -q -z conv,tcp -r",
+  "input_file": "capture.pcap"
 }
 
-// Complex pipeline
+// Extract embedded content from OOXML document
 {
-  "command": "strings sample.exe | tr -d '\\0' | sort -u | head -100"
+  "command": "zipdump.py -s 3 -d sample.docx | xmldump.py pretty"
+}
+
+// Examine PE sections with readelf (for ELF) or pedump
+{
+  "command": "pedump --sections",
+  "input_file": "sample.exe"
+}
+
+// Complex pipeline for string extraction
+{
+  "command": "strings -n 8 sample.exe | tr -d '\\0' | sort -u | head -100"
 }
 ```
 
@@ -371,7 +371,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 
 **Download methods:**
 - `curl` (default): Direct HTTP download with `-sSfL`, max 200MB, max 10 redirects
-- `thug`: Uses thug honeyclient for sites requiring JavaScript execution. Supports `-u` (User-Agent) and `-r` (Referer) flags from custom headers
+- `thug`: Uses thug honeyclient (if installed) for sites requiring JavaScript execution. Supports `-u` (User-Agent) and `-r` (Referer) flags from custom headers
 
 **Security:** Only http:// and https:// URLs are allowed. URLs and headers are validated for injection characters before shell execution.
 
@@ -675,6 +675,18 @@ LOCAL_LIVE_TEST=1 npx vitest run src/__tests__/local-live-integration.test.ts
 - **No cloud dependency**: Works offline, no API keys needed
 - **Simple deployment**: `npx` just works
 - **Flexible backends**: Docker, SSH, or local execution
+
+### Why not a generic shell MCP?
+
+A raw shell lets you run commands, but it doesn't know *which* commands matter for malware analysis or *how* to run them effectively:
+
+- **Tool discovery**: Which of REMnux's 200+ tools apply to a PE vs. OOXML vs. PCAP? This server maps file types to relevant tools automatically.
+- **Invocation quirks**: Flags like `capa -vv` for capability details, `tshark -q -z conv,tcp` for conversation stats, or `readelf -S` for section headers aren't guessable — they encode practitioner knowledge.
+- **Expert pipelines**: Chains like `zipdump.py -s <n> -d file.docx | xmldump.py pretty` for embedded XML, or `strings -n 8 | tr -d '\0' | sort -u` for deobfuscation, reflect real analyst workflows.
+- **Exit code semantics**: Many tools return non-zero on findings (YARA matches, UPX-packed binaries), not failures. This server interprets exit codes correctly per tool.
+- **Confirmation bias mitigation**: Raw tool output labels routine findings as "suspicious" (capa detecting `GetProcAddress`, common anti-debug checks). This server reframes output to prompt consideration of benign explanations.
+
+The goal isn't restricting shell access — it's encoding domain expertise so AI assistants can analyze samples like practitioners.
 
 ### Why is the docs MCP server optional?
 
