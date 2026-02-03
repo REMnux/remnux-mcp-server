@@ -363,7 +363,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tier: "standard",
   },
 
-  // ── Script / text analysis ──────────────────────────────────────────────
+  // ── JavaScript analysis ────────────────────────────────────────────────
   {
     name: "js-beautify",
     description: "Beautify and deobfuscate JavaScript, CSS, and HTML files.",
@@ -371,17 +371,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 60,
-    tags: ["script"],
-    tier: "quick",
-  },
-  {
-    name: "strings",
-    description: "Extract printable strings from binary files.",
-    command: "strings",
-    inputStyle: "positional",
-    outputFormat: "text",
-    timeout: 60,
-    tags: ["script", "fallback", "strings"],
+    tags: ["javascript"],
     tier: "quick",
   },
   {
@@ -392,9 +382,52 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     fixedArgs: ["--output-dir", "/tmp/box-js-out"],
     outputFormat: "text",
     timeout: 120,
-    tags: ["script"],
+    tags: ["javascript"],
     tier: "standard",
     exitCodeHints: { 1: "Script execution failed — may require specific JS runtime features or have syntax box-js cannot handle." },
+  },
+  {
+    name: "jstillery",
+    description: "Deobfuscate JavaScript using AST-based partial evaluation.",
+    command: "jstillery",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["javascript"],
+    tier: "deep",
+  },
+  {
+    name: "spidermonkey",
+    description: "Execute JavaScript with SpiderMonkey engine using browser/PDF object emulation.",
+    command: "js",
+    inputStyle: "positional",
+    fixedArgs: ["-f", "/usr/share/remnux/objects.js"],
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["javascript"],
+    tier: "deep",
+  },
+
+  // ── Script / text analysis ──────────────────────────────────────────────
+  {
+    name: "strings",
+    description: "Extract printable strings from binary files.",
+    command: "strings",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["javascript", "script", "fallback", "strings"],
+    tier: "quick",
+  },
+  {
+    name: "decode-vbe",
+    description: "Decode VBE-encoded VBScript files to readable source.",
+    command: "decode-vbe.py",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["script"],
+    tier: "quick",
   },
   {
     name: "base64dump",
@@ -403,7 +436,19 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 60,
-    tags: ["script", "fallback"],
+    tags: ["javascript", "script", "fallback"],
+    tier: "standard",
+  },
+
+  // ── Python bytecode analysis ──────────────────────────────────────────
+  {
+    name: "pycdc",
+    description: "Decompile Python bytecode (.pyc) to readable source code.",
+    command: "pycdc",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["python"],
     tier: "standard",
   },
 

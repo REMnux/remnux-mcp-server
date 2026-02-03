@@ -52,14 +52,25 @@ const BASE_HINTS: Record<string, string> = {
     "readelf -S lists sections — look for unusual section names or sizes. " +
     "capa detects capabilities in ELF binaries similar to PE analysis. " +
     "For deep analysis, capa -vv shows matched rule details with addresses.",
-  Script:
-    "strings extracts readable content for quick triage. " +
+  JavaScript:
     "js-beautify reformats and deobfuscates JavaScript — look for eval(), " +
     "document.write(), String.fromCharCode(), and unescape() patterns. " +
-    "base64dump finds and decodes Base64 and other encoded strings — " +
-    "common in PowerShell, bash, and JavaScript malware. " +
     "box-js analyzes and deobfuscates JavaScript malware in a sandbox environment. " +
-    "For heavily obfuscated JS, consider manual deobfuscation with run_tool after reviewing js-beautify output.",
+    "base64dump finds and decodes Base64 and other encoded strings. " +
+    "For deep analysis, JStillery uses AST partial evaluation for deobfuscation, and " +
+    "SpiderMonkey with -f /usr/share/remnux/objects.js emulates browser/PDF viewer objects. " +
+    "To extract scripts from HTML, use ExtractScripts via run_tool.",
+  Script:
+    "base64dump finds and decodes Base64 and other encoded strings — " +
+    "common in PowerShell, bash, and VBScript malware. " +
+    "decode-vbe.py decodes VBE-encoded VBScript files to readable source. " +
+    "re-search extracts patterns using regular expressions. " +
+    "For PowerShell deobfuscation, consider running pwsh via run_tool. " +
+    "translate.py applies byte-level transforms. numbers-to-string.py decodes numeric payloads.",
+  Python:
+    "pycdc decompiles Python bytecode (.pyc) to readable source code. " +
+    "For PyInstaller bundles (which produce PE files), use pyinstxtractor via run_tool " +
+    "to extract contents, then analyze the resulting .pyc files with pycdc.",
   JAR:
     "zipdump lists the JAR archive contents (JAR files are ZIP format). " +
     "Look for unusual class files, embedded resources, or manifest entries. " +

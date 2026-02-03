@@ -432,13 +432,13 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 
 | Tier | Behavior |
 |------|----------|
-| `quick` | Fast triage tools only (peframe, pdfid, oleid, diec, readelf, strings) |
+| `quick` | Fast triage tools only (peframe, pdfid, oleid, diec, readelf, strings, js-beautify, decode-vbe) |
 | `standard` | Default — all category tools |
-| `deep` | Standard + expensive tools (pedump, brxor, peepdf-3, dotnetfile_dump, full decompilation) |
+| `deep` | Standard + expensive tools (pedump, brxor, peepdf-3, dotnetfile_dump, jstillery, spidermonkey, full decompilation) |
 
 **Output format:** Returns JSON with `detected_type`, `matched_category`, `depth`, `tools_run` (with output), `tools_failed`, and `tools_skipped`.
 
-**Supported file types:** PE/DLL, PDF, OLE2 Office (.doc/.xls/.ppt), OOXML (.docx/.xlsx/.pptx), RTF, ELF, shell scripts/text, JAR, email (EML), Android APK. Unknown types get fallback tools (strings, exiftool, base64dump, xorsearch).
+**Supported file types:** PE/DLL, PDF, OLE2 Office (.doc/.xls/.ppt), OOXML (.docx/.xlsx/.pptx), RTF, ELF, JavaScript (.js/.hta/.wsf/.html), shell scripts/VBS/PowerShell (.sh/.vbs/.ps1/.bat), Python bytecode (.pyc), JAR, email (EML), Android APK. Unknown types get fallback tools (strings, exiftool, base64dump, xorsearch).
 
 #### Example: Using extract_iocs
 

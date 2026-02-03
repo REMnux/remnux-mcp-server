@@ -68,8 +68,16 @@ export const FILE_TYPE_CATEGORIES: FileTypeCategory[] = [
     patterns: [/OneNote/i],
   },
   {
+    name: "JavaScript",
+    patterns: [/HTML document/i],
+  },
+  {
     name: "Script",
-    patterns: [/shell script/i, /script text/i, /ASCII text/i, /UTF-8.*text/i],
+    patterns: [/shell script/i, /script text/i, /Python script/i, /batch file/i],
+  },
+  {
+    name: "Python",
+    patterns: [/python.*byte-compiled/i],
   },
   {
     name: "JAR",
@@ -95,7 +103,9 @@ export const CATEGORY_TAG_MAP: Record<string, string> = {
   RTF: "rtf",
   ELF: "elf",
   OneNote: "onenote",
+  JavaScript: "javascript",
   Script: "script",
+  Python: "python",
   JAR: "jar",
   Email: "email",
   APK: "apk",
@@ -103,6 +113,15 @@ export const CATEGORY_TAG_MAP: Record<string, string> = {
   Shellcode: "shellcode",
   Unknown: "fallback",
 };
+
+/** JavaScript file extensions — used as fallback for text files. */
+const JAVASCRIPT_EXTENSIONS = /\.(js|hta|wsf|html|htm)$/i;
+
+/** Script file extensions — used as fallback for text files. */
+const SCRIPT_EXTENSIONS = /\.(vbs|vbe|ps1|bat|cmd|sh|py|pl|rb)$/i;
+
+/** Python bytecode extensions — used as fallback for data files. */
+const PYTHON_EXTENSIONS = /\.(pyc|pyo)$/i;
 
 /** Memory image extensions — used as fallback when `file` reports "data". */
 const MEMORY_EXTENSIONS = /\.(img|raw|mem|vmem|dmp|lime)$/i;
@@ -130,6 +149,19 @@ export function matchFileType(fileOutput: string, filename?: string): FileTypeCa
       if (pattern.test(typeOutput)) {
         return category;
       }
+    }
+  }
+
+  // Fallback: extension-based classification for text files that didn't match specific patterns
+  if (filename) {
+    if (JAVASCRIPT_EXTENSIONS.test(filename)) {
+      return FILE_TYPE_CATEGORIES.find((c) => c.name === "JavaScript")!;
+    }
+    if (SCRIPT_EXTENSIONS.test(filename)) {
+      return FILE_TYPE_CATEGORIES.find((c) => c.name === "Script")!;
+    }
+    if (PYTHON_EXTENSIONS.test(filename)) {
+      return FILE_TYPE_CATEGORIES.find((c) => c.name === "Python")!;
     }
   }
 

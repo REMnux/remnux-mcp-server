@@ -60,14 +60,74 @@ describe("matchFileType", () => {
     expect(result.name).toBe("ELF");
   });
 
+  it("matches HTML documents as JavaScript", () => {
+    const result = matchFileType("page.html: HTML document, ASCII text");
+    expect(result.name).toBe("JavaScript");
+  });
+
   it("matches shell scripts", () => {
     const result = matchFileType("script.sh: Bourne-Again shell script, ASCII text executable");
     expect(result.name).toBe("Script");
   });
 
-  it("matches ASCII text files", () => {
-    const result = matchFileType("data.txt: ASCII text");
+  it("matches script text as Script", () => {
+    const result = matchFileType("dropper.vbs: ASCII text, with very long lines, script text executable");
     expect(result.name).toBe("Script");
+  });
+
+  it("matches Python source scripts as Script", () => {
+    const result = matchFileType("dropper.py: Python script, ASCII text executable");
+    expect(result.name).toBe("Script");
+  });
+
+  it("matches DOS batch files as Script", () => {
+    const result = matchFileType("run.bat: DOS batch file, ASCII text");
+    expect(result.name).toBe("Script");
+  });
+
+  it("matches Python bytecode as Python", () => {
+    const result = matchFileType("module.pyc: python 3.8 byte-compiled");
+    expect(result.name).toBe("Python");
+  });
+
+  it("classifies .js files as JavaScript via extension fallback", () => {
+    const result = matchFileType("sample.js: ASCII text", "sample.js");
+    expect(result.name).toBe("JavaScript");
+  });
+
+  it("classifies .hta files as JavaScript via extension fallback", () => {
+    const result = matchFileType("payload.hta: ASCII text, with very long lines", "payload.hta");
+    expect(result.name).toBe("JavaScript");
+  });
+
+  it("classifies .vbs files as Script via extension fallback", () => {
+    const result = matchFileType("dropper.vbs: ASCII text", "dropper.vbs");
+    expect(result.name).toBe("Script");
+  });
+
+  it("classifies .ps1 files as Script via extension fallback", () => {
+    const result = matchFileType("loader.ps1: UTF-8 Unicode text", "loader.ps1");
+    expect(result.name).toBe("Script");
+  });
+
+  it("classifies .pyc files as Python via extension fallback", () => {
+    const result = matchFileType("module.pyc: data", "module.pyc");
+    expect(result.name).toBe("Python");
+  });
+
+  it("classifies .py files as Script via extension fallback", () => {
+    const result = matchFileType("script.py: ASCII text", "script.py");
+    expect(result.name).toBe("Script");
+  });
+
+  it("classifies plain ASCII text without script extension as Unknown", () => {
+    const result = matchFileType("notes.txt: ASCII text", "notes.txt");
+    expect(result.name).toBe("Unknown");
+  });
+
+  it("classifies plain UTF-8 text without script extension as Unknown", () => {
+    const result = matchFileType("log.csv: UTF-8 Unicode text", "log.csv");
+    expect(result.name).toBe("Unknown");
   });
 
   it("matches Java archive files", () => {
@@ -177,8 +237,8 @@ describe("matchFileType", () => {
 // =========================================================================
 
 describe("FILE_TYPE_CATEGORIES", () => {
-  it("has at least 11 categories", () => {
-    expect(FILE_TYPE_CATEGORIES.length).toBeGreaterThanOrEqual(11);
+  it("has at least 13 categories", () => {
+    expect(FILE_TYPE_CATEGORIES.length).toBeGreaterThanOrEqual(13);
   });
 
   it("every category has at least one pattern", () => {
