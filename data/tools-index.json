@@ -101,13 +101,6 @@
       "website": "https://github.com/carbonblack/binee"
     },
     {
-      "command": "binnavi",
-      "name": "BinNavi",
-      "category": "Statically Analyze Code: General",
-      "description": "IDE that allows to inspect, navigate, edit and annotate control flow graphs and call graphs of disassembled code.",
-      "website": "https://github.com/google/binnavi"
-    },
-    {
       "command": "binwalk",
       "name": "binwalk",
       "category": "Examine Static Properties: General",
@@ -162,13 +155,6 @@
       "category": "Statically Analyze Code: PE Files",
       "description": "Detect suspicious capabilities in PE files.",
       "website": "https://github.com/fireeye/capa"
-    },
-    {
-      "command": "captipper",
-      "name": "CapTipper",
-      "category": "Explore Network Interactions: Monitoring",
-      "description": "Analyze HTTP traffic and extract embedded artifacts.",
-      "website": "https://github.com/omriher/CapTipper/tree/python3_support"
     },
     {
       "command": "cast",
@@ -437,13 +423,6 @@
       "website": "http://hooked-on-mnemonics.blogspot.com/2014/04/expexorpy.html"
     },
     {
-      "command": "extractswf",
-      "name": "extract_swf",
-      "category": "Statically Analyze Code: Flash",
-      "description": "Extract potential SWF files from Flash Projector binaries.",
-      "website": "https://github.com/digitalsleuth/extract_swf"
-    },
-    {
       "command": "fakedns",
       "name": "fakedns",
       "category": "Explore Network Interactions: Services",
@@ -491,20 +470,6 @@
       "category": "General Utilities",
       "description": "Web browser.",
       "website": "https://www.mozilla.org/firefox/"
-    },
-    {
-      "command": "flare",
-      "name": "Flare",
-      "category": "Statically Analyze Code: Flash",
-      "description": "Extract and decompile ActionScript from Flash (SWF) files.",
-      "website": "http://www.nowrap.de/flare.html"
-    },
-    {
-      "command": "flasm",
-      "name": "Flasm",
-      "category": "Statically Analyze Code: Flash",
-      "description": "Extract and disassemble ActionScript from Flash (SWF) files.",
-      "website": "http://www.nowrap.de/flasm.html"
     },
     {
       "command": "floss",
@@ -561,13 +526,6 @@
       "category": "Examine Static Properties: General",
       "description": "View, edit, and carve contents of various binary file types.",
       "website": "https://github.com/vstinner/hachoir"
-    },
-    {
-      "command": "hash-id",
-      "name": "Hash ID",
-      "category": "Examine Static Properties: General",
-      "description": "Identify dfferent types of hashes.",
-      "website": "https://github.com/blackploit/hash-identifier"
     },
     {
       "command": "hex-to-bin",
@@ -631,13 +589,6 @@
       "category": "Gather and Analyze Data",
       "description": "Retrieve and parse whois data for IP addresses.",
       "website": "https://github.com/secynic/ipwhois"
-    },
-    {
-      "command": "jad-java-decompiler",
-      "name": "JAD Java Decompiler",
-      "category": "Statically Analyze Code: Java",
-      "description": "Java decompiler and analysis tool.",
-      "website": "Unknown"
     },
     {
       "command": "jadx",
@@ -913,11 +864,11 @@
       "website": "https://www.openssh.com"
     },
     {
-      "command": "origami",
-      "name": "Origami",
+      "command": "origamindee",
+      "name": "Origamindee",
       "category": "Analyze Documents: PDF",
       "description": "Parse, modify, generate PDF files.",
-      "website": "https://github.com/gdelugre/origami"
+      "website": "https://github.com/mindee/origamindee"
     },
     {
       "command": "pcode2code",
@@ -997,7 +948,7 @@
       "website": "https://github.com/zed-0xff/pedump"
     },
     {
-      "command": "peepdf",
+      "command": "peepdf-3",
       "name": "peepdf-3",
       "category": "Analyze Documents: PDF",
       "description": "Examine elements of the PDF file.",
@@ -1305,13 +1256,6 @@
       "website": "https://blog.didierstevens.com/2020/12/19/update-strings-py-version-0-0-6/"
     },
     {
-      "command": "swf-tools",
-      "name": "SWF Tools",
-      "category": "Statically Analyze Code: Flash",
-      "description": "Examine and convert Flash (SWF) files.",
-      "website": "http://swftools.org"
-    },
-    {
       "command": "tcpdump",
       "name": "tcpdump",
       "category": "Explore Network Interactions: Monitoring",
@@ -1452,13 +1396,6 @@
       "website": "https://www.decalage.info/en/vba_emulation"
     },
     {
-      "command": "virustotal-api",
-      "name": "VirusTotal API",
-      "category": "Gather and Analyze Data",
-      "description": "Query and interact with VirusTotal using a command-line interface.",
-      "website": "https://github.com/VirusTotal/vt-py"
-    },
-    {
       "command": "visual-studio-code",
       "name": "Visual Studio Code",
       "category": "View or Edit Files",
@@ -1555,13 +1492,6 @@
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Analyze XOR-encoded data.",
       "website": "https://github.com/hellman/xortool"
-    },
-    {
-      "command": "xxxswf",
-      "name": "xxxswf",
-      "category": "Statically Analyze Code: Flash",
-      "description": "Analyze Flash SWF files.",
-      "website": "https://github.com/viper-framework/xxxswf"
     },
     {
       "command": "yara",
