@@ -93,8 +93,8 @@ const BASE_HINTS: Record<string, string> = {
     "Use strings and exiftool for additional triage. " +
     "OneNote files may contain embedded scripts, executables, or malicious attachments.",
   Shellcode:
-    "Raw shellcode detected. scdbgc provides fast Win32 API call tracing (x86 only). " +
-    "speakeasy emulates both x86 and x64 shellcode with Windows API emulation. " +
+    "Raw shellcode detected. speakeasy emulates both x86 and x64 shellcode with Windows API emulation. " +
+    "scdbgc provides additional Win32 API call tracing for x86 shellcode. " +
     "Look for resolved API names, network connections, file system access, and registry modifications in emulation output. " +
     "For deep analysis, qltool (Qiling) provides multi-platform emulation and tracesc traces execution via Wine. " +
     "Use strings and xorsearch for static indicators before emulation.",
@@ -108,7 +108,7 @@ const BASE_HINTS: Record<string, string> = {
     "For Linux memory images, use vol3-linux-pslist.",
   Unknown:
     "File type not recognized. strings and exiftool provide basic triage. " +
-    "base64dump searches for encoded content. xorsearch tries common XOR keys. " +
+    "base64dump searches for encoded content. xorsearch.py outputs JSON for structured analysis; xorsearch binary is faster for large files. " +
     "translate.py applies byte-level transforms (XOR, shift). re-search.py extracts regex patterns. " +
     "file-magic.py identifies embedded file types. numbers-to-string.py decodes numeric payloads. " +
     "cut-bytes.py extracts byte ranges. format-bytes.py parses structured binary data. " +
