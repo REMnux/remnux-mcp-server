@@ -67,8 +67,8 @@ const BASE_HINTS: Record<string, string> = {
   Script:
     "base64dump finds and decodes Base64 and other encoded strings — " +
     "common in PowerShell, bash, and VBScript malware. " +
-    "decode-vbe.py decodes VBE-encoded (.vbe) files only — look for VBScript.Encode marker. " +
-    "re-search extracts patterns using regular expressions. " +
+    "decode-vbe.py decodes VBE-encoded (.vbe) files only — look for #@~^ VBScript.Encode marker. " +
+    "re-search extracts patterns using regular expressions (use -f flag for binary files). " +
     "For PowerShell deobfuscation, consider running pwsh via run_tool. " +
     "translate.py applies byte-level transforms. numbers-to-string.py decodes numeric payloads.",
   Python:

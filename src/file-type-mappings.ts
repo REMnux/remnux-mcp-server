@@ -52,6 +52,7 @@ export const FILE_TYPE_CATEGORIES: FileTypeCategory[] = [
     patterns: [
       /Microsoft Word 2007/i,
       /Microsoft Excel 2007/i,
+      /Microsoft PowerPoint 2007/i,
       /\bOOXML\b/i,
     ],
   },

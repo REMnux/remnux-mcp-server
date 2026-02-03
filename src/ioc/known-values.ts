@@ -10,6 +10,30 @@ export const PRIVATE_IP_PREFIXES = [
   "172.30.", "172.31.", "192.168.", "127.", "169.254.",
 ];
 
+/** Security vendor and tool author email domains to filter from IOC extraction */
+export const VENDOR_EMAIL_DOMAINS = [
+  // Major security vendors
+  "mandiant.com",
+  "fireeye.com",
+  "microsoft.com",
+  "crowdstrike.com",
+  "sentinelone.com",
+  "trendmicro.com",
+  "fortinet.com",
+  "paloaltonetworks.com",
+  "cisco.com",
+  "mcafee.com",
+  "symantec.com",
+  "sophos.com",
+  "kaspersky.com",
+  "eset.com",
+  "bitdefender.com",
+  "malwarebytes.com",
+  // Tool authors
+  "didierstevenslabs.com",
+  "didierstevens.com",
+];
+
 export const KNOWN_GOOD_DOMAIN_SUFFIXES = [
   "microsoft.com", "google.com", "googleapis.com", "gstatic.com",
   "w3.org", "openxmlformats.org", "xmlsoap.org", "apache.org",

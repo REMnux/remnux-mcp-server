@@ -50,6 +50,11 @@ describe("matchFileType", () => {
     expect(result.name).toBe("OOXML");
   });
 
+  it("classifies Microsoft PowerPoint 2007+ as OOXML", () => {
+    const result = matchFileType("deck.pptm: Microsoft PowerPoint 2007+");
+    expect(result.name).toBe("OOXML");
+  });
+
   it("matches RTF files", () => {
     const result = matchFileType("doc.rtf: Rich Text Format data");
     expect(result.name).toBe("RTF");

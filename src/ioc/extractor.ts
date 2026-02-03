@@ -6,8 +6,11 @@
 
 import { extractIOC } from "ioc-extractor";
 import { extractCustomPatterns } from "./patterns.js";
-import { isNoise } from "./noise.js";
+import { isNoise, type NoiseFilterOptions } from "./noise.js";
 import { scoreIOC } from "./scoring.js";
+
+/** Options for IOC extraction */
+export type ExtractOptions = NoiseFilterOptions;
 
 export interface IOCEntry {
   value: string;
@@ -48,7 +51,7 @@ const TYPE_MAP: Record<string, string> = {
 
 const NOISE_THRESHOLD = 0.3;
 
-export function extractIOCs(text: string): IOCResult {
+export function extractIOCs(text: string, options?: ExtractOptions): IOCResult {
   // 1. Standard extraction
   const libResult = extractIOC(text);
 
@@ -93,7 +96,7 @@ export function extractIOCs(text: string): IOCResult {
   const noise: IOCEntry[] = [];
 
   for (const entry of allEntries) {
-    if (isNoise(entry.value, entry.type) || entry.confidence <= NOISE_THRESHOLD) {
+    if (isNoise(entry.value, entry.type, options) || entry.confidence <= NOISE_THRESHOLD) {
       noise.push(entry);
     } else {
       iocs.push(entry);

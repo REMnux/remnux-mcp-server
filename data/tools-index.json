@@ -997,7 +997,7 @@
       "website": "https://github.com/zed-0xff/pedump"
     },
     {
-      "command": "peepdf-3",
+      "command": "peepdf",
       "name": "peepdf-3",
       "category": "Analyze Documents: PDF",
       "description": "Examine elements of the PDF file.",

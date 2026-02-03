@@ -11,7 +11,9 @@ export async function handleExtractIOCs(
   const startTime = Date.now();
 
   try {
-    const result = extractIOCs(args.text);
+    const result = extractIOCs(args.text, {
+      includePrivateIPs: args.include_private_ips,
+    });
 
     const data: Record<string, unknown> = {
       iocs: result.iocs,

@@ -231,8 +231,9 @@ describe("scoreIOC", () => {
     expect(scoreIOC("HKLM\\Software\\Test", "registry_key")).toBe(0.7);
   });
 
-  it("scores private IPs at 0.2", () => {
-    expect(scoreIOC("192.168.1.1", "ipv4")).toBe(0.2);
+  it("scores all IPs at 0.5 (private IP filtering handled by noise filter)", () => {
+    expect(scoreIOC("192.168.1.1", "ipv4")).toBe(0.5);
+    expect(scoreIOC("8.8.8.8", "ipv4")).toBe(0.5);
   });
 
   it("scores public IPs at 0.5", () => {
@@ -546,5 +547,61 @@ ntdll.dll
     expect(result.iocs.some((e) => e.type === "sha1")).toBe(true);
     // Summary should be non-zero
     expect(result.summary.total).toBeGreaterThan(0);
+  });
+});
+
+// =========================================================================
+// Vendor email filtering
+// =========================================================================
+
+describe("vendor email filtering", () => {
+  it("filters @mandiant.com emails as noise", () => {
+    const result = extractIOCs("Contact moritz.raabe@mandiant.com for details");
+    // Check specifically for emails - domain "mandiant.com" may be extracted separately
+    expect(result.iocs.find(i => i.type === "email" && i.value.includes("mandiant.com"))).toBeUndefined();
+    expect(result.noise.find(i => i.type === "email" && i.value.includes("mandiant.com"))).toBeDefined();
+  });
+
+  it("filters subdomain vendor emails as noise", () => {
+    const result = extractIOCs("analyst@research.crowdstrike.com");
+    expect(result.iocs.find(i => i.type === "email")).toBeUndefined();
+    expect(result.noise.find(i => i.type === "email")).toBeDefined();
+  });
+
+  it("does not filter non-vendor emails", () => {
+    const result = extractIOCs("attacker@evil-domain.com");
+    const emails = result.iocs.filter(i => i.type === "email");
+    expect(emails.length).toBe(1);
+  });
+
+  it("filters @didierstevens.com tool author emails", () => {
+    expect(isNoise("didier@didierstevens.com", "email")).toBe(true);
+  });
+});
+
+// =========================================================================
+// Private IP filtering options
+// =========================================================================
+
+describe("private IP filtering options", () => {
+  it("filters private IPs by default", () => {
+    const result = extractIOCs("Connected to 192.168.1.100");
+    expect(result.iocs.find(i => i.value === "192.168.1.100")).toBeUndefined();
+    expect(result.noise.find(i => i.value === "192.168.1.100")).toBeDefined();
+  });
+
+  it("includes private IPs when option is set", () => {
+    const result = extractIOCs("Connected to 192.168.1.100", { includePrivateIPs: true });
+    expect(result.iocs.find(i => i.value === "192.168.1.100")).toBeDefined();
+  });
+
+  it("includes 10.x IPs when option is set", () => {
+    const result = extractIOCs("C2 at 10.0.0.50", { includePrivateIPs: true });
+    expect(result.iocs.find(i => i.value === "10.0.0.50")).toBeDefined();
+  });
+
+  it("isNoise respects includePrivateIPs option", () => {
+    expect(isNoise("192.168.1.1", "ipv4")).toBe(true);
+    expect(isNoise("192.168.1.1", "ipv4", { includePrivateIPs: true })).toBe(false);
   });
 });

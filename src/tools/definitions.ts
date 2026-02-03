@@ -270,7 +270,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "peepdf-3",
     description: "Examine elements of a PDF file for notable content.",
-    command: "peepdf-3",
+    command: "peepdf",
     inputStyle: "positional",
     fixedArgs: ["-f", "-l"],
     outputFormat: "text",
@@ -323,6 +323,10 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 60,
     tags: ["ole2", "ooxml", "macros"],
     tier: "standard",
+    exitCodeHints: {
+      5: "No VBA macros found in document.",
+      9: "File format not recognized or corrupted.",
+    },
   },
   {
     name: "oledump",
@@ -344,6 +348,9 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 120,
     tags: ["ole2", "ooxml"],
     tier: "standard",
+    exitCodeHints: {
+      1: "File is not encrypted or uses unsupported encryption.",
+    },
   },
 
   {
@@ -355,6 +362,9 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 60,
     tags: ["ole2", "ooxml", "macros"],
     tier: "standard",
+    exitCodeHints: {
+      1: "File does not contain VBA p-code. May be a non-macro document or already decompiled.",
+    },
   },
   {
     name: "xlmdeobfuscator",
@@ -501,6 +511,9 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 60,
     tags: ["script"],
     tier: "quick",
+    exitCodeHints: {
+      1: "File is not VBE-encoded (requires #@~^ marker). Try other decoders for this script type.",
+    },
   },
   {
     name: "base64dump",
@@ -763,6 +776,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 60,
     tags: ["script", "fallback", "decryption"],
     tier: "standard",
+    requiresUserArgs: true, // Needs expression like 'byte ^ 0x10'
   },
   {
     name: "numbers-to-string",
@@ -773,6 +787,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 60,
     tags: ["script", "fallback"],
     tier: "standard",
+    requiresUserArgs: true, // Needs expression argument or stdin
   },
   {
     name: "re-search",
@@ -783,6 +798,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 60,
     tags: ["script", "fallback"],
     tier: "standard",
+    requiresUserArgs: true, // Needs regex pattern argument
   },
   {
     name: "file-magic",

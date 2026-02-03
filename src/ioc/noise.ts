@@ -3,7 +3,7 @@
  * Filters out private IPs, common benign domains, empty hashes, and stock OS paths.
  */
 
-import { PRIVATE_IP_PREFIXES, KNOWN_GOOD_DOMAIN_SUFFIXES } from "./known-values.js";
+import { PRIVATE_IP_PREFIXES, KNOWN_GOOD_DOMAIN_SUFFIXES, VENDOR_EMAIL_DOMAINS } from "./known-values.js";
 
 /** Tool/library URLs that appear in analysis tool output, not from the sample. */
 const TOOL_URL_DOMAINS = new Set([
@@ -85,9 +85,16 @@ function isLikelyVersionString(ip: string): boolean {
   return nums.every((n) => n >= 0 && n <= 20) && nums.some((n) => n === 0);
 }
 
-export function isNoise(value: string, type: string): boolean {
+/** Options for noise filtering */
+export interface NoiseFilterOptions {
+  /** Include private/internal IP addresses (default: false) */
+  includePrivateIPs?: boolean;
+}
+
+export function isNoise(value: string, type: string, options?: NoiseFilterOptions): boolean {
   if (type === "ipv4") {
-    if (PRIVATE_IP_PREFIXES.some((p) => value.startsWith(p))) return true;
+    // Skip private IP filtering if option is set
+    if (!options?.includePrivateIPs && PRIVATE_IP_PREFIXES.some((p) => value.startsWith(p))) return true;
     // Filter PE version strings like 1.0.0.0, 1.1.0.1 (must contain a zero octet)
     if (isLikelyVersionString(value)) return true;
     return false;
@@ -184,6 +191,17 @@ export function isNoise(value: string, type: string): boolean {
   if (type === "eth" || type === "xmr") {
     // Filter PE FileVersion patterns
     if (/^\d+\.\d+\.\d+\.\d+$/.test(value)) return true;
+    return false;
+  }
+
+  // Filter security vendor emails (tool authors, not malware IOCs)
+  if (type === "email") {
+    const emailDomain = value.split("@")[1]?.toLowerCase();
+    if (emailDomain && VENDOR_EMAIL_DOMAINS.some(d =>
+      emailDomain === d || emailDomain.endsWith("." + d)
+    )) {
+      return true;
+    }
     return false;
   }
 

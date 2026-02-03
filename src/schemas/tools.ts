@@ -93,5 +93,6 @@ export type GetToolHelpArgs = z.infer<typeof getToolHelpSchema>;
 export const extractIOCsSchema = z.object({
   text: z.string().describe("Text to extract IOCs from (e.g., output from run_tool or analyze_file)"),
   include_noise: z.boolean().optional().default(false).describe("Include low-confidence known-good IOCs"),
+  include_private_ips: z.boolean().optional().default(false).describe("Include private/internal IP addresses (10.x, 172.16-31.x, 192.168.x)"),
 });
 export type ExtractIOCsArgs = z.infer<typeof extractIOCsSchema>;

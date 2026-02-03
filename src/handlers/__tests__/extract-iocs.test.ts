@@ -9,14 +9,17 @@ vi.mock("../../ioc/extractor.js", () => ({
 
 import { extractIOCs } from "../../ioc/extractor.js";
 
+// Type cast for bun compatibility (vi.mocked not available in bun's test runner)
+const mockedExtractIOCs = extractIOCs as ReturnType<typeof vi.fn>;
+
 describe("handleExtractIOCs", () => {
   beforeEach(() => {
-    vi.mocked(extractIOCs).mockReset();
+    mockedExtractIOCs.mockReset();
   });
 
   it("excludes noise by default", async () => {
     const deps = createMockDeps();
-    vi.mocked(extractIOCs).mockReturnValue({
+    mockedExtractIOCs.mockReturnValue({
       iocs: [{ type: "ipv4", value: "10.0.0.1", confidence: 0.9 }],
       noise: [{ type: "ipv4", value: "127.0.0.1", confidence: 0.1 }],
       summary: { total: 1, noise_filtered: 1, by_type: { ipv4: 1 } },
@@ -25,6 +28,7 @@ describe("handleExtractIOCs", () => {
     const result = await handleExtractIOCs(deps, {
       text: "found 10.0.0.1",
       include_noise: false,
+      include_private_ips: false,
     });
 
     const env = parseEnvelope(result);
@@ -34,7 +38,7 @@ describe("handleExtractIOCs", () => {
 
   it("includes noise when include_noise is true", async () => {
     const deps = createMockDeps();
-    vi.mocked(extractIOCs).mockReturnValue({
+    mockedExtractIOCs.mockReturnValue({
       iocs: [],
       noise: [{ type: "ipv4", value: "127.0.0.1", confidence: 0.1 }],
       summary: { total: 0, noise_filtered: 1, by_type: {} },
@@ -43,6 +47,7 @@ describe("handleExtractIOCs", () => {
     const result = await handleExtractIOCs(deps, {
       text: "found 127.0.0.1",
       include_noise: true,
+      include_private_ips: false,
     });
 
     const env = parseEnvelope(result);
@@ -52,13 +57,14 @@ describe("handleExtractIOCs", () => {
 
   it("wraps errors thrown by extractIOCs", async () => {
     const deps = createMockDeps();
-    vi.mocked(extractIOCs).mockImplementation(() => {
+    mockedExtractIOCs.mockImplementation(() => {
       throw new Error("parser crash");
     });
 
     const result = await handleExtractIOCs(deps, {
       text: "some text",
       include_noise: false,
+      include_private_ips: false,
     });
 
     const env = parseEnvelope(result);
@@ -68,7 +74,7 @@ describe("handleExtractIOCs", () => {
 
   it("returns summary statistics from extractor", async () => {
     const deps = createMockDeps();
-    vi.mocked(extractIOCs).mockReturnValue({
+    mockedExtractIOCs.mockReturnValue({
       iocs: [
         { type: "domain", value: "evil.com", confidence: 0.9 },
         { type: "ipv4", value: "192.168.1.1", confidence: 0.8 },
@@ -80,6 +86,7 @@ describe("handleExtractIOCs", () => {
     const result = await handleExtractIOCs(deps, {
       text: "evil.com 192.168.1.1",
       include_noise: false,
+      include_private_ips: false,
     });
 
     const env = parseEnvelope(result);

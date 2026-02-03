@@ -168,6 +168,16 @@ export async function handleAnalyzeFile(
 
   // Step 3: Run each tool
   for (const tool of tools) {
+    // Skip tools that require user-supplied arguments (can't auto-run)
+    if (tool.requiresUserArgs) {
+      toolsSkipped.push({
+        name: tool.name,
+        command: tool.command,
+        reason: "Requires user-supplied arguments (use run_tool manually)",
+      });
+      continue;
+    }
+
     const cmd = buildCommandFromDefinition(tool, analysisPath, config.outputDir);
 
     // Ensure output directories exist for tools that write to --output-dir
@@ -195,6 +205,25 @@ export async function handleAnalyzeFile(
 
       let stderr = result.stderr || "";
       stderr = filterStderrNoise(stderr);
+
+      // Detect Python TypeError/AttributeError indicating wrong file type for tool
+      // Only trigger when stderr contains Python traceback AND output is minimal
+      const isPythonTypeError = result.exitCode !== 0 &&
+        /^Traceback \(most recent call last\):/m.test(stderr) &&
+        /TypeError|AttributeError|ValueError|KeyError|IndexError|ImportError|ModuleNotFoundError|FileNotFoundError|UnicodeDecodeError/i.test(stderr) &&
+        !/command not found/i.test(stderr);
+
+      if (isPythonTypeError) {
+        const hint = tool.exitCodeHints?.[result.exitCode] ||
+          `Tool encountered error on this file type (${stderr.match(/(?:TypeError|AttributeError|ValueError|KeyError|IndexError|ImportError|ModuleNotFoundError|FileNotFoundError|UnicodeDecodeError)[^\n]*/)?.[0] || "see stderr"})`;
+        toolsSkipped.push({
+          name: tool.name,
+          command: cmd,
+          reason: hint,
+        });
+        continue;
+      }
+
       // Detect missing tools — only match shell "command not found" or exit code 127,
       // not tool output that happens to contain "not found" (e.g., pescan "section not found")
       const isNotInstalled = result.exitCode === 127 ||

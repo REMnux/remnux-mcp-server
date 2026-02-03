@@ -3,7 +3,7 @@
  * Higher scores indicate more specificity / likely malicious relevance.
  */
 
-import { PRIVATE_IP_PREFIXES, KNOWN_GOOD_DOMAIN_SUFFIXES } from "./known-values.js";
+import { KNOWN_GOOD_DOMAIN_SUFFIXES } from "./known-values.js";
 
 export function scoreIOC(value: string, type: string): number {
   switch (type) {
@@ -31,12 +31,10 @@ export function scoreIOC(value: string, type: string): number {
       return 0.5;
     }
 
-    case "ipv4": {
-      if (PRIVATE_IP_PREFIXES.some((p) => value.startsWith(p))) {
-        return 0.2;
-      }
+    case "ipv4":
+      // Note: Private IP filtering is handled by noise.ts isNoise(),
+      // so scoring doesn't penalize private IPs (avoids duplicate filtering)
       return 0.5;
-    }
 
     case "ipv6":
       return 0.5;
