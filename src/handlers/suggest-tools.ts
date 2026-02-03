@@ -44,7 +44,7 @@ const BASE_HINTS: Record<string, string> = {
   OOXML:
     "olevba handles both OLE2 and OOXML macro extraction. " +
     "zipdump lists the ZIP structure — OOXML files are ZIP archives with XML inside. " +
-    "xmldump.py extracts and examines XML content within the OOXML archive. " +
+    "To examine XML: zipdump.py -s <stream_num> -d file.docx | xmldump.py pretty. " +
     "Look for unusual entries or embedded OLE objects within the archive. " +
     "pcodedmp disassembles VBA p-code. xlmdeobfuscator deobfuscates Excel 4.0 XLM macros.",
   RTF:
@@ -67,7 +67,7 @@ const BASE_HINTS: Record<string, string> = {
   Script:
     "base64dump finds and decodes Base64 and other encoded strings — " +
     "common in PowerShell, bash, and VBScript malware. " +
-    "decode-vbe.py decodes VBE-encoded VBScript files to readable source. " +
+    "decode-vbe.py decodes VBE-encoded (.vbe) files only — look for VBScript.Encode marker. " +
     "re-search extracts patterns using regular expressions. " +
     "For PowerShell deobfuscation, consider running pwsh via run_tool. " +
     "translate.py applies byte-level transforms. numbers-to-string.py decodes numeric payloads.",

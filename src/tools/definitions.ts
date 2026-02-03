@@ -113,6 +113,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 60,
     tags: ["pe", "dotnet"],
     tier: "standard",
+    exitCodeHints: { 1: "pescan requires pev plugins — ensure /usr/local/lib/pev/plugins exists" },
   },
   {
     name: "signsrch",
@@ -137,11 +138,10 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 
   {
     name: "upx-decompress",
-    description: "Decompress UPX-packed executables.",
+    description: "Decompress UPX-packed executables in-place (keeps backup as .exe~).",
     command: "upx",
     inputStyle: "positional",
-    fixedArgs: ["-d"],
-    suffixArgs: ["-o", "/tmp/unpacked"],
+    fixedArgs: ["-d", "-k"],
     outputFormat: "text",
     timeout: 60,
     tags: ["pe", "unpacking"],
@@ -251,6 +251,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: "Analyze incremental updates in PDF files to detect hidden payload swaps.",
     command: "pdftool.py",
     inputStyle: "positional",
+    fixedArgs: ["iu"],
     outputFormat: "text",
     timeout: 60,
     tags: ["pdf"],
@@ -261,7 +262,6 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: "Extract previous versions of content from PDF files.",
     command: "pdfresurrect",
     inputStyle: "positional",
-    fixedArgs: ["-w"],
     outputFormat: "text",
     timeout: 60,
     tags: ["pdf"],
@@ -381,7 +381,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "xmldump",
-    description: "Extract and examine XML contents from OOXML documents.",
+    description: "Format and analyze XML. For OOXML: zipdump.py -s <n> -d file | xmldump.py pretty",
     command: "xmldump.py",
     inputStyle: "positional",
     outputFormat: "text",
