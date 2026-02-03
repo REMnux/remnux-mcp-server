@@ -14,18 +14,23 @@ import { toREMnuxError } from "../errors/error-mapper.js";
 const BASE_HINTS: Record<string, string> = {
   DOTNET:
     "Start with peframe and diec for triage. diec detects packers/protectors. " +
-    "ilspycmd decompiles .NET to C# source. " +
     "capa identifies capabilities like C2, persistence, or file manipulation. " +
+    "floss extracts obfuscated strings. yara-rules scans against community signatures. " +
+    "ilspycmd decompiles .NET to C# source. " +
     "For deep analysis, capa -vv shows matched rule details with addresses.",
   PE:
     "Start with peframe and diec for triage — diec detects packers and compilers. " +
     "capa maps capabilities to MITRE ATT&CK. floss extracts obfuscated strings. " +
+    "portex provides comprehensive PE structure analysis including anomaly detection. " +
+    "yara-rules scans against community signatures for known malware families. " +
     "For deep analysis, capa -vv shows matched rule details with addresses. " +
     "pedump shows raw PE structure and brxor bruteforces XOR-encoded strings.",
   PDF:
     "Start with pdfid to identify notable elements (/JS, /JavaScript, /OpenAction, /Launch). " +
     "Use pdf-parser --stats for structural overview. If notable objects found, " +
-    "extract them with pdf-parser -o <obj_id> -d. peepdf-3 provides interactive deep analysis. " +
+    "extract them with pdf-parser -o <obj_id> -d. " +
+    "pdfresurrect extracts previous versions of content — useful for detecting swapped or hidden payloads. " +
+    "peepdf-3 provides interactive deep analysis. " +
     "qpdf decrypts permission-locked PDFs. pdftk extracts metadata and document info.",
   OLE2:
     "Start with oleid for risk indicators (macros, encryption, external links). " +
@@ -80,9 +85,10 @@ const BASE_HINTS: Record<string, string> = {
     "Use strings and xorsearch for static indicators before emulation.",
   Memory:
     "Memory image detected. Start with vol3-info to identify OS and kernel version. " +
-    "vol3-pslist and vol3-pstree reveal running processes; vol3-psscan finds hidden/unlinked processes. " +
-    "vol3-netscan shows network connections. vol3-cmdline extracts process arguments. " +
-    "vol3-dlllist shows loaded DLLs. vol3-filescan finds file objects. vol3-hivelist lists registry hives. " +
+    "vol3-pslist and vol3-pstree reveal running processes. " +
+    "vol3-netscan shows network connections. vol3-psscan finds hidden/unlinked processes. " +
+    "vol3-cmdline extracts process arguments. vol3-dlllist shows loaded DLLs. " +
+    "vol3-filescan finds file objects. vol3-hivelist lists registry hives. " +
     "For deeper analysis, vol3-malfind detects injected code and vol3-handles lists open handles. " +
     "For Linux memory images, use vol3-linux-pslist.",
   Unknown:
