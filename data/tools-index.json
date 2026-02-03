@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-02-02",
+  "updated": "2026-02-03",
   "tools": [
     {
       "command": "1768",
@@ -206,11 +206,32 @@
       "website": "https://github.com/strozfriedberg/cobaltstrike-config-extractor"
     },
     {
+      "command": "cs-analyze-processdump",
+      "name": "cs-analyze-processdump.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Analyze Cobalt Strike beacon process dumps to detect sleep mask encoding.",
+      "website": "https://blog.didierstevens.com/2021/11/25/new-tool-cs-analyze-processdump-py/"
+    },
+    {
       "command": "cs-decrypt-metadata",
       "name": "cs-decrypt-metadata.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Decrypt Cobalt Strike metadata.",
       "website": "https://blog.didierstevens.com/2021/11/12/update-cs-decrypt-metadata-py-version-0-0-2/"
+    },
+    {
+      "command": "cs-extract-key",
+      "name": "cs-extract-key.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Extract AES and HMAC keys from Cobalt Strike beacon process memory.",
+      "website": "https://blog.didierstevens.com/2021/11/03/new-tool-cs-extract-key-py/"
+    },
+    {
+      "command": "cs-parse-traffic",
+      "name": "cs-parse-traffic.py",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Decrypt and parse Cobalt Strike beacon network traffic.",
+      "website": "https://blog.didierstevens.com/2021/11/29/new-tool-cs-parse-traffic-py/"
     },
     {
       "command": "curl",
@@ -297,6 +318,13 @@
       "website": "https://blog.didierstevens.com"
     },
     {
+      "command": "disitool",
+      "name": "disitool.py",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Extract, delete, copy, and inject digital signatures in PE files.",
+      "website": "https://blog.didierstevens.com/programs/disitool/"
+    },
+    {
       "command": "dissect",
       "name": "dissect",
       "category": "Gather and Analyze Data",
@@ -323,6 +351,13 @@
       "category": "Gather and Analyze Data",
       "description": "Python library to encode/decode DNS wire-format packets.",
       "website": "https://github.com/paulc/dnslib"
+    },
+    {
+      "command": "dnsresolver",
+      "name": "dnsresolver.py",
+      "category": "Explore Network Interactions: Services",
+      "description": "DNS resolver tool for dynamic analysis with wildcard and tracking support.",
+      "website": "https://blog.didierstevens.com/2021/07/15/new-tool-dnsresolver-py/"
     },
     {
       "command": "docker",
@@ -444,6 +479,13 @@
       "website": "http://astron.com/pub/file/README"
     },
     {
+      "command": "file-magic",
+      "name": "file-magic.py",
+      "category": "Examine Static Properties: General",
+      "description": "Identify file types using the Python magic module.",
+      "website": "https://blog.didierstevens.com/2018/07/11/new-tool-file-magic-py/"
+    },
+    {
       "command": "firefox",
       "name": "Firefox",
       "category": "General Utilities",
@@ -526,6 +568,13 @@
       "category": "Examine Static Properties: General",
       "description": "Identify dfferent types of hashes.",
       "website": "https://github.com/blackploit/hash-identifier"
+    },
+    {
+      "command": "hex-to-bin",
+      "name": "hex-to-bin.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Convert hexadecimal text dumps to binary data.",
+      "website": "https://blog.didierstevens.com/2020/04/19/update-hex-to-bin-py-version-0-0-5/"
     },
     {
       "command": "ibus",
@@ -689,6 +738,13 @@
       "website": "https://github.com/JusticeRage/Manalyze"
     },
     {
+      "command": "manalyze",
+      "name": "Manalyze",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Perform static analysis of suspicious PE files.",
+      "website": "https://github.com/JusticeRage/Manalyze"
+    },
+    {
       "command": "mitmproxy",
       "name": "mitmproxy",
       "category": "Explore Network Interactions: Monitoring",
@@ -801,6 +857,13 @@
       "website": "https://github.com/digitalsleuth/NoMoreXOR"
     },
     {
+      "command": "numbers-to-string",
+      "name": "numbers-to-string.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Translate number sequences into ASCII characters.",
+      "website": "https://blog.didierstevens.com/2020/12/12/update-numbers-to-string-py-version-0-0-11/"
+    },
+    {
       "command": "objdump",
       "name": "objdump",
       "category": "Statically Analyze Code: General",
@@ -827,6 +890,13 @@
       "category": "Analyze Documents: Microsoft Office",
       "description": "Microsoft Office OLE2 compound documents.",
       "website": "http://www.decalage.info/python/oletools"
+    },
+    {
+      "command": "onedump",
+      "name": "onedump.py",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Extract and analyze embedded files from OneNote documents.",
+      "website": "https://blog.didierstevens.com/2023/01/22/new-tool-onedump-py/"
     },
     {
       "command": "opencode",
@@ -1039,6 +1109,13 @@
       "website": "https://github.com/kevthehermit/RATDecoders"
     },
     {
+      "command": "re-search",
+      "name": "re-search.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Search files using regular expressions from a built-in library or custom patterns.",
+      "website": "https://blog.didierstevens.com/2023/04/03/update-re-search-py-version-0-0-22/"
+    },
+    {
       "command": "readpe-formerly-pev",
       "name": "readpe (formerly pev)",
       "category": "Examine Static Properties: PE Files",
@@ -1219,6 +1296,13 @@
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Locate and decode stack strings in executable files.",
       "website": "https://github.com/REMnux/distro/blob/master/files/strdeob.pl"
+    },
+    {
+      "command": "strings",
+      "name": "strings.py",
+      "category": "Examine Static Properties: General",
+      "description": "Extract ASCII and Unicode strings from binary files with length sorting and filtering.",
+      "website": "https://blog.didierstevens.com/2020/12/19/update-strings-py-version-0-0-6/"
     },
     {
       "command": "swf-tools",
@@ -1443,6 +1527,13 @@
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Bruteforce an XOR-encoded file.",
       "website": "https://eternal-todo.com/category/bruteforcer"
+    },
+    {
+      "command": "xorsearch",
+      "name": "xorsearch.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Search for XOR, ROL, ROT, and SHIFT encoded strings with YARA and regex support.",
+      "website": "https://blog.didierstevens.com/2020/08/23/new-tool-xorsearch-py/"
     },
     {
       "command": "xorsearch",
