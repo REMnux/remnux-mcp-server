@@ -302,6 +302,37 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tags: ["pdf"],
     tier: "standard",
   },
+  {
+    name: "pdfcop",
+    description: "Detect malicious PDF structures using policy-based heuristics.",
+    command: "pdfcop",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pdf", "triage"],
+    tier: "quick",
+  },
+  {
+    name: "pdfextract",
+    description: "Extract JavaScript, attachments, fonts, images, and streams from PDF.",
+    command: "pdfextract",
+    inputStyle: "positional",
+    fixedArgs: ["--js", "--attachments", "--streams"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pdf"],
+    tier: "standard",
+  },
+  {
+    name: "pdfdecompress",
+    description: "Decompress PDF streams to reveal obfuscated content.",
+    command: "pdfdecompress",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pdf"],
+    tier: "standard",
+  },
 
   // ── OLE2 / Office analysis ──────────────────────────────────────────────
   {

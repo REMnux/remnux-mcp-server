@@ -27,9 +27,12 @@ const BASE_HINTS: Record<string, string> = {
     "For deep analysis, capa -vv shows matched rule details with addresses. " +
     "pedump shows raw PE structure and brxor bruteforces XOR-encoded strings.",
   PDF:
-    "Start with pdfid to identify notable elements (/JS, /JavaScript, /OpenAction, /Launch). " +
+    "Start with pdfid and pdfcop for triage — pdfid identifies notable elements " +
+    "(/JS, /JavaScript, /OpenAction, /Launch), pdfcop detects malicious structures. " +
     "Use pdf-parser --stats for structural overview. If notable objects found, " +
-    "extract them with pdf-parser -o <obj_id> -d. " +
+    "extract them with pdf-parser -o <obj_id> -d or use pdfextract for bulk extraction " +
+    "of JavaScript, attachments, and streams. " +
+    "pdfdecompress strips compression filters to expose obfuscated content. " +
     "pdftool.py analyzes incremental updates — shows what changed between PDF revisions. " +
     "pdfresurrect extracts previous versions of content — recovers earlier document states. " +
     "peepdf-3 provides interactive deep analysis. " +
