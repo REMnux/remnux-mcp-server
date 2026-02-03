@@ -23,24 +23,28 @@ const BASE_HINTS: Record<string, string> = {
     "capa maps capabilities to MITRE ATT&CK. floss extracts obfuscated strings. " +
     "portex provides comprehensive PE structure analysis including anomaly detection. " +
     "yara-rules scans against community signatures for known malware families. " +
+    "1768.py analyzes Cobalt Strike beacons. disitool.py examines Authenticode signatures. " +
     "For deep analysis, capa -vv shows matched rule details with addresses. " +
     "pedump shows raw PE structure and brxor bruteforces XOR-encoded strings.",
   PDF:
     "Start with pdfid to identify notable elements (/JS, /JavaScript, /OpenAction, /Launch). " +
     "Use pdf-parser --stats for structural overview. If notable objects found, " +
     "extract them with pdf-parser -o <obj_id> -d. " +
-    "pdfresurrect extracts previous versions of content — useful for detecting swapped or hidden payloads. " +
+    "pdftool.py analyzes incremental updates — shows what changed between PDF revisions. " +
+    "pdfresurrect extracts previous versions of content — recovers earlier document states. " +
     "peepdf-3 provides interactive deep analysis. " +
     "qpdf decrypts permission-locked PDFs. pdftk extracts metadata and document info.",
   OLE2:
     "Start with oleid for risk indicators (macros, encryption, external links). " +
     "olevba extracts and analyzes VBA macros — look for auto-execute triggers and notable keywords. " +
     "oledump lists OLE streams; use -s <stream> -v to dump specific macro streams. " +
+    "msoffcrypto-crack.py attempts to recover passwords for encrypted documents. " +
     "pcodedmp disassembles VBA p-code (useful when source is stomped). " +
     "xlmdeobfuscator handles Excel 4.0 XLM macros.",
   OOXML:
     "olevba handles both OLE2 and OOXML macro extraction. " +
     "zipdump lists the ZIP structure — OOXML files are ZIP archives with XML inside. " +
+    "xmldump.py extracts and examines XML content within the OOXML archive. " +
     "Look for unusual entries or embedded OLE objects within the archive. " +
     "pcodedmp disassembles VBA p-code. xlmdeobfuscator deobfuscates Excel 4.0 XLM macros.",
   RTF:
@@ -85,8 +89,8 @@ const BASE_HINTS: Record<string, string> = {
     "droidlysis performs static analysis identifying permissions, API calls, and risk indicators. " +
     "Look for excessive permissions, obfuscation, and notable network activity.",
   OneNote:
-    "OneNote file detected. No dedicated OneNote tools are currently available in REMnux. " +
-    "Use strings and exiftool for basic triage. Use run_tool to manually extract embedded objects. " +
+    "OneNote file detected. onedump.py analyzes OneNote documents and extracts embedded files. " +
+    "Use strings and exiftool for additional triage. " +
     "OneNote files may contain embedded scripts, executables, or malicious attachments.",
   Shellcode:
     "Raw shellcode detected. scdbgc provides fast Win32 API call tracing (x86 only). " +
@@ -107,6 +111,8 @@ const BASE_HINTS: Record<string, string> = {
     "base64dump searches for encoded content. xorsearch tries common XOR keys. " +
     "translate.py applies byte-level transforms (XOR, shift). re-search.py extracts regex patterns. " +
     "file-magic.py identifies embedded file types. numbers-to-string.py decodes numeric payloads. " +
+    "cut-bytes.py extracts byte ranges. format-bytes.py parses structured binary data. " +
+    "xor-kpa.py performs known-plaintext XOR attacks. " +
     "Consider using 'file' or 'diec' via run_tool for deeper type identification.",
 };
 
