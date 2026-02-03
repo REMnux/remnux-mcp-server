@@ -519,8 +519,11 @@ describe("analyze_file", () => {
     vi.mocked(mockConnector.execute).mockResolvedValueOnce(
       ok("sample.exe: PE32 executable")
     );
-    // First tool not found, rest succeed
+    // Preprocessing detect calls (debloat, pyinstxtractor) return non-zero (not applicable)
+    // Then first tool not found, rest succeed
     vi.mocked(mockConnector.executeShell)
+      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // debloat detect
+      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // pyinstxtractor detect
       .mockResolvedValueOnce({ stdout: "", stderr: "peframe: command not found", exitCode: 127 })
       .mockResolvedValue(ok("output"));
 
@@ -534,7 +537,10 @@ describe("analyze_file", () => {
     vi.mocked(mockConnector.execute).mockResolvedValueOnce(
       ok("sample.exe: PE32 executable")
     );
+    // Preprocessing detect calls (debloat, pyinstxtractor) return non-zero (not applicable)
     vi.mocked(mockConnector.executeShell)
+      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // debloat detect
+      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // pyinstxtractor detect
       .mockRejectedValueOnce(new Error("Command timeout"))
       .mockResolvedValue(ok("output"));
 

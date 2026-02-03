@@ -12,6 +12,7 @@ import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
 import { extractIOCs } from "../ioc/extractor.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
+import { getPreprocessors } from "../tools/preprocessors.js";
 
 interface ToolRun {
   name: string;
@@ -45,6 +46,11 @@ const TOOL_OUTPUT_BUDGETS: Record<string, number> = {
   base64dump: 15 * 1024,
   "js-beautify": 15 * 1024,
   "box-js": 20 * 1024,
+  cfr: 15 * 1024,
+  jadx: 15 * 1024,
+  manalyze: 15 * 1024,
+  "tshark-verbose": 30 * 1024,
+  "tshark-dns": 15 * 1024,
 };
 
 export async function handleAnalyzeFile(
@@ -117,6 +123,44 @@ export async function handleAnalyzeFile(
   const tag = CATEGORY_TAG_MAP[category.name] ?? "fallback";
   const tools = toolRegistry.byTagAndTier(tag, depth);
 
+  // Step 2b: Run applicable preprocessors
+  let analysisPath = filePath;
+  const preprocessResults: Array<{ name: string; description: string; outputPath?: string; error?: string }> = [];
+
+  for (const pp of getPreprocessors(category.name)) {
+    try {
+      const detect = await connector.executeShell(pp.detectCommand(filePath), {
+        timeout: 10000,
+        cwd: config.samplesDir,
+      });
+      if (detect.exitCode !== 0) continue; // Not applicable
+
+      const safeFile = args.file.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const outPath = `${config.outputDir}/preprocessed-${pp.name}-${safeFile}`;
+      const result = await connector.executeShell(pp.processCommand(filePath, outPath), {
+        timeout: pp.timeout,
+        cwd: config.samplesDir,
+      });
+
+      if (result.exitCode === 0) {
+        analysisPath = outPath;
+        preprocessResults.push({ name: pp.name, description: pp.description, outputPath: outPath });
+      } else {
+        preprocessResults.push({
+          name: pp.name,
+          description: pp.description,
+          error: result.stderr?.trim() || `Exit code ${result.exitCode}`,
+        });
+      }
+    } catch (error) {
+      preprocessResults.push({
+        name: pp.name,
+        description: pp.description,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
   const toolsRun: ToolRun[] = [];
   const toolsFailed: ToolFailed[] = [];
   const toolsSkipped: ToolSkipped[] = [];
@@ -124,7 +168,7 @@ export async function handleAnalyzeFile(
 
   // Step 3: Run each tool
   for (const tool of tools) {
-    const cmd = buildCommandFromDefinition(tool, filePath, config.outputDir);
+    const cmd = buildCommandFromDefinition(tool, analysisPath, config.outputDir);
 
     // Ensure output directories exist for tools that write to --output-dir
     if (tool.fixedArgs && config.outputDir) {
@@ -231,6 +275,7 @@ export async function handleAnalyzeFile(
     detected_type: fileOutput,
     matched_category: category.name,
     depth,
+    ...(preprocessResults.length > 0 && { preprocessing: preprocessResults }),
     analysis_guidance:
       "IMPORTANT: Many capabilities flagged by analysis tools (API imports like GetProcAddress/VirtualProtect, " +
       "memory operations, TLS sections, anti-debug patterns) are common in BOTH malware and legitimate software. " +

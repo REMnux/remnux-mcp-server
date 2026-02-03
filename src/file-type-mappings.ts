@@ -91,6 +91,10 @@ export const FILE_TYPE_CATEGORIES: FileTypeCategory[] = [
     name: "APK",
     patterns: [/\bAndroid\b/i],
   },
+  {
+    name: "PCAP",
+    patterns: [/pcap capture/i, /tcpdump/i, /pcapng/i, /pcap-ng/i],
+  },
 ];
 
 /** Maps category names to their primary registry tag. */
@@ -109,6 +113,7 @@ export const CATEGORY_TAG_MAP: Record<string, string> = {
   JAR: "jar",
   Email: "email",
   APK: "apk",
+  PCAP: "pcap",
   Memory: "memory",
   Shellcode: "shellcode",
   Unknown: "fallback",
@@ -122,6 +127,9 @@ const SCRIPT_EXTENSIONS = /\.(vbs|vbe|ps1|bat|cmd|sh|py|pl|rb)$/i;
 
 /** Python bytecode extensions — used as fallback for data files. */
 const PYTHON_EXTENSIONS = /\.(pyc|pyo)$/i;
+
+/** PCAP file extensions — used as fallback for network captures. */
+const PCAP_EXTENSIONS = /\.(pcap|pcapng|cap)$/i;
 
 /** Memory image extensions — used as fallback when `file` reports "data". */
 const MEMORY_EXTENSIONS = /\.(img|raw|mem|vmem|dmp|lime)$/i;
@@ -175,6 +183,11 @@ export function matchFileType(fileOutput: string, filename?: string): FileTypeCa
   // Fallback: if filename has OLE2 extension and `file` output is ambiguous (e.g., "data", "CDF")
   if (filename && OLE2_EXTENSIONS.test(filename) && /^data$|^CDF/i.test(typeOutput)) {
     return FILE_TYPE_CATEGORIES.find((c) => c.name === "OLE2")!;
+  }
+
+  // Fallback: PCAP files — `file` may report "data" for some capture formats
+  if (filename && PCAP_EXTENSIONS.test(filename)) {
+    return FILE_TYPE_CATEGORIES.find((c) => c.name === "PCAP")!;
   }
 
   // Fallback: memory images — `file` reports "data" for raw memory dumps

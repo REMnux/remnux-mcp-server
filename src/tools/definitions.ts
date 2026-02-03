@@ -138,6 +138,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tier: "standard",
   },
 
+  {
+    name: "manalyze",
+    description: "Statically analyze PE files for imports, resources, and anomalies.",
+    command: "manalyze",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pe"],
+    tier: "standard",
+  },
+
   // ── PE extras from demos ────────────────────────────────────────────────
   {
     name: "pedump",
@@ -454,6 +465,16 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 
   // ── JAR ─────────────────────────────────────────────────────────────────
   // zipdump already covers JAR (tagged "jar")
+  {
+    name: "cfr",
+    description: "Decompile Java class files and JARs to readable Java source code.",
+    command: "cfr",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["jar"],
+    tier: "standard",
+  },
 
   // ── Email ───────────────────────────────────────────────────────────────
   {
@@ -478,6 +499,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tier: "quick",
   },
 
+  // ── OneNote ─────────────────────────────────────────────────────────────
+  {
+    name: "onedump",
+    description: "Analyze OneNote documents and extract embedded files.",
+    command: "onedump.py",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["onenote"],
+    tier: "standard",
+  },
+
   // ── APK ─────────────────────────────────────────────────────────────────
   {
     name: "apktool",
@@ -495,6 +528,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: "Perform static analysis of Android applications.",
     command: "droidlysis",
     inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["apk"],
+    tier: "standard",
+  },
+  {
+    name: "jadx",
+    description: "Decompile Android APK/DEX files to Java source code.",
+    command: "jadx",
+    inputStyle: "positional",
+    fixedArgs: ["-d", "/tmp/jadx-out", "--no-debug-info"],
     outputFormat: "text",
     timeout: 120,
     tags: ["apk"],
@@ -773,7 +817,79 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tier: "deep",
   },
 
+  // ── PCAP / network analysis ─────────────────────────────────────────────
+  {
+    name: "tshark-conversations",
+    description: "Summarize TCP/UDP conversations from a PCAP file.",
+    command: "tshark",
+    inputStyle: "flag",
+    inputFlag: "-r",
+    fixedArgs: ["-q", "-z", "conv,tcp"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pcap", "triage"],
+    tier: "quick",
+  },
+  {
+    name: "tshark-http",
+    description: "Show HTTP request/response statistics from a PCAP file.",
+    command: "tshark",
+    inputStyle: "flag",
+    inputFlag: "-r",
+    fixedArgs: ["-q", "-z", "http,tree"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pcap"],
+    tier: "standard",
+  },
+  {
+    name: "tshark-hierarchy",
+    description: "Show protocol hierarchy statistics from a PCAP file.",
+    command: "tshark",
+    inputStyle: "flag",
+    inputFlag: "-r",
+    fixedArgs: ["-q", "-z", "io,phs"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pcap"],
+    tier: "standard",
+  },
+  {
+    name: "tshark-dns",
+    description: "Extract DNS queries and responses from a PCAP file.",
+    command: "tshark",
+    inputStyle: "flag",
+    inputFlag: "-r",
+    fixedArgs: ["-Y", "dns", "-T", "fields", "-e", "dns.qry.name", "-e", "dns.a", "-e", "dns.resp.type"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pcap"],
+    tier: "standard",
+  },
+  {
+    name: "tshark-verbose",
+    description: "Full packet decode of first 50 packets from a PCAP file.",
+    command: "tshark",
+    inputStyle: "flag",
+    inputFlag: "-r",
+    fixedArgs: ["-V", "-c", "50"],
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["pcap"],
+    tier: "deep",
+  },
+
   // ── Cross-type / general ────────────────────────────────────────────────
+  {
+    name: "ssdeep",
+    description: "Compute fuzzy hash (ssdeep) for file similarity comparison.",
+    command: "ssdeep",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 30,
+    tags: ["pe", "dotnet", "elf", "pdf", "ole2", "ooxml", "rtf", "jar", "apk", "pcap", "fallback"],
+    tier: "quick",
+  },
   {
     name: "exiftool",
     description: "Read and analyze EXIF metadata from various file types.",

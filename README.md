@@ -432,13 +432,23 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 
 | Tier | Behavior |
 |------|----------|
-| `quick` | Fast triage tools only (peframe, pdfid, oleid, diec, readelf, strings, js-beautify, decode-vbe) |
-| `standard` | Default — all category tools |
-| `deep` | Standard + expensive tools (pedump, brxor, peepdf-3, dotnetfile_dump, jstillery, spidermonkey, full decompilation) |
+| `quick` | Fast triage tools only (peframe, pdfid, oleid, diec, readelf, strings, js-beautify, decode-vbe, tshark conversations, ssdeep) |
+| `standard` | Default — all category tools (adds capa, olevba, oledump, cfr, jadx, tshark HTTP/DNS/protocol stats, etc.) |
+| `deep` | Standard + expensive tools (pedump, brxor, peepdf-3, dotnetfile_dump, jstillery, spidermonkey, tshark full decode, full decompilation) |
 
 **Output format:** Returns JSON with `detected_type`, `matched_category`, `depth`, `tools_run` (with output), `tools_failed`, and `tools_skipped`.
 
-**Supported file types:** PE/DLL, PDF, OLE2 Office (.doc/.xls/.ppt), OOXML (.docx/.xlsx/.pptx), RTF, ELF, JavaScript (.js/.hta/.wsf/.html), shell scripts/VBS/PowerShell (.sh/.vbs/.ps1/.bat), Python bytecode (.pyc), JAR, email (EML), Android APK. Unknown types get fallback tools (strings, exiftool, base64dump, xorsearch).
+**Supported file types:** PE/DLL, PDF, OLE2 Office (.doc/.xls/.ppt), OOXML (.docx/.xlsx/.pptx), RTF, ELF, JavaScript (.js/.hta/.wsf/.html), shell scripts/VBS/PowerShell (.sh/.vbs/.ps1/.bat), Python bytecode (.pyc), JAR, email (EML), Android APK, OneNote, PCAP/pcapng network captures. Unknown types get fallback tools (strings, exiftool, base64dump, xorsearch).
+
+**Preprocessing:** Before running analysis tools, `analyze_file` checks for conditions that would prevent effective analysis and applies automatic fixes:
+
+| Preprocessor | Condition | Action |
+|--------------|-----------|--------|
+| msoffcrypto-tool | Office doc is encrypted | Decrypt with empty/default password before running olevba/oledump |
+| debloat | PE file is >50MB | Remove junk padding before running peframe/capa/etc |
+| pyinstxtractor | PE is a PyInstaller bundle | Extract Python files before analysis |
+
+Preprocessing results appear in the response under `preprocessing`. If a preprocessor fails (e.g., wrong password), analysis continues on the original file.
 
 #### Example: Using extract_iocs
 
@@ -499,7 +509,7 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 | Command injection (prompt injection tricks AI into shell execution) | Analyst's workflow | Anti-injection patterns (`eval`, `$()`, backticks, etc.) |
 | Dangerous pipes (attacker code piped to interpreters) | Analyst's workflow | Pipe-to-interpreter blocking (`\| bash`, `\| python`) |
 | Catastrophic commands (`rm -rf /`, `mkfs`) | Analysis session | Narrow pattern guards for root wipes and filesystem formatting |
-| Resource exhaustion (tools hang or consume excessive resources) | AI assistant / analysis session | Timeout enforcement (default 5 min), output budgets (80KB/tool, 200KB total) |
+| Resource exhaustion (tools hang or consume excessive resources) | AI assistant / analysis session | Timeout enforcement (default 5 min), output budgets (40KB/tool default, 120KB total) |
 | Archive zip-slip (path traversal in archives) | Analysis session | Post-extraction validation rejects path escape attempts |
 | SSH injection | SSH connection | Proper shell escaping using single quotes |
 
@@ -547,7 +557,7 @@ These commands are intentionally allowed because REMnux is disposable and contai
 3. **Pipe validation**: Pipes to code interpreters blocked
 4. **Shell escaping**: Proper single-quote escaping for SSH commands
 5. **Timeouts**: Long-running processes terminated (default 5 min)
-6. **Output budgets**: Per-tool (80KB default) and total (200KB) limits prevent AI context exhaustion
+6. **Output budgets**: Per-tool (40KB default) and total (120KB) limits prevent AI context exhaustion
 7. **Path sandboxing** (opt-in via `--sandbox`): Restricts file operations to samples/output dirs
 
 ### Prompt Injection from Malware
