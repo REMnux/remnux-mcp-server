@@ -1,7 +1,14 @@
 {
   "version": "1.0.0",
-  "updated": "2026-02-01",
+  "updated": "2026-02-02",
   "tools": [
+    {
+      "command": "1768",
+      "name": "1768.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Analyze Cobalt Strike beacons.",
+      "website": "https://blog.didierstevens.com/2021/05/22/update-1768-py-version-0-0-6/"
+    },
     {
       "command": "7-zip",
       "name": "7-Zip",
@@ -71,6 +78,13 @@
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Extract and deobfuscate patterns from suspicious files.",
       "website": "https://github.com/digitalsleuth/balbuzard"
+    },
+    {
+      "command": "base64dump",
+      "name": "base64dump.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Locate and decode strings encoded in Base64 and other common encodings.",
+      "website": "https://blog.didierstevens.com/2020/07/03/update-base64dump-py-version-0-0-12/"
     },
     {
       "command": "bearparser",
@@ -192,11 +206,25 @@
       "website": "https://github.com/strozfriedberg/cobaltstrike-config-extractor"
     },
     {
+      "command": "cs-decrypt-metadata",
+      "name": "cs-decrypt-metadata.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Decrypt Cobalt Strike metadata.",
+      "website": "https://blog.didierstevens.com/2021/11/12/update-cs-decrypt-metadata-py-version-0-0-2/"
+    },
+    {
       "command": "curl",
       "name": "cURL",
       "category": "General Utilities",
       "description": "Interact with servers via supported protocols, including HTTP, HTTPS, FTP, IMAP, etc. using this command-line tool.",
       "website": "https://curl.haxx.se"
+    },
+    {
+      "command": "cut-bytes",
+      "name": "cut-bytes.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Cut out a part of a data stream.",
+      "website": "https://blog.didierstevens.com/2015/10/14/cut-bytes-py/"
     },
     {
       "command": "cutter",
@@ -225,6 +253,13 @@
       "category": "Examine Static Properties: PE Files",
       "description": "Remove junk contents from bloated Windows executables.",
       "website": "https://github.com/Squiblydoo/debloat"
+    },
+    {
+      "command": "decode-vbe",
+      "name": "decode-vbe.py",
+      "category": "Statically Analyze Code: Scripts",
+      "description": "Decode encoded VBS scripts (VBE).",
+      "website": "https://blog.didierstevens.com/2016/03/29/decoding-vbe/"
     },
     {
       "command": "decompyle",
@@ -323,6 +358,13 @@
       "category": "Dynamically Reverse-Engineer Code: ELF Files",
       "description": "An AArch32/x86/x86-64 debugger, well suited for debugging ELF files.",
       "website": "https://github.com/eteran/edb-debugger"
+    },
+    {
+      "command": "emldump",
+      "name": "emldump.py",
+      "category": "Analyze Documents: Email Messages",
+      "description": "Parse and analyze EML files.",
+      "website": "https://blog.didierstevens.com/2020/11/29/update-emldump-py-version-0-0-11/"
     },
     {
       "command": "epic-irc-client",
@@ -428,6 +470,13 @@
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Extract and deobfuscate strings from PE executables.",
       "website": "https://github.com/mandiant/flare-floss"
+    },
+    {
+      "command": "format-bytes",
+      "name": "format-bytes.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Decompose structured binary data with format strings.",
+      "website": "https://blog.didierstevens.com/2020/02/17/update-format-bytes-py-version-0-0-13/"
     },
     {
       "command": "frida",
@@ -668,6 +717,13 @@
       "website": "https://wiki.gnome.org/msitools"
     },
     {
+      "command": "msoffcrypto-crack",
+      "name": "msoffcrypto-crack.py",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Recover the password of an encrypted Microsoft Office document.",
+      "website": "https://blog.didierstevens.com/2018/12/31/new-tool-msoffcrypto-crack-py/"
+    },
+    {
       "command": "msoffcrypto-tool",
       "name": "msoffcrypto-tool",
       "category": "Analyze Documents: Microsoft Office",
@@ -752,6 +808,13 @@
       "website": "https://en.wikipedia.org/wiki/Objdump"
     },
     {
+      "command": "oledump",
+      "name": "oledump.py",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Analyze OLE2 Structured Storage files.",
+      "website": "https://blog.didierstevens.com/programs/oledump-py/"
+    },
+    {
       "command": "olefile",
       "name": "olefile",
       "category": "Analyze Documents: Microsoft Office",
@@ -801,6 +864,20 @@
       "website": "https://github.com/bontchev/pcodedmp"
     },
     {
+      "command": "pdf-parser",
+      "name": "pdf-parser.py",
+      "category": "Analyze Documents: PDF",
+      "description": "Examine elements of the PDF file.",
+      "website": "https://blog.didierstevens.com/programs/pdf-tools/"
+    },
+    {
+      "command": "pdfid",
+      "name": "pdfid.py",
+      "category": "Analyze Documents: PDF",
+      "description": "Identify suspicious elements of the PDF file.",
+      "website": "https://blog.didierstevens.com/programs/pdf-tools/"
+    },
+    {
       "command": "pdfresurrect",
       "name": "pdfresurrect",
       "category": "Analyze Documents: PDF",
@@ -815,6 +892,13 @@
       "website": "https://gitlab.com/pdftk-java/pdftk"
     },
     {
+      "command": "pdftool",
+      "name": "pdftool.py",
+      "category": "Analyze Documents: PDF",
+      "description": "Analyze PDF files to identify incremental updates to the document.",
+      "website": "https://blog.didierstevens.com/2021/01/31/new-tool-pdftool-py/"
+    },
+    {
       "command": "pdnstool",
       "name": "pdnstool",
       "category": "Gather and Analyze Data",
@@ -827,6 +911,13 @@
       "category": "Examine Static Properties: PE Files",
       "description": "Examine contents and structure of PE files.",
       "website": "https://github.com/blackberry/pe_tree"
+    },
+    {
+      "command": "pecheck",
+      "name": "pecheck.py",
+      "category": "Examine Static Properties: PE Files",
+      "description": "Analyze static properties of PE files.",
+      "website": "https://blog.didierstevens.com/2020/03/15/pecheck-py-version-0-7-10/"
     },
     {
       "command": "pedump",
@@ -983,6 +1074,13 @@
       "website": "https://citp.princeton.edu/our-work/memory/"
     },
     {
+      "command": "rtfdump",
+      "name": "rtfdump.py",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Analyze a suspicious RTF file.",
+      "website": "https://blog.didierstevens.com/2018/12/10/update-rtfdump-py-version-0-0-9/"
+    },
+    {
       "command": "runsc",
       "name": "runsc",
       "category": "Dynamically Reverse-Engineer Code: Shellcode",
@@ -1016,6 +1114,13 @@
       "category": "View or Edit Files",
       "description": "Edit text files.",
       "website": "https://www.scintilla.org/SciTE.html"
+    },
+    {
+      "command": "sets",
+      "name": "sets.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Perform set operations on lines or bytes in text files.",
+      "website": "https://blog.didierstevens.com/2017/03/05/new-tool-sets-py/"
     },
     {
       "command": "shcode2exe",
@@ -1186,6 +1291,13 @@
       "website": "https://www.torproject.org"
     },
     {
+      "command": "translate",
+      "name": "translate.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Translate bytes according to a Python expression.",
+      "website": "https://blog.didierstevens.com/programs/translate/"
+    },
+    {
       "command": "trid",
       "name": "TrID",
       "category": "Examine Static Properties: General",
@@ -1312,6 +1424,20 @@
       "website": "https://github.com/DissectMalware/XLMMacroDeobfuscator"
     },
     {
+      "command": "xmldump",
+      "name": "xmldump.py",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Extract contents of XML files, in particular OOXML-formatted Microsoft Office documents.",
+      "website": "https://blog.didierstevens.com/2017/12/18/new-tool-xmldump-py/"
+    },
+    {
+      "command": "xor-kpa",
+      "name": "xor-kpa.py",
+      "category": "Examine Static Properties: Deobfuscation",
+      "description": "Implement a XOR known plaintext attack.",
+      "website": "https://blog.didierstevens.com/2017/06/06/update-xor-kpa-py-version-0-0-5/"
+    },
+    {
       "command": "xorbruteforcerpy",
       "name": "xorBruteForcer.py",
       "category": "Examine Static Properties: Deobfuscation",
@@ -1359,6 +1485,13 @@
       "category": "Examine Static Properties: General",
       "description": "Statically scan a file to identify common malicious capabilities.",
       "website": "https://github.com/Yara-Rules/rules"
+    },
+    {
+      "command": "zipdump",
+      "name": "zipdump.py",
+      "category": "Analyze Documents: Microsoft Office",
+      "description": "Analyze zip-compressed files.",
+      "website": "https://blog.didierstevens.com/2020/07/27/update-zipdump-py-version-0-0-20/"
     }
   ]
 }
