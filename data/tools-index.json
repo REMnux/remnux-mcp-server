@@ -500,6 +500,13 @@
       "website": "https://ghidra-sre.org"
     },
     {
+      "command": "ghidrassistmcp",
+      "name": "GhidrAssistMCP",
+      "category": "Use Artificial Intelligence",
+      "description": "MCP server for AI-assisted reverse engineering in Ghidra.",
+      "website": "https://github.com/jtang613/GhidrAssistMCP"
+    },
+    {
       "command": "gnome-calculator",
       "name": "GNOME Calculator",
       "category": "General Utilities",
