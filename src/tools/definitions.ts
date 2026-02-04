@@ -62,7 +62,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     outputFormat: "text",
     timeout: 300,
     tags: ["pe", "dotnet", "strings"],
-    tier: "standard",
+    tier: "deep",  // CPU-intensive deobfuscation, use 'strings' tool for quick extraction
   },
   {
     name: "portex",

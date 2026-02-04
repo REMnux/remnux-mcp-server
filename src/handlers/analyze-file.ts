@@ -46,9 +46,9 @@ function generateNextSteps(
 
   // Depth-based suggestions
   if (depth === "quick") {
-    steps.push("Run with depth='standard' for more thorough analysis (capa, floss, etc.)");
+    steps.push("Run with depth='standard' for more thorough analysis (capa, YARA rules, etc.)");
   } else if (depth === "standard") {
-    steps.push("Run with depth='deep' for exhaustive analysis including decompilation and XOR brute-force");
+    steps.push("Run with depth='deep' for exhaustive analysis including floss string deobfuscation, decompilation, and XOR brute-force");
   }
 
   // Category-specific suggestions
@@ -176,6 +176,7 @@ function generateTriageSummary(
 
 const DEFAULT_OUTPUT_BUDGET = 40 * 1024; // 40KB default
 const TOTAL_RESPONSE_BUDGET = 120 * 1024; // 120KB total across all tools
+const MAX_SAVED_OUTPUT_SIZE = 500 * 1024; // 500KB max saved file
 
 /** Per-tool output budgets — tools known to produce large output get tighter limits. */
 const TOOL_OUTPUT_BUDGETS: Record<string, number> = {
@@ -198,6 +199,28 @@ const TOOL_OUTPUT_BUDGETS: Record<string, number> = {
   manalyze: 15 * 1024,
   "tshark-verbose": 30 * 1024,
   "tshark-dns": 15 * 1024,
+};
+
+/** Parsing hints for querying large output files with jq/grep */
+const PARSING_HINTS: Record<string, string[]> = {
+  capa: [
+    "Count capabilities: run_tool command='jq \".rules | keys | length\" output/<file>'",
+    "List ATT&CK techniques: run_tool command='jq -r \".rules[].attack[].technique\" output/<file> | sort -u'",
+    "Show specific capability: run_tool command='jq \".rules[\\\"<capability-name>\\\"]\" output/<file>'",
+  ],
+  floss: [
+    "Search for URLs: run_tool command='grep -oE \"https?://[^\\\"]+\" output/<file> | sort -u'",
+    "Search for IPs: run_tool command='grep -oE \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\" output/<file> | sort -u'",
+    "Find base64 strings: run_tool command='grep -E \"^[A-Za-z0-9+/]{20,}=*$\" output/<file>'",
+  ],
+  olevba: [
+    "Show VBA code only: run_tool command='grep -A 100 \"VBA MACRO\" output/<file>'",
+    "Find suspicious keywords: run_tool command='grep -iE \"shell|exec|powershell|cmd\" output/<file>'",
+  ],
+  strings: [
+    "Search for URLs: run_tool command='grep -oE \"https?://[^\\\"]+\" output/<file> | sort -u'",
+    "Search for paths: run_tool command='grep -E \"[A-Za-z]:\\\\\\\\|/usr/|/etc/\" output/<file>'",
+  ],
 };
 
 export async function handleAnalyzeFile(
@@ -393,6 +416,13 @@ export async function handleAnalyzeFile(
         continue;
       }
 
+      // Detect timeout via GNU timeout exit codes (124 = SIGTERM timeout, 137 = SIGKILL)
+      const isTimeout = result.exitCode === 124 || result.exitCode === 137;
+      if (isTimeout) {
+        toolsFailed.push({ name: tool.name, command: cmd, error: "Timed out" });
+        continue;
+      }
+
       let output = result.stdout || stderr || "(no output)";
       const fullLen = output.length;
       // Per-tool budget, further reduced if approaching total response budget
@@ -401,19 +431,35 @@ export async function handleAnalyzeFile(
       const outputTruncated = output.length > budget;
       let savedOutputFile: string | undefined;
       if (outputTruncated) {
-        // Save full output to output dir for later retrieval
+        // Save full output to output dir for later retrieval (if under size limit)
         const safeFile = args.file.replace(/[^a-zA-Z0-9._-]/g, "_");
         const outFilename = `${tool.name}-${safeFile}.txt`;
-        try {
-          const outPath = `${config.outputDir}/${outFilename}`;
-          await connector.writeFile(outPath, Buffer.from(output, "utf-8"));
-          savedOutputFile = outFilename;
-        } catch {
-          // Non-fatal: truncation hint won't include file reference
+
+        if (fullLen <= MAX_SAVED_OUTPUT_SIZE) {
+          try {
+            const outPath = `${config.outputDir}/${outFilename}`;
+            await connector.writeFile(outPath, Buffer.from(output, "utf-8"));
+            savedOutputFile = outFilename;
+          } catch {
+            // Non-fatal: truncation hint won't include file reference
+          }
         }
-        output = output.slice(0, budget) +
-          `\n\n[Truncated at ${Math.round(budget / 1024)}KB of ${Math.round(fullLen / 1024)}KB total` +
-          (savedOutputFile ? `. Full output: output/${savedOutputFile} — use download_file to retrieve]` : "]");
+
+        // Build truncation message with optional parsing hints
+        const hints = PARSING_HINTS[tool.name]?.map(h => h.replace(/<file>/g, outFilename));
+        let truncationMsg: string;
+        if (savedOutputFile) {
+          truncationMsg = `\n\n[Truncated at ${Math.round(budget / 1024)}KB of ${Math.round(fullLen / 1024)}KB total. Full output: output/${savedOutputFile}]`;
+          if (hints && hints.length > 0) {
+            truncationMsg += `\n[Query with: ${hints[0]}]`;
+          }
+        } else if (fullLen > MAX_SAVED_OUTPUT_SIZE) {
+          truncationMsg = `\n\n[Output too large (${Math.round(fullLen / 1024)}KB) to save. Re-run tool with filters.]`;
+        } else {
+          truncationMsg = `\n\n[Truncated at ${Math.round(budget / 1024)}KB of ${Math.round(fullLen / 1024)}KB total]`;
+        }
+
+        output = output.slice(0, budget) + truncationMsg;
       }
 
       totalOutputSize += output.length;
@@ -425,6 +471,28 @@ export async function handleAnalyzeFile(
       const hint = tool.exitCodeHints?.[result.exitCode];
       if (hint) {
         extraMetadata.analyst_note = hint;
+      }
+
+      // Extract capa summary from JSON output for compact overview
+      if (tool.name === "capa" && tool.outputFormat === "json" && result.stdout) {
+        try {
+          const capaData = JSON.parse(result.stdout);
+          if (capaData.rules) {
+            const rules = capaData.rules as Record<string, { attack?: Array<{ technique: string }> }>;
+            const attackTechniques = [...new Set(
+              Object.values(rules)
+                .flatMap((r) => r.attack || [])
+                .map((a) => a.technique)
+            )];
+            extraMetadata.capa_summary = {
+              capability_count: Object.keys(rules).length,
+              attack_techniques: attackTechniques,
+              top_capabilities: Object.keys(rules).slice(0, 10),
+            };
+          }
+        } catch {
+          // JSON parse failed, skip summary extraction
+        }
       }
 
       toolsRun.push({

@@ -231,8 +231,19 @@ export class DockerConnector implements Connector {
   }
 
   async executeShell(command: string, options: ExecOptions = {}): Promise<ExecResult> {
-    // Execute command through bash shell to support pipes and redirects
-    return this.execute(["bash", "-c", command], options);
+    // Calculate shell timeout (slightly shorter than client timeout to fire first)
+    const clientTimeoutMs = options.timeout || 300000;
+    const clientTimeoutSecs = Math.floor(clientTimeoutMs / 1000);
+    const shellTimeoutSecs = Math.max(clientTimeoutSecs - 5, 10); // 5s buffer, min 10s
+
+    // Escape command for bash -c (single quotes with proper escaping)
+    const escapedCmd = command.replace(/'/g, "'\\''");
+
+    // Wrap with GNU timeout: SIGTERM first, SIGKILL after 10s grace period
+    // This ensures the process actually dies even if it ignores SIGTERM
+    const wrappedCmd = `timeout -s TERM -k 10s ${shellTimeoutSecs}s bash -c '${escapedCmd}'`;
+
+    return this.execute(["bash", "-c", wrappedCmd], options);
   }
 
   async disconnect(): Promise<void> {

@@ -155,9 +155,19 @@ export class SSHConnector implements Connector {
     const client = await this.connect();
     const timeout = options.timeout || 300000;
 
+    // Calculate shell timeout (slightly shorter than client timeout to fire first)
+    const clientTimeoutSecs = Math.floor(timeout / 1000);
+    const shellTimeoutSecs = Math.max(clientTimeoutSecs - 5, 10); // 5s buffer, min 10s
+
+    // Escape command for bash -c (single quotes with proper escaping)
+    const escapedCmd = command.replace(/'/g, "'\\''");
+
+    // Wrap with GNU timeout: SIGTERM first, SIGKILL after 10s grace period
+    const wrappedCmd = `timeout -s TERM -k 10s ${shellTimeoutSecs}s bash -c '${escapedCmd}'`;
+
     // Build the full command with optional cwd
     const escapedCwd = options.cwd ? `'${options.cwd.replace(/'/g, "'\\''")}'` : null;
-    const fullCmd = escapedCwd ? `cd ${escapedCwd} && ${command}` : command;
+    const fullCmd = escapedCwd ? `cd ${escapedCwd} && ${wrappedCmd}` : wrappedCmd;
 
     return new Promise((resolve, reject) => {
       let timedOut = false;
