@@ -446,13 +446,13 @@ The `depth` parameter controls which tools run during analysis. Higher tiers inc
 
 | File Type | Quick | Standard (adds) | Deep (adds) |
 |-----------|-------|-----------------|-------------|
-| **PE/DLL** | peframe, diec, strings, ssdeep | capa, floss, portex, pescan, manalyze, signsrch, yara-rules, upx, 1768 | capa-vv, pedump, brxor, xor-kpa, disitool |
-| **.NET** | peframe, diec | ilspycmd, capa | dotnetfile_dump |
+| **PE/DLL** | peframe, diec, strings, ssdeep | capa, floss, portex, pescan, manalyze, signsrch, yara-forge, yara-rules, upx, 1768 | capa-vv, pedump, brxor, xor-kpa, disitool |
+| **.NET** | peframe, diec | ilspycmd, capa, yara-forge, yara-rules | dotnetfile_dump |
 | **PDF** | pdfid, pdfcop | pdf-parser, pdfextract, pdftool, pdfresurrect, qpdf, pdftk | peepdf-3, pdfdecompress |
 | **Office (OLE2)** | oleid | olevba, oledump, pcodedmp, xlmdeobfuscator | — |
 | **Office (OOXML)** | oleid | olevba, zipdump, xmldump | — |
 | **RTF** | rtfdump | rtfobj | — |
-| **ELF** | readelf-header | readelf-sections, capa | — |
+| **ELF** | readelf-header | readelf-sections, capa, yara-forge, yara-rules | — |
 | **JavaScript** | js-beautify | box-js | jstillery, spidermonkey |
 | **VBScript** | decode-vbe | — | — |
 | **JAR/Java** | — | cfr, jadx | — |

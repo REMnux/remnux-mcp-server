@@ -139,6 +139,17 @@ function generateTriageSummary(
   const hasYaraMatches = toolsRun.some(t =>
     t.name === "yara-rules" && t.output && t.output.trim().length > 0 && !t.output.includes("No matches")
   );
+  const hasFamilyDetection = toolsRun.some(t => {
+    if (t.name !== "yara-forge" || !t.output) return false;
+    // Check for actual YARA matches: lines that aren't warnings/errors
+    const lines = t.output.trim().split("\n");
+    return lines.some(line => {
+      const trimmed = line.trim();
+      return trimmed.length > 0 &&
+             !trimmed.startsWith("warning:") &&
+             !trimmed.startsWith("error:");
+    });
+  });
 
   // Detect shellcode loader/stub pattern: no imports + W+X section + low entropy
   const hasNoImports = toolsRun.some(t =>
@@ -161,6 +172,7 @@ function generateTriageSummary(
   if (hasAnomaly) findings.push("PE anomalies detected");
   if (hasCapabilities) findings.push("Notable capabilities identified");
   if (hasMacros) findings.push("VBA macros present");
+  if (hasFamilyDetection) findings.push("Malware family identified");
   if (hasYaraMatches) findings.push("YARA rules matched");
 
   if (highCount > 0) findings.push(`${highCount} high-severity finding(s)`);
