@@ -434,11 +434,39 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 
 **Depth tiers:**
 
-| Tier | Behavior |
-|------|----------|
-| `quick` | Fast triage tools only (peframe, pdfid, oleid, diec, readelf, strings, js-beautify, decode-vbe, tshark conversations, ssdeep) |
-| `standard` | Default — all category tools (adds capa, olevba, oledump, cfr, jadx, tshark HTTP/DNS/protocol stats, etc.) |
-| `deep` | Standard + expensive tools (pedump, brxor, peepdf-3, dotnetfile_dump, jstillery, spidermonkey, tshark full decode, full decompilation) |
+The `depth` parameter controls which tools run during analysis. Higher tiers include all tools from lower tiers.
+
+| Tier | Purpose | When to Use |
+|------|---------|-------------|
+| `quick` | Fast triage (~15 tools) | Initial assessment, bulk processing, time-sensitive analysis |
+| `standard` | Comprehensive analysis (~60 tools) | Default — thorough analysis with reasonable time |
+| `deep` | Maximum coverage (~78 tools) | Deep-dive investigation, packed/obfuscated samples |
+
+**Tools by tier and file type:**
+
+| File Type | Quick | Standard (adds) | Deep (adds) |
+|-----------|-------|-----------------|-------------|
+| **PE/DLL** | peframe, diec, strings, ssdeep | capa, floss, portex, pescan, manalyze, signsrch, yara-rules, upx, 1768 | capa-vv, pedump, brxor, xor-kpa, disitool |
+| **.NET** | peframe, diec | ilspycmd, capa | dotnetfile_dump |
+| **PDF** | pdfid, pdfcop | pdf-parser, pdfextract, pdftool, pdfresurrect, qpdf, pdftk | peepdf-3, pdfdecompress |
+| **Office (OLE2)** | oleid | olevba, oledump, pcodedmp, xlmdeobfuscator | — |
+| **Office (OOXML)** | oleid | olevba, zipdump, xmldump | — |
+| **RTF** | rtfdump | rtfobj | — |
+| **ELF** | readelf-header | readelf-sections, capa | — |
+| **JavaScript** | js-beautify | box-js | jstillery, spidermonkey |
+| **VBScript** | decode-vbe | — | — |
+| **JAR/Java** | — | cfr, jadx | — |
+| **Python (.pyc)** | — | pycdc | — |
+| **Email** | msgconvert | emldump | — |
+| **Shellcode** | speakeasy-sc-x64/x86 | scdbgc | qltool-sc-x64/x86, tracesc, speakeasy |
+| **PCAP** | tshark-conversations | tshark-http, tshark-dns, tshark-hierarchy | tshark-verbose |
+| **Memory** | vol3-info, vol3-pslist | vol3-pstree, vol3-netscan, vol3-cmdline, vol3-filescan, vol3-dlllist, vol3-psscan, vol3-hivelist, vol3-linux-pslist | vol3-malfind, vol3-handles |
+| **Fallback** | strings, ssdeep | exiftool, base64dump, xorsearch, yara-rules | sets |
+
+**Tier selection guidance:**
+- Use `quick` for initial triage or when processing many files — runs in seconds
+- Use `standard` (default) for most investigations — balances thoroughness with time
+- Use `deep` when standard analysis shows signs of packing, obfuscation, or encryption — adds brute-force deobfuscation and verbose output modes
 
 **Output format:** Returns JSON with `detected_type`, `matched_category`, `depth`, `tools_run` (with output), `tools_failed`, and `tools_skipped`.
 

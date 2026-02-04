@@ -25,7 +25,149 @@ interface ToolRun {
   metadata?: Record<string, unknown>;
 }
 interface ToolFailed { name: string; command: string; error: string }
-interface ToolSkipped { name: string; command: string; reason: string }
+interface ToolSkipped {
+  name: string;
+  command: string;
+  reason: string;
+  /** Categorizes why the tool was skipped for clearer UX */
+  skip_type: "not_installed" | "not_applicable" | "requires_user_args";
+}
+
+/** Generate suggested next steps based on file category and analysis results */
+function generateNextSteps(
+  category: string,
+  depth: DepthTier,
+  toolsRun: ToolRun[],
+  toolsSkipped: ToolSkipped[],
+  iocCount: number
+): string[] {
+  const steps: string[] = [];
+
+  // Depth-based suggestions
+  if (depth === "quick") {
+    steps.push("Run with depth='standard' for more thorough analysis (capa, floss, etc.)");
+  } else if (depth === "standard") {
+    steps.push("Run with depth='deep' for exhaustive analysis including decompilation and XOR brute-force");
+  }
+
+  // Category-specific suggestions
+  switch (category) {
+    case "PE":
+    case "DOTNET":
+      if (!toolsRun.some(t => t.name === "capa" && t.findings && t.findings.length > 0)) {
+        steps.push("File may be packed — try unpacking with 'upx -d' or specialized unpackers before re-analysis");
+      }
+      steps.push("For dynamic analysis: use run_tool with 'speakeasy -t <file>' to emulate execution");
+      steps.push("Search for strings in specific sections: run_tool command='strings -a -n 8 <file>'");
+      break;
+    case "PDF":
+      steps.push("Extract suspicious objects: run_tool command='pdf-parser.py -o <obj_num> -d <file>'");
+      steps.push("Decode JavaScript streams: run_tool command='pdf-parser.py -o <obj_num> -f -d <file>'");
+      break;
+    case "OLE2":
+    case "OOXML":
+      steps.push("Extract specific macro streams: run_tool command='oledump.py -s <stream_num> -v <file>'");
+      steps.push("Decode VBA p-code for stomped macros: run_tool command='pcodedmp <file>'");
+      break;
+    case "Shellcode":
+      steps.push("Emulate 32-bit shellcode: run_tool command='speakeasy -t <file> -r -a x86'");
+      steps.push("Emulate 64-bit shellcode: run_tool command='speakeasy -t <file> -r -a amd64'");
+      steps.push("Trace API calls: run_tool command='scdbgc -f <file> -s -1'");
+      break;
+    case "PCAP":
+      steps.push("Extract HTTP objects: run_tool command='tshark -r <file> --export-objects http,/tmp/http-objects'");
+      steps.push("Follow TCP stream: run_tool command='tshark -r <file> -z follow,tcp,ascii,0'");
+      break;
+    case "Memory":
+      steps.push("Dump suspicious process: run_tool command='vol3 -f <file> windows.memmap --pid <pid> --dump'");
+      steps.push("Extract injected code: run_tool command='vol3 -f <file> windows.malfind --dump'");
+      break;
+  }
+
+  // IOC-based suggestions
+  if (iocCount > 0) {
+    steps.push("Extracted IOCs are in the 'iocs' field — consider threat intel lookup for network indicators");
+  }
+
+  // Tool-not-installed suggestions
+  const notInstalled = toolsSkipped.filter(t => t.skip_type === "not_installed");
+  if (notInstalled.length > 0) {
+    steps.push(`${notInstalled.length} tool(s) not installed — run check_tools to see installation status`);
+  }
+
+  return steps.slice(0, 5); // Limit to 5 most relevant suggestions
+}
+
+/** Generate a brief triage summary from analysis results */
+function generateTriageSummary(
+  category: string,
+  toolsRun: ToolRun[],
+  iocCount: number
+): string {
+  const findings: string[] = [];
+
+  // Count findings by severity
+  let highCount = 0;
+  let mediumCount = 0;
+  for (const tool of toolsRun) {
+    if (tool.findings) {
+      for (const f of tool.findings) {
+        if (f.severity === "high") highCount++;
+        else if (f.severity === "medium") mediumCount++;
+      }
+    }
+  }
+
+  // Check for specific indicators
+  const hasCapabilities = toolsRun.some(t =>
+    t.name === "capa" && t.findings && t.findings.length > 0
+  );
+  const hasMacros = toolsRun.some(t =>
+    t.name === "olevba" && t.output && !t.output.includes("No VBA macros found")
+  );
+  const hasPackerDetection = toolsRun.some(t =>
+    t.name === "diec" && t.output && /packer|protector|crypter/i.test(t.output)
+  );
+  const hasAnomaly = toolsRun.some(t =>
+    (t.name === "portex" || t.name === "pescan") && t.findings && t.findings.length > 0
+  );
+  const hasYaraMatches = toolsRun.some(t =>
+    t.name === "yara-rules" && t.output && t.output.trim().length > 0 && !t.output.includes("No matches")
+  );
+
+  // Detect shellcode loader/stub pattern: no imports + W+X section + low entropy
+  const hasNoImports = toolsRun.some(t =>
+    t.name === "yara-rules" && t.output?.includes("ImportTableIsBad")
+  );
+  const hasWriteExecute = toolsRun.some(t =>
+    (t.name === "portex" || t.name === "pescan") &&
+    t.output && /write.*execute|self-modifying/i.test(t.output)
+  );
+  const hasLowEntropy = toolsRun.some(t =>
+    t.name === "portex" && t.output && /entropy[:\s]+0\.\d+/i.test(t.output)
+  );
+  const isShellcodeLoaderPattern = hasNoImports && hasWriteExecute && hasLowEntropy;
+
+  // Build summary
+  findings.push(`File type: ${category}`);
+
+  if (isShellcodeLoaderPattern) findings.push("⚠️ Shellcode loader pattern (no imports + W+X section + low entropy)");
+  if (hasPackerDetection) findings.push("Packer/protector detected");
+  if (hasAnomaly) findings.push("PE anomalies detected");
+  if (hasCapabilities) findings.push("Notable capabilities identified");
+  if (hasMacros) findings.push("VBA macros present");
+  if (hasYaraMatches) findings.push("YARA rules matched");
+
+  if (highCount > 0) findings.push(`${highCount} high-severity finding(s)`);
+  else if (mediumCount > 0) findings.push(`${mediumCount} medium-severity finding(s)`);
+
+  if (iocCount > 0) findings.push(`${iocCount} IOC(s) extracted`);
+
+  const toolsSucceeded = toolsRun.length;
+  findings.push(`${toolsSucceeded} tool(s) completed`);
+
+  return findings.join(" | ");
+}
 
 const DEFAULT_OUTPUT_BUDGET = 40 * 1024; // 40KB default
 const TOTAL_RESPONSE_BUDGET = 120 * 1024; // 120KB total across all tools
@@ -174,6 +316,7 @@ export async function handleAnalyzeFile(
         name: tool.name,
         command: tool.command,
         reason: "Requires user-supplied arguments (use run_tool manually)",
+        skip_type: "requires_user_args",
       });
       continue;
     }
@@ -220,6 +363,7 @@ export async function handleAnalyzeFile(
           name: tool.name,
           command: cmd,
           reason: hint,
+          skip_type: "not_applicable",
         });
         continue;
       }
@@ -230,7 +374,12 @@ export async function handleAnalyzeFile(
         /command not found/i.test(stderr) ||
         (result.exitCode !== 0 && /^.*: No such file or directory$/m.test(stderr) && stderr.includes(tool.command));
       if (isNotInstalled) {
-        toolsSkipped.push({ name: tool.name, command: cmd, reason: "Tool not installed" });
+        toolsSkipped.push({
+          name: tool.name,
+          command: cmd,
+          reason: "Tool not installed",
+          skip_type: "not_installed",
+        });
         continue;
       }
 
@@ -299,11 +448,22 @@ export async function handleAnalyzeFile(
     iocResult.iocs = iocResult.iocs.filter((ioc) => !ownHashes.has(ioc.value.toLowerCase()));
   }
 
+  // Generate triage summary and next steps
+  const triageSummary = generateTriageSummary(category.name, toolsRun, iocResult.iocs.length);
+  const suggestedNextSteps = generateNextSteps(
+    category.name,
+    depth,
+    toolsRun,
+    toolsSkipped,
+    iocResult.iocs.length
+  );
+
   return formatResponse("analyze_file", {
     file: args.file,
     detected_type: fileOutput,
     matched_category: category.name,
     depth,
+    triage_summary: triageSummary,
     ...(preprocessResults.length > 0 && { preprocessing: preprocessResults }),
     analysis_guidance:
       "IMPORTANT: Many capabilities flagged by analysis tools (API imports like GetProcAddress/VirtualProtect, " +
@@ -317,6 +477,7 @@ export async function handleAnalyzeFile(
     ...(tools.length === 0 && {
       warning: `No tools registered for category "${category.name}" at depth "${depth}". Try depth "deep" or use run_tool directly.`,
     }),
+    suggested_next_steps: suggestedNextSteps,
     iocs: iocResult.iocs,
     ioc_summary: iocResult.summary,
     tools_run: toolsRun,
