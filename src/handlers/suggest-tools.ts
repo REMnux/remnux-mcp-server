@@ -97,7 +97,6 @@ const BASE_HINTS: Record<string, string> = {
     "OneNote files may contain embedded scripts, executables, or malicious attachments.",
   Shellcode:
     "Raw shellcode detected. speakeasy emulates both x86 and x64 shellcode with Windows API emulation. " +
-    "scdbgc provides additional Win32 API call tracing for x86 shellcode. " +
     "Look for resolved API names, network connections, file system access, and registry modifications in emulation output. " +
     "For deep analysis, qltool (Qiling) provides multi-platform emulation and tracesc traces execution via Wine. " +
     "Use strings and xorsearch for static indicators before emulation.",

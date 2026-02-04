@@ -884,18 +884,6 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 
   // ── Shellcode analysis ─────────────────────────────────────────────────
   {
-    name: "scdbgc",
-    description: "Trace Win32 API calls made by 32-bit shellcode using emulation.",
-    command: "scdbgc",
-    inputStyle: "flag",
-    inputFlag: "-f",
-    fixedArgs: ["-s", "-1"],
-    outputFormat: "text",
-    timeout: 60,
-    tags: ["shellcode"],
-    tier: "standard",
-  },
-  {
     name: "speakeasy-sc-x86",
     description: "Emulate 32-bit shellcode using Speakeasy Windows API emulation.",
     command: "speakeasy",

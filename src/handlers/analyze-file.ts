@@ -13,6 +13,7 @@ import { toREMnuxError } from "../errors/error-mapper.js";
 import { extractIOCs } from "../ioc/extractor.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
 import { getPreprocessors } from "../tools/preprocessors.js";
+import { shouldSummarize, generateSummary } from "../analysis/index.js";
 
 interface ToolRun {
   name: string;
@@ -72,7 +73,6 @@ function generateNextSteps(
     case "Shellcode":
       steps.push("Emulate 32-bit shellcode: run_tool command='speakeasy -t <file> -r -a x86'");
       steps.push("Emulate 64-bit shellcode: run_tool command='speakeasy -t <file> -r -a amd64'");
-      steps.push("Trace API calls: run_tool command='scdbgc -f <file> -s -1'");
       break;
     case "PCAP":
       steps.push("Extract HTTP objects: run_tool command='tshark -r <file> --export-objects http,/tmp/http-objects'");
@@ -458,6 +458,36 @@ export async function handleAnalyzeFile(
     iocResult.iocs.length
   );
 
+  const analysisGuidance =
+    "IMPORTANT: Many capabilities flagged by analysis tools (API imports like GetProcAddress/VirtualProtect, " +
+    "memory operations, TLS sections, anti-debug patterns) are common in BOTH malware and legitimate software. " +
+    "Do not assume malicious intent from flagged items alone. For each finding, consider: " +
+    "(1) Is this expected for legitimate software of this type? " +
+    "(2) Do multiple findings together suggest malicious purpose, or are they individually " +
+    "explainable as normal development practices? " +
+    "(3) What concrete evidence distinguishes this from a benign program? " +
+    "State your confidence level (low/medium/high) and what evidence supports or contradicts a malicious verdict.";
+
+  // Check if output exceeds budget - return summary instead of full output
+  if (shouldSummarize(toolsRun)) {
+    const summary = generateSummary(
+      args.file,
+      fileOutput,
+      category.name,
+      depth,
+      triageSummary,
+      toolsRun,
+      toolsFailed,
+      toolsSkipped,
+      preprocessResults,
+      iocResult.iocs,
+      iocResult.summary,
+      suggestedNextSteps,
+      analysisGuidance,
+    );
+    return formatResponse("analyze_file", summary, startTime);
+  }
+
   return formatResponse("analyze_file", {
     file: args.file,
     detected_type: fileOutput,
@@ -465,15 +495,7 @@ export async function handleAnalyzeFile(
     depth,
     triage_summary: triageSummary,
     ...(preprocessResults.length > 0 && { preprocessing: preprocessResults }),
-    analysis_guidance:
-      "IMPORTANT: Many capabilities flagged by analysis tools (API imports like GetProcAddress/VirtualProtect, " +
-      "memory operations, TLS sections, anti-debug patterns) are common in BOTH malware and legitimate software. " +
-      "Do not assume malicious intent from flagged items alone. For each finding, consider: " +
-      "(1) Is this expected for legitimate software of this type? " +
-      "(2) Do multiple findings together suggest malicious purpose, or are they individually " +
-      "explainable as normal development practices? " +
-      "(3) What concrete evidence distinguishes this from a benign program? " +
-      "State your confidence level (low/medium/high) and what evidence supports or contradicts a malicious verdict.",
+    analysis_guidance: analysisGuidance,
     ...(tools.length === 0 && {
       warning: `No tools registered for category "${category.name}" at depth "${depth}". Try depth "deep" or use run_tool directly.`,
     }),
