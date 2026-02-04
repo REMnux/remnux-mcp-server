@@ -86,12 +86,22 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "yara-rules",
-    description: "Scan a file with YARA rules to identify notable capabilities.",
+    description: "Scan a file with YARA rules to identify capabilities and behaviors (packer detection, anti-debug, networking).",
     command: "yara-rules",
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 60,
     tags: ["pe", "dotnet", "yara"],
+    tier: "standard",
+  },
+  {
+    name: "yara-forge",
+    description: "Identify malware families using curated YARA rules from 45+ sources (Malpedia, ReversingLabs, etc.).",
+    command: "yara-forge",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["pe", "dotnet", "elf", "yara", "family-detection"],
     tier: "standard",
   },
   {
