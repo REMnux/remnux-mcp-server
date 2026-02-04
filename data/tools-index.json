@@ -1522,6 +1522,13 @@
       "website": "https://github.com/Yara-Rules/rules"
     },
     {
+      "command": "zbarimg",
+      "name": "zbarimg",
+      "category": "Explore Network Interactions: Connecting",
+      "description": "Decode QR codes and barcodes from image files.",
+      "website": "https://github.com/mchehab/zbar"
+    },
+    {
       "command": "zipdump",
       "name": "zipdump.py",
       "category": "Analyze Documents: Microsoft Office",
