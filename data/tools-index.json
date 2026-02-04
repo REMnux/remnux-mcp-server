@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-02-03",
+  "updated": "2026-02-04",
   "tools": [
     {
       "command": "1768",
@@ -1506,6 +1506,13 @@
       "category": "Gather and Analyze Data",
       "description": "Identify and classify malware samples using Yara rules.",
       "website": "https://virustotal.github.io/yara/"
+    },
+    {
+      "command": "yara-forge-rules",
+      "name": "YARA-Forge Rules",
+      "category": "Examine Static Properties: General",
+      "description": "Scan files with curated YARA rules from 45+ sources for malware family identification.",
+      "website": "https://yarahq.github.io/"
     },
     {
       "command": "yara-rules",
