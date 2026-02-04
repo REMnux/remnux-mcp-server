@@ -176,7 +176,7 @@ export async function createServer(config: ServerConfig) {
   // Tool: analyze_file - Auto-analyze a file using appropriate REMnux tools
   server.tool(
     "analyze_file",
-    "Auto-analyze a file using REMnux tools appropriate for the detected file type. Runs `file` to detect type, then executes matching tools (e.g., PE → peframe/capa, PDF → pdfid/pdf-parser, Office → olevba/oleid). Use `depth` to control analysis intensity: 'quick' (triage only), 'standard' (default), 'deep' (includes expensive tools).",
+    "Auto-analyze a file using REMnux tools appropriate for the detected file type. Runs `file` to detect type, then executes matching tools (e.g., PE → peframe/capa, PDF → pdfid/pdf-parser, Office → olevba/oleid). Use `depth` to control analysis intensity: 'quick' (triage only), 'standard' (default), 'deep' (includes expensive tools). Note: 'standard' is sufficient for most files; use 'deep' only when standard doesn't reveal enough.",
     analyzeFileSchema.shape,
     (args) => handleAnalyzeFile(deps, args)
   );

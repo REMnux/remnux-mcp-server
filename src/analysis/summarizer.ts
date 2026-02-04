@@ -80,6 +80,7 @@ export interface AnalysisSummary {
   suggested_next_steps: string[];
   full_output_hint: string;
   analysis_guidance: string;
+  workflow_hint?: string;
 }
 
 /** Threshold in bytes above which we switch to summary mode */
@@ -207,6 +208,7 @@ export function generateSummary(
   iocSummary: IOCSummary,
   nextSteps: string[],
   analysisGuidance: string,
+  workflowHint?: string,
 ): AnalysisSummary {
   const toolSummaries: ToolSummary[] = [];
   const savedFiles: string[] = [];
@@ -253,5 +255,6 @@ export function generateSummary(
         ? `Full tool outputs saved to output directory. Use download_file to retrieve: ${savedFiles.join(", ")}`
         : "Use run_tool to re-run specific tools for full output.",
     analysis_guidance: analysisGuidance,
+    ...(workflowHint && { workflow_hint: workflowHint }),
   };
 }

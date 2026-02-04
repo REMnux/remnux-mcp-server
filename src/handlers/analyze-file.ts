@@ -74,6 +74,11 @@ function generateNextSteps(
       steps.push("Emulate 32-bit shellcode: run_tool command='speakeasy -t <file> -r -a x86'");
       steps.push("Emulate 64-bit shellcode: run_tool command='speakeasy -t <file> -r -a amd64'");
       break;
+    case "DataWithPEExtension":
+      steps.push("Emulate as shellcode: run_tool command='speakeasy -t <file> -r -a x86' (try amd64 if no output)");
+      steps.push("Check for Cobalt Strike beacon: run_tool command='1768.py <file>'");
+      steps.push("Extract encoded content: run_tool command='base64dump.py -n 20 <file>'");
+      break;
     case "PCAP":
       steps.push("Extract HTTP objects: run_tool command='tshark -r <file> --export-objects http,/tmp/http-objects'");
       steps.push("Follow TCP stream: run_tool command='tshark -r <file> -z follow,tcp,ascii,0'");
@@ -203,6 +208,11 @@ export async function handleAnalyzeFile(
   try {
   const { connector, config } = deps;
   const depth = (args.depth ?? "standard") as DepthTier;
+
+  // Workflow hint for non-default depth
+  const workflowHint = depth === "deep"
+    ? "TIP: For most files, depth='standard' (the default, ~30-90s) provides sufficient coverage. Use 'deep' only when standard analysis doesn't reveal enough, or for exhaustive investigation."
+    : undefined;
 
   // Validate file path (skip unless --sandbox)
   if (!config.noSandbox) {
@@ -484,6 +494,7 @@ export async function handleAnalyzeFile(
       iocResult.summary,
       suggestedNextSteps,
       analysisGuidance,
+      workflowHint,
     );
     return formatResponse("analyze_file", summary, startTime);
   }
@@ -496,6 +507,7 @@ export async function handleAnalyzeFile(
     triage_summary: triageSummary,
     ...(preprocessResults.length > 0 && { preprocessing: preprocessResults }),
     analysis_guidance: analysisGuidance,
+    ...(workflowHint && { workflow_hint: workflowHint }),
     ...(tools.length === 0 && {
       warning: `No tools registered for category "${category.name}" at depth "${depth}". Try depth "deep" or use run_tool directly.`,
     }),

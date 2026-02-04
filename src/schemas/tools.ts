@@ -45,7 +45,7 @@ export const analyzeFileSchema = z.object({
   file: z.string().describe("Filename relative to samples directory, or absolute path in local mode"),
   timeout_per_tool: z.number().optional().describe("Timeout per tool in seconds (default: 60)"),
   depth: z.enum(["quick", "standard", "deep"]).optional().default("standard").describe(
-    "Analysis depth: 'quick' (fast triage tools only), 'standard' (default, all category tools), 'deep' (standard + expensive tools like full decompilation)"
+    "Analysis depth. 'quick' (~5-15s): fast triage. 'standard' (~30-90s, default): comprehensive analysis. 'deep' (~2-5min): exhaustive. Use 'deep' only when 'standard' isn't enough."
   ),
 });
 export type AnalyzeFileArgs = z.input<typeof analyzeFileSchema>;
