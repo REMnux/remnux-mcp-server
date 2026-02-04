@@ -116,6 +116,12 @@ const BASE_HINTS: Record<string, string> = {
     "cut-bytes.py extracts byte ranges. format-bytes.py parses structured binary data. " +
     "xor-kpa.py performs known-plaintext XOR attacks. " +
     "Consider using 'file' or 'diec' via run_tool for deeper type identification.",
+  DataWithPEExtension:
+    "File has an executable extension but 'file' reports 'data' — may be raw shellcode, " +
+    "packed/encrypted payload, or corrupted PE. Start with strings and xorsearch for static indicators. " +
+    "speakeasy emulates both PE files and raw shellcode — try x86 first, then amd64. " +
+    "1768.py and csce detect Cobalt Strike beacon configs. " +
+    "If emulation produces no output, the file may be encrypted — try base64dump for encoded content.",
 };
 
 /** Observable properties extracted from `file` command output. */

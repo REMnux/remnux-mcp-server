@@ -5,17 +5,20 @@ import { createMockDeps, ok, parseEnvelope } from "./helpers.js";
 describe("handleCheckTools", () => {
   it("returns summary with available and missing tools", async () => {
     const deps = createMockDeps();
-    const exec = vi.mocked(deps.connector.execute);
+    const execShell = vi.mocked(deps.connector.executeShell);
 
-    // Specific tools are "available", rest "missing" (works with parallel execution)
+    // Specific tools are "available", rest "missing"
     const availableTools = new Set(["strings", "exiftool", "capa"]);
-    exec.mockImplementation(async (cmd) => {
+
+    execShell.mockImplementation(async (cmd) => {
       // Connectivity probe
-      if (cmd[0] === "true") return ok("");
-      if (cmd[0] === "which" && availableTools.has(cmd[1] as string)) {
-        return ok(`/usr/bin/${cmd[1]}`);
+      if (cmd === "true") return ok("");
+      // Batched which commands - return paths for available tools
+      if (cmd.includes("which ")) {
+        const paths = [...availableTools].map((t) => `/usr/bin/${t}`).join("\n");
+        return ok(paths);
       }
-      return { stdout: "", stderr: `${cmd[1]} not found`, exitCode: 1 };
+      return ok("");
     });
 
     const result = await handleCheckTools(deps);
@@ -31,7 +34,7 @@ describe("handleCheckTools", () => {
 
   it("returns connection error when container is not running", async () => {
     const deps = createMockDeps();
-    vi.mocked(deps.connector.execute).mockRejectedValue(new Error("not running"));
+    vi.mocked(deps.connector.executeShell).mockRejectedValue(new Error("not running"));
 
     const result = await handleCheckTools(deps);
     const env = parseEnvelope(result);
@@ -42,10 +45,10 @@ describe("handleCheckTools", () => {
 
   it("marks all tools as unavailable when only which calls throw", async () => {
     const deps = createMockDeps();
-    vi.mocked(deps.connector.execute).mockImplementation(async (cmd) => {
+    vi.mocked(deps.connector.executeShell).mockImplementation(async (cmd) => {
       // Connectivity probe succeeds
-      if (cmd[0] === "true") return { stdout: "", stderr: "", exitCode: 0 };
-      // All which calls fail
+      if (cmd === "true") return { stdout: "", stderr: "", exitCode: 0 };
+      // Batched which calls fail
       throw new Error("which failed");
     });
 
@@ -59,12 +62,13 @@ describe("handleCheckTools", () => {
 
   it("handles mixed available and missing tools", async () => {
     const deps = createMockDeps();
-    vi.mocked(deps.connector.execute).mockImplementation(async (cmd) => {
-      if (cmd[0] === "true") return ok("");
-      if (cmd[0] === "which" && cmd[1] === "strings") {
+    vi.mocked(deps.connector.executeShell).mockImplementation(async (cmd) => {
+      if (cmd === "true") return ok("");
+      // Only strings is available
+      if (cmd.includes("which ")) {
         return ok("/usr/bin/strings");
       }
-      return { stdout: "", stderr: "", exitCode: 1 };
+      return ok("");
     });
 
     const result = await handleCheckTools(deps);

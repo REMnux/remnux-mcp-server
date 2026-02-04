@@ -235,6 +235,31 @@ describe("matchFileType", () => {
     // If file reports something specific, that takes precedence
     expect(matchFileType("PE32 executable", "sample.img").name).toBe("PE");
   });
+
+  it("classifies data files with PE-like extensions as DataWithPEExtension", () => {
+    // Raw shellcode, packed, or corrupted files with PE extensions
+    expect(matchFileType("data", "beacon.exe").name).toBe("DataWithPEExtension");
+    expect(matchFileType("data", "loader.dll").name).toBe("DataWithPEExtension");
+    expect(matchFileType("data", "driver.sys").name).toBe("DataWithPEExtension");
+    expect(matchFileType("data", "screensaver.scr").name).toBe("DataWithPEExtension");
+    expect(matchFileType("data", "dropper.com").name).toBe("DataWithPEExtension");
+  });
+
+  it("classifies data+PE extension with full path prefix from file command", () => {
+    expect(matchFileType("/home/remnux/samples/beacon.exe: data", "beacon.exe").name).toBe("DataWithPEExtension");
+  });
+
+  it("does not classify valid PE files as DataWithPEExtension", () => {
+    // Valid PE should be classified as PE, not DataWithPEExtension
+    expect(matchFileType("PE32 executable (GUI) Intel 80386", "sample.exe").name).toBe("PE");
+    expect(matchFileType("PE32+ executable (DLL)", "module.dll").name).toBe("PE");
+  });
+
+  it("does not classify data files without PE extension as DataWithPEExtension", () => {
+    // Other data files should not match
+    expect(matchFileType("data", "sample.dat").name).toBe("Unknown");
+    expect(matchFileType("data", "file.txt").name).toBe("Unknown");
+  });
 });
 
 // =========================================================================

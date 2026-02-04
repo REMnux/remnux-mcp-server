@@ -167,7 +167,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 60,
-    tags: ["pe", "cobalt-strike"],
+    tags: ["pe", "cobalt-strike", "data-exe"],
     tier: "standard",
   },
   {
@@ -177,8 +177,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 60,
-    tags: ["pe", "cobalt-strike"],
+    tags: ["pe", "cobalt-strike", "data-exe"],
     tier: "deep",
+  },
+  {
+    name: "csce",
+    description: "Extract Cobalt Strike beacon configuration from raw shellcode or memory dumps.",
+    command: "csce",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pe", "cobalt-strike", "data-exe", "shellcode"],
+    tier: "standard",
   },
 
   // ── PE extras from demos ────────────────────────────────────────────────
@@ -530,7 +540,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 60,
-    tags: ["javascript", "script", "fallback", "strings"],
+    tags: ["javascript", "script", "fallback", "strings", "data-exe"],
     tier: "quick",
   },
   {
@@ -553,7 +563,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 60,
-    tags: ["javascript", "script", "fallback"],
+    tags: ["javascript", "script", "fallback", "data-exe"],
     tier: "standard",
   },
 
@@ -892,7 +902,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     fixedArgs: ["-r", "-a", "x86"],
     outputFormat: "text",
     timeout: 120,
-    tags: ["shellcode"],
+    tags: ["shellcode", "data-exe"],
     tier: "quick",
   },
   {
@@ -904,7 +914,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     fixedArgs: ["-r", "-a", "amd64"],
     outputFormat: "text",
     timeout: 120,
-    tags: ["shellcode"],
+    tags: ["shellcode", "data-exe"],
     tier: "quick",
   },
   {
@@ -915,7 +925,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inputFlag: "-t",
     outputFormat: "text",
     timeout: 120,
-    tags: ["pe", "dotnet"],
+    tags: ["pe", "dotnet", "data-exe"],
     tier: "deep",
   },
   {
@@ -1045,7 +1055,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     fixedArgs: ["-W", "-d", "3"],
     outputFormat: "text",
     timeout: 60,
-    tags: ["fallback"],
+    tags: ["fallback", "data-exe"],
     tier: "standard",
   },
   {
@@ -1056,7 +1066,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     fixedArgs: ["-J"],
     outputFormat: "json",
     timeout: 60,
-    tags: ["fallback"],
+    tags: ["fallback", "data-exe"],
     tier: "standard",
   },
 ];

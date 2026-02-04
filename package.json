@@ -13,6 +13,8 @@
     "start": "node dist/cli.js",
     "lint": "eslint src/",
     "test": "vitest",
+    "validate:tools": "bun run scripts/validate-tools.ts",
+    "preversion": "npm run validate:tools && npm test",
     "prepare": "husky",
     "prepublishOnly": "npm run build"
   },

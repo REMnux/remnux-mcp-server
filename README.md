@@ -459,6 +459,7 @@ The `depth` parameter controls which tools run during analysis. Higher tiers inc
 | **Python (.pyc)** | — | pycdc | — |
 | **Email** | msgconvert | emldump | — |
 | **Shellcode** | speakeasy-sc-x64/x86 | — | qltool-sc-x64/x86, tracesc |
+| **Data+PE ext** | speakeasy-sc-x64/x86 | strings, base64dump, xorsearch, 1768, csce | tracesc |
 | **PCAP** | tshark-conversations | tshark-http, tshark-dns, tshark-hierarchy | tshark-verbose |
 | **Memory** | vol3-info, vol3-pslist | vol3-pstree, vol3-netscan, vol3-cmdline, vol3-filescan, vol3-dlllist, vol3-psscan, vol3-hivelist, vol3-linux-pslist | vol3-malfind, vol3-handles |
 | **Fallback** | strings, ssdeep | exiftool, base64dump, xorsearch, yara-rules | sets |
@@ -478,7 +479,7 @@ The `depth` parameter controls which tools run during analysis. Higher tiers inc
 
 The `mode` field indicates whether the response is `"full"` or `"summary"`. In summary mode, use `download_file` to retrieve complete tool outputs when needed.
 
-**Supported file types:** PE/DLL, PDF, OLE2 Office (.doc/.xls/.ppt), OOXML (.docx/.xlsx/.pptx), RTF, ELF, JavaScript (.js/.hta/.wsf/.html), shell scripts/VBS/PowerShell (.sh/.vbs/.ps1/.bat), Python bytecode (.pyc), JAR, email (EML), Android APK, OneNote, PCAP/pcapng network captures. Unknown types get fallback tools (strings, exiftool, base64dump, xorsearch).
+**Supported file types:** PE/DLL, PDF, OLE2 Office (.doc/.xls/.ppt), OOXML (.docx/.xlsx/.pptx), RTF, ELF, JavaScript (.js/.hta/.wsf/.html), shell scripts/VBS/PowerShell (.sh/.vbs/.ps1/.bat), Python bytecode (.pyc), JAR, email (EML), Android APK, OneNote, shellcode (.bin/.sc), PCAP/pcapng network captures. Files with PE extensions (.exe/.dll/.sys) where `file` reports "data" are classified as potential raw shellcode or packed payloads and analyzed with emulation tools. Unknown types get fallback tools (strings, exiftool, base64dump, xorsearch).
 
 **Preprocessing:** Before running analysis tools, `analyze_file` checks for conditions that would prevent effective analysis and applies automatic fixes:
 

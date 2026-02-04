@@ -19,35 +19,55 @@ export async function handleCheckTools(deps: HandlerDeps) {
 
   // Verify container connectivity before checking individual tools
   try {
-    await connector.execute(["true"], { timeout: 5000 });
+    await connector.executeShell("true", { timeout: 5000 });
   } catch (error) {
     return formatError("check_tools", toREMnuxError(error), startTime);
   }
 
   try {
-    const results = await Promise.all(
-      [...toolNames].map(async (name) => {
-        try {
-          const result = await connector.execute(["which", name], { timeout: 5000 });
-          if (result.exitCode === 0 && result.stdout?.trim()) {
-            return { tool: name, available: true, path: result.stdout.trim() };
+    // Batch all tool checks in a single shell call for consistent PATH handling
+    // This matches the approach used in suggest-tools.ts
+    const uniqueCommands = [...toolNames];
+    const availableCommands = new Map<string, string>();
+
+    if (uniqueCommands.length > 0) {
+      const checks = uniqueCommands.map((c) => `which ${c} 2>/dev/null`).join("; ");
+      const result = await connector.executeShell(checks, { timeout: 30000 });
+
+      // Parse "which" output - each line is a path if command was found
+      for (const line of (result.stdout || "").split("\n")) {
+        const path = line.trim();
+        if (path && path.startsWith("/")) {
+          // Extract command name from path (e.g., "/usr/bin/speakeasy" -> "speakeasy")
+          const cmdName = path.split("/").pop();
+          if (cmdName) {
+            availableCommands.set(cmdName, path);
           }
-          return { tool: name, available: false };
-        } catch {
-          return { tool: name, available: false };
         }
-      })
-    );
+      }
+    }
+
+    // Build results for each tool
+    const results = uniqueCommands.map((name) => {
+      const path = availableCommands.get(name);
+      if (path) {
+        return { tool: name, available: true, path };
+      }
+      return { tool: name, available: false };
+    });
     tools.push(...results);
-
-    const available = tools.filter(t => t.available).length;
-    const missing = tools.filter(t => !t.available).length;
-
-    return formatResponse("check_tools", {
-      summary: { total: tools.length, available, missing },
-      tools: tools.sort((a, b) => a.tool.localeCompare(b.tool)),
-    }, startTime);
-  } catch (error) {
-    return formatError("check_tools", toREMnuxError(error), startTime);
+  } catch {
+    // Graceful degradation: mark all tools as unavailable if which calls fail
+    for (const name of toolNames) {
+      tools.push({ tool: name, available: false });
+    }
   }
+
+  const available = tools.filter(t => t.available).length;
+  const missing = tools.filter(t => !t.available).length;
+
+  return formatResponse("check_tools", {
+    summary: { total: tools.length, available, missing },
+    tools: tools.sort((a, b) => a.tool.localeCompare(b.tool)),
+  }, startTime);
 }

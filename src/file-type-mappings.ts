@@ -117,6 +117,7 @@ export const CATEGORY_TAG_MAP: Record<string, string> = {
   PCAP: "pcap",
   Memory: "memory",
   Shellcode: "shellcode",
+  DataWithPEExtension: "data-exe",
   Unknown: "fallback",
 };
 
@@ -137,6 +138,9 @@ const MEMORY_EXTENSIONS = /\.(img|raw|mem|vmem|dmp|lime)$/i;
 
 /** Shellcode extensions — used as fallback when `file` reports "data". */
 const SHELLCODE_EXTENSIONS = /\.(bin|sc|shellcode|payload)$/i;
+
+/** PE-like extensions — used as fallback when `file` reports "data" for potential shellcode/packed PE. */
+const PE_LIKE_EXTENSIONS = /\.(exe|dll|sys|scr|com|drv|cpl)$/i;
 
 /** OOXML file extensions — used as fallback when `file` reports "Zip archive". */
 const OOXML_EXTENSIONS = /\.(docx|docm|xlsx|xlsm|pptx|pptm)$/i;
@@ -199,6 +203,11 @@ export function matchFileType(fileOutput: string, filename?: string): FileTypeCa
   // Fallback: shellcode — `file` reports "data" and filename has shellcode extension
   if (filename && SHELLCODE_EXTENSIONS.test(filename) && /^data$/i.test(typeOutput)) {
     return { name: "Shellcode", patterns: [] };
+  }
+
+  // Fallback: PE-like extension but `file` reports "data" — may be raw shellcode, packed, or corrupted
+  if (filename && PE_LIKE_EXTENSIONS.test(filename) && /^data$/i.test(typeOutput)) {
+    return { name: "DataWithPEExtension", patterns: [] };
   }
 
   return { name: "Unknown", patterns: [] };
