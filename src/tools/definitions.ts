@@ -62,7 +62,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     outputFormat: "text",
     timeout: 300,
     tags: ["pe", "dotnet", "strings"],
-    tier: "deep",  // CPU-intensive deobfuscation, use 'strings' tool for quick extraction
+    tier: "deep",  // CPU-intensive deobfuscation, use pestr for quick extraction
+  },
+  {
+    name: "pestr",
+    description: "Extract ASCII and Unicode strings from PE files with section and offset info.",
+    command: "pestr",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pe", "dotnet", "strings"],
+    tier: "quick",
   },
   {
     name: "portex",
@@ -535,7 +545,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   // ── Script / text analysis ──────────────────────────────────────────────
   {
     name: "strings",
-    description: "Extract printable strings from binary files.",
+    description: "Extract printable ASCII strings from binary files. For Unicode (UTF-16), use 'strings -e l <file>' (little-endian) or 'strings -e b <file>' (big-endian). For PE files, prefer pestr which extracts both automatically.",
     command: "strings",
     inputStyle: "positional",
     outputFormat: "text",

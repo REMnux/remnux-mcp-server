@@ -14,12 +14,14 @@ import { toREMnuxError } from "../errors/error-mapper.js";
 const BASE_HINTS: Record<string, string> = {
   DOTNET:
     "Start with peframe and diec for triage. diec detects packers/protectors. " +
+    "For string extraction, pestr extracts both ASCII and Unicode with section info. " +
     "capa identifies capabilities like C2, persistence, or file manipulation. " +
     "floss extracts obfuscated strings. yara-rules scans against community signatures. " +
     "ilspycmd decompiles .NET to C# source. " +
     "For deep analysis, capa -vv shows matched rule details with addresses.",
   PE:
     "Start with peframe and diec for triage — diec detects packers and compilers. " +
+    "For string extraction, use pestr (extracts both ASCII and Unicode with section info) — prefer over generic strings command. " +
     "capa maps capabilities to MITRE ATT&CK. floss extracts obfuscated strings. " +
     "portex provides comprehensive PE structure analysis including anomaly detection. " +
     "yara-rules scans against community signatures for known malware families. " +
