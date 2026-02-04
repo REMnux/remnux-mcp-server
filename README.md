@@ -458,7 +458,7 @@ The `depth` parameter controls which tools run during analysis. Higher tiers inc
 | **JAR/Java** | — | cfr, jadx | — |
 | **Python (.pyc)** | — | pycdc | — |
 | **Email** | msgconvert | emldump | — |
-| **Shellcode** | speakeasy-sc-x64/x86 | scdbgc | qltool-sc-x64/x86, tracesc, speakeasy |
+| **Shellcode** | speakeasy-sc-x64/x86 | — | qltool-sc-x64/x86, tracesc |
 | **PCAP** | tshark-conversations | tshark-http, tshark-dns, tshark-hierarchy | tshark-verbose |
 | **Memory** | vol3-info, vol3-pslist | vol3-pstree, vol3-netscan, vol3-cmdline, vol3-filescan, vol3-dlllist, vol3-psscan, vol3-hivelist, vol3-linux-pslist | vol3-malfind, vol3-handles |
 | **Fallback** | strings, ssdeep | exiftool, base64dump, xorsearch, yara-rules | sets |
@@ -469,6 +469,14 @@ The `depth` parameter controls which tools run during analysis. Higher tiers inc
 - Use `deep` when standard analysis shows signs of packing, obfuscation, or encryption — adds brute-force deobfuscation and verbose output modes
 
 **Output format:** Returns JSON with `detected_type`, `matched_category`, `depth`, `tools_run` (with output), `tools_failed`, and `tools_skipped`.
+
+**Smart summarization:** When total tool output exceeds ~32KB, the response automatically switches to summary mode to prevent LLM context overflow. Summary mode includes:
+- Key findings per tool (top 5 most informative lines)
+- Full IOC extraction (preserved in full — high value, compact)
+- Triage summary and suggested next steps
+- Paths to saved full outputs for drill-down via `download_file`
+
+The `mode` field indicates whether the response is `"full"` or `"summary"`. In summary mode, use `download_file` to retrieve complete tool outputs when needed.
 
 **Supported file types:** PE/DLL, PDF, OLE2 Office (.doc/.xls/.ppt), OOXML (.docx/.xlsx/.pptx), RTF, ELF, JavaScript (.js/.hta/.wsf/.html), shell scripts/VBS/PowerShell (.sh/.vbs/.ps1/.bat), Python bytecode (.pyc), JAR, email (EML), Android APK, OneNote, PCAP/pcapng network captures. Unknown types get fallback tools (strings, exiftool, base64dump, xorsearch).
 
