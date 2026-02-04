@@ -173,7 +173,9 @@ function generateHints(category: string, fileOutput: string): string {
       "capa and floss results may be limited on packed samples. " +
       (props.packed === "UPX"
         ? "UPX can be unpacked with the upx-decompress tool — recommend unpacking then re-analyzing."
-        : "No standard unpacker available; expect partial static analysis results."),
+        : "No standard unpacker available; static code analysis will be limited. " +
+          "Focus on: certificate/signature artifacts (disitool.py for structure, strings -a for embedded cert text), " +
+          "metadata masquerading (exiftool, peframe), and string patterns for C2/IOCs."),
     );
   }
 
