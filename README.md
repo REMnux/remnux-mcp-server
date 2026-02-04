@@ -144,7 +144,11 @@ claude mcp add remnux -- npx @remnux/mcp-server --mode=docker --container=remnux
 **With a VM (SSH):**
 
 ```bash
-# Uses SSH agent by default; add --password if needed
+# Key-based auth via SSH agent (default) — ensure your key is loaded:
+# ssh-add ~/.ssh/your_key
+claude mcp add remnux -- npx @remnux/mcp-server --mode=ssh --host=YOUR_VM_IP --user=remnux
+
+# Password auth
 claude mcp add remnux -- npx @remnux/mcp-server --mode=ssh --host=YOUR_VM_IP --user=remnux --password=YOUR_PASSWORD
 ```
 
