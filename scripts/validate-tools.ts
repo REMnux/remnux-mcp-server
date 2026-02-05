@@ -63,8 +63,9 @@ const KNOWN_ALIASES: Record<string, string> = {
   "js-beautify": "js-beautifier",
   // Python decompiler (Decompyle++)
   pycdc: "decompyle",
-  // PE scanner from pev/readpe
+  // PE tools from pev/readpe
   pescan: "readpe-formerly-pev",
+  pestr: "readpe-formerly-pev",
   // dotnetfile
   "dotnetfile_dump.py": "dotnetfile",
   // Wine-based shellcode tracer
