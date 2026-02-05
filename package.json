@@ -12,7 +12,7 @@
     "dev": "tsc --watch",
     "start": "node dist/cli.js",
     "lint": "eslint src/",
-    "test": "vitest",
+    "test": "vitest run",
     "pretest": "bun run scripts/check-stale-build.ts",
     "validate:tools": "bun run scripts/validate-tools.ts",
     "preversion": "npm run validate:tools && npm test",
