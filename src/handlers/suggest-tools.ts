@@ -189,7 +189,13 @@ function generateHints(category: string, fileOutput: string): string {
     extras.push("DLL detected — check exports with `pedump --exports` for entry point analysis.");
   }
 
-  if (props.compiler) {
+  if (props.compiler === "AutoIt") {
+    extras.push(
+      "AutoIt compiled executable detected. " +
+      "autoit-ripper extracts and decompiles the embedded script to .au3 source. " +
+      "Review the decompiled script for C2 URLs, obfuscated strings, and DllCall APIs."
+    );
+  } else if (props.compiler) {
     extras.push(`Unusual compiler: ${props.compiler}. This may indicate specialized tooling or uncommon origin.`);
   }
 

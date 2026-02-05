@@ -157,6 +157,21 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
 
   {
+    name: "autoit-ripper",
+    description: "Extract and decompile AutoIt scripts from compiled executables.",
+    command: "autoit-ripper",
+    inputStyle: "positional",
+    suffixArgs: ["/tmp/autoit-out"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pe", "autoit", "decompilation"],
+    tier: "standard",
+    exitCodeHints: {
+      1: "Not an AutoIt compiled executable or unsupported AutoIt version.",
+    },
+  },
+
+  {
     name: "upx-decompress",
     description: "Decompress UPX-packed executables in-place (keeps backup as .exe~).",
     command: "upx",

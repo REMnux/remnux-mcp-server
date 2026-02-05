@@ -102,6 +102,7 @@ export const FILE_TYPE_CATEGORIES: FileTypeCategory[] = [
 export const CATEGORY_TAG_MAP: Record<string, string> = {
   DOTNET: "dotnet",
   PE: "pe",
+  AutoIt: "autoit",
   PDF: "pdf",
   OLE2: "ole2",
   OOXML: "ooxml",
