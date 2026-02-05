@@ -1060,13 +1060,6 @@
       "website": "https://www.rarlab.com"
     },
     {
-      "command": "ratdecoders",
-      "name": "RATDecoders",
-      "category": "Examine Static Properties: Deobfuscation",
-      "description": "Python3 Decoders for Remote Access Trojans.",
-      "website": "https://github.com/kevthehermit/RATDecoders"
-    },
-    {
       "command": "re-search",
       "name": "re-search.py",
       "category": "Examine Static Properties: Deobfuscation",
@@ -1394,13 +1387,6 @@
       "category": "View or Edit Files",
       "description": "Compare binary files.",
       "website": "https://www.cjmweb.net/vbindiff/"
-    },
-    {
-      "command": "vipermonkey",
-      "name": "ViperMonkey",
-      "category": "Analyze Documents: Microsoft Office",
-      "description": "A VBA parser and emulation engine to analyze malicious macros.",
-      "website": "https://www.decalage.info/en/vba_emulation"
     },
     {
       "command": "visual-studio-code",
