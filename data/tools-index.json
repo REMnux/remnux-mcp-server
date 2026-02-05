@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-02-04",
+  "updated": "2026-02-05",
   "tools": [
     {
       "command": "1768",
@@ -57,6 +57,13 @@
       "category": "Statically Analyze Code: Android",
       "description": "Reverse-engineer Android APK files.",
       "website": "https://ibotpeaches.github.io/Apktool/"
+    },
+    {
+      "command": "autoit-ripper",
+      "name": "AutoIt-Ripper",
+      "category": "Statically Analyze Code: Scripts",
+      "description": "Extract AutoIt scripts embedded in PE binaries.",
+      "website": "https://github.com/nazywam/AutoIt-Ripper"
     },
     {
       "command": "baksmali",
