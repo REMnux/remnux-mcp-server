@@ -955,13 +955,6 @@
       "website": "https://github.com/digitalsleuth/peepdf-3"
     },
     {
-      "command": "pefile",
-      "name": "pefile",
-      "category": "Examine Static Properties: PE Files",
-      "description": "Python library for analyzing static properties of PE files.",
-      "website": "https://github.com/erocarrera/pefile"
-    },
-    {
       "command": "peframe",
       "name": "PEframe",
       "category": "Examine Static Properties: PE Files",
@@ -981,13 +974,6 @@
       "category": "Examine Static Properties: PE Files",
       "description": "Statically analyze PE files.",
       "website": "https://github.com/katjahahn/PortEx"
-    },
-    {
-      "command": "postgresql",
-      "name": "PostgreSQL",
-      "category": "General Utilities",
-      "description": "Relational Database.",
-      "website": "https://www.postgresql.org"
     },
     {
       "command": "powershell-core",
@@ -1156,13 +1142,6 @@
       "category": "Dynamically Reverse-Engineer Code: Shellcode",
       "description": "Convert 32 and 64-bit shellcode to a Windows executable file.",
       "website": "https://github.com/repnz/shellcode2exe"
-    },
-    {
-      "command": "shodan",
-      "name": "shodan",
-      "category": "Gather and Analyze Data",
-      "description": "Query Shodan, a search engine for internet-connected devices.",
-      "website": "https://github.com/achillean/shodan-python/"
     },
     {
       "command": "signsrch",
