@@ -167,6 +167,31 @@ function generateTriageSummary(
   // Build summary
   findings.push(`File type: ${category}`);
 
+  // Surface key container/packer detections from ALL tool outputs
+  const allOutput = toolsRun.map(t => t.output || "").join(" ");
+
+  if (/IExpress|WEXTRACT|Cabinet Self-Extractor/i.test(allOutput)) {
+    findings.push("IExpress SFX");
+  }
+  if (/NSIS|Nullsoft/i.test(allOutput)) {
+    findings.push("NSIS installer");
+  }
+  if (/Inno\s*Setup/i.test(allOutput)) {
+    findings.push("Inno Setup");
+  }
+  if (/PyInstaller/i.test(allOutput)) {
+    findings.push("PyInstaller");
+  }
+  if (/AutoIt|AU3!/i.test(allOutput)) {
+    findings.push("AutoIt compiled");
+  }
+  if (/Themida|VMProtect|Enigma/i.test(allOutput)) {
+    findings.push("protected");
+  }
+  if (/\bUPX\b/i.test(allOutput)) {
+    findings.push("UPX packed");
+  }
+
   if (isShellcodeLoaderPattern) findings.push("⚠️ Shellcode loader pattern (no imports + W+X section + low entropy)");
   if (hasPackerDetection) findings.push("Packer/protector detected");
   if (hasAnomaly) findings.push("PE anomalies detected");
