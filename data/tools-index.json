@@ -59,13 +59,6 @@
       "website": "https://ibotpeaches.github.io/Apktool/"
     },
     {
-      "command": "automater",
-      "name": "Automater",
-      "category": "Gather and Analyze Data",
-      "description": "Gather OSINT data about IPs, domains, and hashes.",
-      "website": "https://github.com/digitalsleuth/TekDefense-Automater"
-    },
-    {
       "command": "baksmali",
       "name": "baksmali",
       "category": "Statically Analyze Code: Android",
