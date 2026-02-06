@@ -79,7 +79,7 @@ describe("handleRunTool", () => {
   it("rejects blocked commands", async () => {
     const deps = createMockDeps();
 
-    const result = await handleRunTool(deps, { command: "eval malicious" });
+    const result = await handleRunTool(deps, { command: "echo $(whoami)" });
     const env = parseEnvelope(result);
     expect(env.success).toBe(false);
     expect(env.error_code).toBe("COMMAND_BLOCKED");

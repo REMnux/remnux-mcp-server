@@ -34,7 +34,7 @@ The server gives AI assistants structured access to REMnux tools with features p
 
 - **Unified connection layer** — Docker exec, SSH, and local execution behind one interface. Switch deployment scenarios without changing how your AI assistant interacts with tools.
 - **File-type-aware analysis** — `analyze_file` detects file types and runs the appropriate tool chain automatically, returning structured output with IOC extraction. `suggest_tools` lets the AI agent request recommendations and decide what to run.
-- **Defense-in-depth guardrails** — Pattern blocking catches common AI hallucinations such as `curl | bash` or `eval`. Optional path sandboxing (`--sandbox`) restricts file operations to the samples and output directories. These complement the container or VM isolation that serves as the primary security boundary.
+- **Defense-in-depth guardrails** — Pattern blocking catches prompt injection via command substitution (`$()`, backticks, `${}`). Optional path sandboxing (`--sandbox`) restricts file operations to the samples and output directories. These complement the container or VM isolation that serves as the primary security boundary.
 - **Browsable tool registry** — MCP resources at `remnux://tools`, `remnux://tools/by-tag/{tag}`, and `remnux://tools/{name}` let the AI agent discover available tools and their metadata without external lookups.
 
 ## Architecture
@@ -549,7 +549,7 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 
 | Threat | Target | Defense |
 |--------|--------|---------|
-| Command injection (prompt injection tricks AI into shell execution) | Analyst's workflow | Anti-injection patterns (`eval`, `$()`, backticks, etc.) |
+| Command injection (prompt injection tricks AI into shell execution) | Analyst's workflow | Anti-injection patterns (`$()`, backticks, `${}`, etc.) |
 | Dangerous pipes (attacker code piped to interpreters) | Analyst's workflow | Container/VM isolation; AI system prompt guidance |
 | Catastrophic commands (`rm -rf /`, `mkfs`) | Analysis session | Narrow pattern guards for root wipes and filesystem formatting |
 | Resource exhaustion (tools hang or consume excessive resources) | AI assistant / analysis session | Timeout enforcement (default 5 min), output budgets (40KB/tool default, 120KB total) |
@@ -566,10 +566,10 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 
 **Blocked command patterns (anti-injection):**
 - Null bytes (truncate paths in C functions)
-- Shell escape: `eval`, `exec`, backticks, `$()`, `${}`, process substitution `<()` `>()`
-- Shell sourcing: `source`
+- Shell escape: backticks, `$()`, `${}`, process substitution `<()` `>()`
 
 **Deliberately NOT blocked (legitimate shell syntax):**
+- `eval`, `exec`, `source` — same threat class as pipe-to-interpreter (already allowed); without `$()` or backticks, these only operate on literal strings; container/VM isolation handles residual risk
 - Simple `$VAR` references (needed for shell loops: `for f in *; do file "$f"; done`)
 - Newlines/carriage returns (enables multi-line scripts; container isolation is the security boundary)
 
@@ -599,6 +599,7 @@ These commands are intentionally allowed because REMnux is disposable and contai
 | `dd` | Legitimate forensics tool for disk/memory carving |
 | `curl`, `wget` | Network tools needed for analysis |
 | `\| python`, `\| bash`, `\| perl`, etc. | Container isolation handles code execution; blocking prevented legitimate workflows |
+| `eval`, `exec`, `source` | Same threat class as pipe-to-interpreter; `$()` blocking already covers injection vectors |
 | `/etc/`, `/proc/`, `/sys/`, `/dev/` | Container's own filesystem; useful for forensics |
 | `crontab`, `nohup`, `screen`, `tmux` | Ephemeral environment; timeouts still apply |
 | `tee`, `xargs` | Essential for saving output and batch operations |
@@ -606,12 +607,11 @@ These commands are intentionally allowed because REMnux is disposable and contai
 ### Defense in Depth
 
 1. **Container/VM isolation**: REMnux runs isolated — the primary security boundary (user responsibility)
-2. **Anti-injection**: Shell escape patterns block prompt injection from executing arbitrary code
-3. **Pipe validation**: Pipes to code interpreters blocked
-4. **Shell escaping**: Proper single-quote escaping for SSH commands
-5. **Timeouts**: Long-running processes terminated (default 5 min)
-6. **Output budgets**: Per-tool (40KB default) and total (120KB) limits prevent AI context exhaustion
-7. **Path sandboxing** (opt-in via `--sandbox`): Restricts file operations to samples/output dirs
+2. **Anti-injection**: Shell escape patterns block prompt injection from executing arbitrary code via `$()`, backticks, `${}`, and process substitution
+3. **Shell escaping**: Proper single-quote escaping for SSH commands
+4. **Timeouts**: Long-running processes terminated (default 5 min)
+5. **Output budgets**: Per-tool (40KB default) and total (120KB) limits prevent AI context exhaustion
+6. **Path sandboxing** (opt-in via `--sandbox`): Restricts file operations to samples/output dirs
 
 ### Prompt Injection from Malware
 
@@ -748,7 +748,7 @@ This server is self-sufficient for most workflows: `suggest_tools` recommends th
 ### Why blocklist-only (no allowlist)?
 
 - **Container isolation** is the real security boundary, not this server's guardrails
-- **Anti-injection patterns** prevent prompt injection from triggering arbitrary code execution (e.g., `eval`, `$(cmd)`, `| bash`)
+- **Anti-injection patterns** prevent prompt injection from triggering arbitrary code execution via `$(cmd)`, backticks, `${}`, and process substitution
 - **Simpler maintenance**: No need to parse salt-states or fetch remote tool lists
 - **Works offline**: No dependency on docs.remnux.org for tool validation
 - **Flexible**: Any installed tool can be used without updating an allowlist

@@ -7,8 +7,12 @@
  *
  * This module prevents:
  * 1. Shell injection — malware output containing prompt injection could trick
- *    the AI into executing arbitrary code via eval, $(), backticks, etc.
- * 2. Dangerous pipes — pipes to interpreters (| bash, | python) blocked.
+ *    the AI into executing arbitrary code via $(), backticks, ${}, etc.
+ *
+ * eval/exec/source are NOT blocked (removed 2026-02): same threat class as
+ * pipe-to-interpreter (already allowed). Without $() or backticks, these can
+ * only operate on literal strings — equivalent to typing commands directly.
+ * Container/VM isolation handles the residual risk.
  *
  * Path sandboxing (isPathSafe, validateFilePath) is available as an opt-in
  * workflow aid via --sandbox, not as a security control.
@@ -32,8 +36,6 @@ export const BLOCKED_PATTERNS: BlockedPattern[] = [
   { pattern: /\x00/, category: "null byte injection" },
 
   // Shell escape / code execution — prevents prompt injection from triggering arbitrary code
-  { pattern: /\beval\b/i, category: "shell escape" },
-  { pattern: /(?<!-)\bexec\b/i, category: "shell escape" },
   { pattern: /`[^`]+`/, category: "shell escape (backtick)" },
   { pattern: /\$\([^)]+\)/, category: "shell escape (command substitution)" },
   { pattern: /\$\{[^}]+\}/, category: "shell escape (variable expansion)" },
@@ -43,9 +45,6 @@ export const BLOCKED_PATTERNS: BlockedPattern[] = [
 
   // Process substitution
   { pattern: /[<>]\s*\(/, category: "process substitution" },
-
-  // Shell sourcing
-  { pattern: /\bsource\b/i, category: "shell escape" },
 
   // Catastrophic command guard — prevents AI from accidentally destroying the analysis session
   // Only blocks root-level wipes (rm -rf /), not targeted deletes (rm -rf subdir/)

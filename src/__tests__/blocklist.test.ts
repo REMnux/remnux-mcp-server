@@ -34,7 +34,7 @@ describe("BLOCKED_PATTERNS", () => {
       // Newlines enable multi-command execution, but:
       // 1. AI can already do this via multiple tool calls
       // 2. Container isolation is the security boundary
-      // 3. Shell injection patterns ($(), eval, |bash) are still blocked
+      // 3. Shell injection patterns ($(), backticks) are still blocked
       expect(isBlocked("strings sample.exe\nfile sample.exe")).toBe(false);
       expect(isBlocked("test\rcommand")).toBe(false);
     });
@@ -66,23 +66,6 @@ describe("BLOCKED_PATTERNS", () => {
       expect(isBlocked("file --output=$HOME/file")).toBe(false);
     });
 
-    it("should block eval", () => {
-      expect(isBlocked("eval malicious")).toBe(true);
-    });
-
-    it("should block exec", () => {
-      expect(isBlocked("exec /bin/sh")).toBe(true);
-    });
-
-    it("should allow find -exec (legitimate forensic tool)", () => {
-      expect(isBlocked("find . -name '*.exe' -exec file {} \\;")).toBe(false);
-      expect(isBlocked("find /path -exec strings {} \\;")).toBe(false);
-    });
-
-    it("should block source", () => {
-      expect(isBlocked("source /tmp/evil.sh")).toBe(true);
-    });
-
     it("should block <() process substitution", () => {
       expect(isBlocked("diff <(cat file1) <(cat file2)")).toBe(true);
       expect(isBlocked("cat <(echo malicious)")).toBe(true);
@@ -112,6 +95,31 @@ describe("BLOCKED_PATTERNS", () => {
   });
 
   describe("Deliberately NOT blocked (container is disposable)", () => {
+    // eval/exec/source REMOVED (2026-02): Same threat class as pipe-to-interpreter
+    // (already allowed). Without $() or backticks, these can only operate on literal
+    // strings. Container/VM isolation handles the residual risk.
+    it("should allow eval (container isolation — $() blocking covers injection)", () => {
+      expect(isBlocked("eval 'echo hello'")).toBe(false);
+      expect(isBlocked("eval malicious")).toBe(false);
+    });
+
+    it("should allow exec (container isolation)", () => {
+      expect(isBlocked("exec /bin/sh")).toBe(false);
+      expect(isBlocked("find . -name '*.exe' -exec file {} \\;")).toBe(false);
+      expect(isBlocked("find /path -exec strings {} \\;")).toBe(false);
+    });
+
+    it("should allow source (container isolation)", () => {
+      expect(isBlocked("source /tmp/script.sh")).toBe(false);
+      expect(isBlocked("source script.sh")).toBe(false);
+    });
+
+    it("should allow grep for eval/exec/source (search, not execution)", () => {
+      expect(isBlocked("strings sample.exe | grep -iE '(eval|exec|source)'")).toBe(false);
+      expect(isBlocked("grep -c exec /tmp/script.sh")).toBe(false);
+      expect(isBlocked("grep -i eval /path/to/file")).toBe(false);
+    });
+
     it("should allow sudo (container isolation handles this)", () => {
       expect(isBlocked("sudo apt install")).toBe(false);
     });
@@ -292,8 +300,8 @@ describe("isCommandSafe", () => {
       expect(isCommandSafe("echo ${PATH}").safe).toBe(false);
     });
 
-    it("rejects eval", () => {
-      expect(isCommandSafe("eval 'rm -rf /'").safe).toBe(false);
+    it("allows eval (container isolation — $() blocking covers injection)", () => {
+      expect(isCommandSafe("eval 'echo hello'").safe).toBe(true);
     });
 
     it("allows pipe to bash (container isolation)", () => {

@@ -166,7 +166,7 @@ describe("run_tool", () => {
   });
 
   it("blocks shell injection commands", async () => {
-    const { envelope, isError } = await callTool("run_tool", { command: "eval malicious" });
+    const { envelope, isError } = await callTool("run_tool", { command: "echo $(whoami)" });
 
     expect(isError).toBe(true);
     expect(envelope.success).toBe(false);
