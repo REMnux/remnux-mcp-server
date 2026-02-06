@@ -107,4 +107,136 @@ describe("handleRunTool", () => {
     expect(env.success).toBe(false);
     expect(result.isError).toBe(true);
   });
+
+  describe("discouraged pattern warnings", () => {
+    it("blocks raw yara command with warning", async () => {
+      const deps = createMockDeps();
+
+      const result = await handleRunTool(deps, {
+        command: "yara /path/to/sample.exe",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true); // Warning is not an error
+      expect(env.data.command_blocked).toBe(true);
+      expect(env.data.warning).toBe("Raw yara command detected.");
+      expect(env.data.suggestion).toContain("yara-forge");
+      expect(env.data.suggestion).toContain("yara-rules");
+      // Verify command was NOT executed
+      expect(deps.connector.executeShell).not.toHaveBeenCalled();
+    });
+
+    it("blocks raw yara with full path", async () => {
+      const deps = createMockDeps();
+
+      const result = await handleRunTool(deps, {
+        command: "/usr/bin/yara sample.exe",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.data.command_blocked).toBe(true);
+      expect(deps.connector.executeShell).not.toHaveBeenCalled();
+    });
+
+    it("allows yara-forge (not discouraged)", async () => {
+      const deps = createMockDeps();
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("No matches"));
+
+      const result = await handleRunTool(deps, {
+        command: "yara-forge sample.exe",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true);
+      expect(env.data.command_blocked).toBeUndefined();
+      expect(deps.connector.executeShell).toHaveBeenCalled();
+    });
+
+    it("allows yara-rules (not discouraged)", async () => {
+      const deps = createMockDeps();
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("Matches found"));
+
+      const result = await handleRunTool(deps, {
+        command: "yara-rules sample.exe",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true);
+      expect(env.data.command_blocked).toBeUndefined();
+      expect(deps.connector.executeShell).toHaveBeenCalled();
+    });
+
+    it("allows raw yara with --acknowledge-raw flag", async () => {
+      const deps = createMockDeps();
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("Custom rule matched"));
+
+      const result = await handleRunTool(deps, {
+        command: "yara --acknowledge-raw /path/to/rules.yar sample.exe",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true);
+      expect(env.data.command_blocked).toBeUndefined();
+      expect(deps.connector.executeShell).toHaveBeenCalled();
+    });
+
+    it("does not allow bypass via filename containing --acknowledge-raw", async () => {
+      const deps = createMockDeps();
+
+      const result = await handleRunTool(deps, {
+        command: "yara",
+        input_file: "--acknowledge-raw/malware.exe",
+      });
+
+      const env = parseEnvelope(result);
+      // Should still be blocked - the --acknowledge-raw must be in args.command, not in the path
+      expect(env.data.command_blocked).toBe(true);
+      expect(deps.connector.executeShell).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("advisory patterns", () => {
+    it("returns advisory when using strings command", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("output"));
+
+      const result = await handleRunTool(deps, {
+        command: "strings -n 8",
+        input_file: "sample.bin",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true);
+      expect(env.data.advisory).toContain("INCOMPLETE");
+      expect(env.data.advisory).toContain("pestr");
+      expect(env.data.advisory).toContain("strings -el");
+    });
+
+    it("returns advisory for strings with embedded path", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("output"));
+
+      const result = await handleRunTool(deps, {
+        command: "strings /path/to/sample.exe | grep password",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true);
+      expect(env.data.advisory).toContain("pestr");
+    });
+
+    it("does not return advisory for pestr command", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("output"));
+
+      const result = await handleRunTool(deps, {
+        command: "pestr",
+        input_file: "sample.exe",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true);
+      expect(env.data.advisory).toBeUndefined();
+    });
+  });
 });

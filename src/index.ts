@@ -92,7 +92,8 @@ export async function createServer(config: ServerConfig) {
   // Tool: run_tool - Execute a command in REMnux
   server.tool(
     "run_tool",
-    "Execute a command in REMnux. Supports piped commands (e.g., 'oledump.py sample.doc | grep VBA').",
+    "Execute a command in REMnux. Supports piped commands (e.g., 'oledump.py sample.doc | grep VBA'). " +
+    "String extraction: For PE files use 'pestr'; for non-PE use 'strings' (ASCII) and 'strings -el' (Unicode).",
     runToolSchema.shape,
     (args) => handleRunTool(deps, args)
   );

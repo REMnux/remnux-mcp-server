@@ -9,23 +9,67 @@ import { toolRegistry } from "../tools/registry.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
 
 /**
- * Command-specific advisory guidance for suboptimal patterns.
- * Returns advisory text when a better alternative exists.
+ * Pre-execution warning patterns for discouraged commands.
+ * These block execution and require acknowledgment to proceed.
  */
+interface DiscouragedPattern {
+  pattern: RegExp;
+  warning: string;
+  suggestion: string;
+}
+
+const DISCOURAGED_PATTERNS: DiscouragedPattern[] = [
+  {
+    pattern: /^yara\s/,
+    warning: "Raw yara command detected.",
+    suggestion:
+      "Use yara-forge (45+ curated rule sources) or yara-rules (capability detection) instead. " +
+      "These are pre-configured and have structured output parsers. " +
+      "If you need raw yara with custom rules, re-run with --acknowledge-raw flag.",
+  },
+];
+
+/**
+ * Non-blocking advisory patterns for suboptimal commands.
+ * Returns guidance in response WITHOUT blocking execution.
+ */
+interface AdvisoryPattern {
+  match: (command: string) => boolean;
+  advisory: string;
+}
+
+const ADVISORY_PATTERNS: AdvisoryPattern[] = [
+  {
+    match: (cmd) => {
+      const firstWord = cmd.trim().split(/\s/)[0].replace(/^.*\//, "");
+      return firstWord === "strings";
+    },
+    advisory:
+      "INCOMPLETE: 'strings' extracts ASCII only. To capture Unicode strings: " +
+      "PE files → use 'pestr' instead (extracts both ASCII+Unicode with section context). " +
+      "Other files → also run 'strings -el <file>' for Unicode (little-endian 16-bit).",
+  },
+];
+
 function getCommandAdvisory(command: string): string | undefined {
+  const matched = ADVISORY_PATTERNS.find((p) => p.match(command));
+  return matched?.advisory;
+}
+
+/**
+ * Check if a command matches a discouraged pattern.
+ * Returns the pattern if matched, undefined otherwise.
+ */
+function checkDiscouragedPattern(
+  command: string
+): DiscouragedPattern | undefined {
   const firstWord = command.trim().split(/\s/)[0];
   // Strip path prefix (/usr/bin/yara → yara) to match commands invoked with full path
   const baseCmd = firstWord.replace(/^.*\//, "");
-  // Advise on raw yara but not yara-forge or yara-rules (the good alternatives)
-  if (baseCmd === "yara") {
-    return (
-      "Consider using 'yara-forge' (45+ curated rule sources) or 'yara-rules' " +
-      "(capability detection) instead of raw yara. These are run automatically " +
-      "by analyze_file and have structured output parsers."
-    );
-  }
-  return undefined;
+  // Append space to baseCmd to match pattern (ensures we match "yara " not "yara-forge ")
+  return DISCOURAGED_PATTERNS.find((p) => p.pattern.test(baseCmd + " "));
 }
+
 
 export async function handleRunTool(
   deps: HandlerDeps,
@@ -65,6 +109,25 @@ export async function handleRunTool(
       "security",
       "This command is blocked for security reasons. Use an allowed tool instead.",
     ), startTime);
+  }
+
+  // Check for discouraged patterns BEFORE execution (unless acknowledged)
+  // Use regex to ensure --acknowledge-raw is a flag, not part of a filename
+  const hasAcknowledge = /(?:^|\s)--acknowledge-raw(?:\s|$)/.test(args.command);
+  if (!hasAcknowledge) {
+    const discouraged = checkDiscouragedPattern(fullCommand);
+    if (discouraged) {
+      return formatResponse(
+        "run_tool",
+        {
+          warning: discouraged.warning,
+          suggestion: discouraged.suggestion,
+          command_blocked: true,
+          note: "Command was NOT executed. Use suggested alternatives or add --acknowledge-raw to proceed.",
+        },
+        startTime
+      );
+    }
   }
 
   const MAX_STDOUT_RESPONSE = 100 * 1024; // 100KB — fits in LLM context
@@ -111,7 +174,7 @@ export async function handleRunTool(
       }
     }
 
-    // Check for command-specific advisory guidance
+    // Check for advisory (non-blocking guidance)
     const advisory = getCommandAdvisory(fullCommand);
 
     return formatResponse("run_tool", {
