@@ -193,29 +193,38 @@ describe("DANGEROUS_PIPE_PATTERNS", () => {
   const isDangerousPipe = (input: string): boolean =>
     DANGEROUS_PIPE_PATTERNS.some(({ pattern }) => pattern.test(input));
 
-  describe("Pipe to code interpreters (anti-injection)", () => {
-    it("should block pipe to sh/bash", () => {
-      expect(isDangerousPipe("cat file | sh")).toBe(true);
-      expect(isDangerousPipe("cat file | bash")).toBe(true);
+  // Pipe-to-interpreter patterns were REMOVED in 2026-02
+  // Container/VM isolation is the security boundary, not pipe blocking.
+  // These tests document that pipes to interpreters are NOW ALLOWED.
+
+  describe("Pipes to interpreters (now allowed - container isolation)", () => {
+    it("should allow pipe to sh/bash", () => {
+      expect(isDangerousPipe("cat file | sh")).toBe(false);
+      expect(isDangerousPipe("cat file | bash")).toBe(false);
     });
 
-    it("should block pipe to python", () => {
-      expect(isDangerousPipe("cat file | python")).toBe(true);
-      expect(isDangerousPipe("cat file | python3")).toBe(true);
+    it("should allow pipe to python", () => {
+      expect(isDangerousPipe("cat file | python")).toBe(false);
+      expect(isDangerousPipe("cat file | python3")).toBe(false);
     });
 
-    it("should block pipe to other interpreters", () => {
-      expect(isDangerousPipe("cat file | perl")).toBe(true);
-      expect(isDangerousPipe("cat file | ruby")).toBe(true);
-      expect(isDangerousPipe("cat file | node")).toBe(true);
-      expect(isDangerousPipe("cat file | php")).toBe(true);
-      expect(isDangerousPipe("cat file | lua")).toBe(true);
-      expect(isDangerousPipe("cat file | zsh")).toBe(true);
-      expect(isDangerousPipe("cat file | fish")).toBe(true);
+    it("should allow pipe to other interpreters", () => {
+      expect(isDangerousPipe("cat file | perl")).toBe(false);
+      expect(isDangerousPipe("cat file | ruby")).toBe(false);
+      expect(isDangerousPipe("cat file | node")).toBe(false);
+      expect(isDangerousPipe("cat file | php")).toBe(false);
+      expect(isDangerousPipe("cat file | lua")).toBe(false);
+      expect(isDangerousPipe("cat file | zsh")).toBe(false);
+      expect(isDangerousPipe("cat file | fish")).toBe(false);
+    });
+
+    it("should allow heredocs piped to interpreters", () => {
+      expect(isDangerousPipe("cat << 'EOF' | python3\nprint('hello')\nEOF")).toBe(false);
+      expect(isDangerousPipe("cat << 'EOF' | bash\necho hello\nEOF")).toBe(false);
     });
   });
 
-  describe("Deliberately NOT blocked (container is disposable)", () => {
+  describe("Safe analysis pipes (always allowed)", () => {
     it("should allow pipe to tee (saving output)", () => {
       expect(isDangerousPipe("strings sample.exe | tee /output/strings.txt")).toBe(false);
     });
@@ -232,16 +241,14 @@ describe("DANGEROUS_PIPE_PATTERNS", () => {
       expect(isDangerousPipe("echo password | sudo tee /etc/file")).toBe(false);
     });
 
-    it("should allow curl/wget piped (incomplete protection anyway)", () => {
+    it("should allow curl/wget piped", () => {
       expect(isDangerousPipe("curl http://example.com | grep title")).toBe(false);
     });
 
     it("should allow pipe to env", () => {
       expect(isDangerousPipe("cat data | env")).toBe(false);
     });
-  });
 
-  describe("Safe analysis pipes", () => {
     it("should allow grep pipes", () => {
       expect(isDangerousPipe("strings sample.exe | grep password")).toBe(false);
     });
@@ -289,12 +296,12 @@ describe("isCommandSafe", () => {
       expect(isCommandSafe("eval 'rm -rf /'").safe).toBe(false);
     });
 
-    it("rejects pipe to bash", () => {
-      expect(isCommandSafe("cat script.sh | bash").safe).toBe(false);
+    it("allows pipe to bash (container isolation)", () => {
+      expect(isCommandSafe("cat script.sh | bash").safe).toBe(true);
     });
 
-    it("rejects pipe to python", () => {
-      expect(isCommandSafe("cat script.py | python").safe).toBe(false);
+    it("allows pipe to python (container isolation)", () => {
+      expect(isCommandSafe("cat script.py | python").safe).toBe(true);
     });
   });
 

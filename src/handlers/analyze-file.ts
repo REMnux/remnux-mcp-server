@@ -12,8 +12,13 @@ import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
 import { extractIOCs } from "../ioc/extractor.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
+import { filterMetadataLines } from "../utils/metadata-filter.js";
 import { getPreprocessors } from "../tools/preprocessors.js";
 import { shouldSummarize, generateSummary } from "../analysis/index.js";
+import {
+  evaluateAdvisories,
+  type AdvisoryContext,
+} from "../tools/advisories.js";
 
 interface ToolRun {
   name: string;
@@ -59,7 +64,7 @@ function generateNextSteps(
         steps.push("File may be packed — try unpacking with 'upx -d' or specialized unpackers before re-analysis");
       }
       steps.push("For dynamic analysis: use run_tool with 'speakeasy -t <file>' to emulate execution");
-      steps.push("Search for strings in specific sections: run_tool command='strings -a -n 8 <file>'");
+      steps.push("Extract strings: run_tool command='pestr <file>' (extracts both ASCII and Unicode with section info)");
       break;
     case "PDF":
       steps.push("Extract suspicious objects: run_tool command='pdf-parser.py -o <obj_num> -d <file>'");
@@ -89,17 +94,9 @@ function generateNextSteps(
       break;
   }
 
-  // AutoIt-specific guidance when autoit-ripper fails but diec detected AutoIt
-  const autoitRipperFailed = toolsRun.some(t => t.name === "autoit-ripper" && t.exit_code === 1);
-  const diecDetectedAutoIt = toolsRun.some(t =>
-    t.name === "diec" && t.output && /AutoIt|AU3!/i.test(t.output)
-  );
-  if (autoitRipperFailed && diecDetectedAutoIt) {
-    steps.push(
-      "autoit-ripper failed but diec detected AutoIt. The script is likely nested inside " +
-      "a wrapper (IExpress/CAB/SFX). Extract inner files with 7z or cabextract, then re-run autoit-ripper."
-    );
-  }
+  // NOTE: Cross-tool conditions like "autoit-ripper failed + diec detected AutoIt"
+  // are now handled by the advisory framework (see advisories.ts).
+  // This keeps generateNextSteps focused on category/depth suggestions.
 
   // IOC-based suggestions
   if (iocCount > 0) {
@@ -568,7 +565,10 @@ export async function handleAnalyzeFile(
 
   const combinedOutput = toolsRun.map(t => t.output).join("\n\n")
     .replace(/^\s*"command":\s*".*"$/gm, "");
-  const iocResult = extractIOCs(combinedOutput);
+  // Filter metadata lines (author, reference, namespace, etc.) to prevent false IOC extraction
+  // from tool/rule metadata (e.g., capa authors, YARA rule references)
+  const filteredOutput = filterMetadataLines(combinedOutput);
+  const iocResult = extractIOCs(filteredOutput);
 
   // Filter out the analyzed file's own hashes from IOC results
   if (ownHashes.size > 0) {
@@ -584,6 +584,17 @@ export async function handleAnalyzeFile(
     toolsSkipped,
     iocResult.iocs.length
   );
+
+  // Evaluate cross-tool advisories
+  const advisoryContext: AdvisoryContext = {
+    toolsRun: toolsRun.map((t) => ({
+      name: t.name,
+      exit_code: t.exit_code,
+      output: t.output,
+    })),
+    category: category.name,
+  };
+  const advisories = evaluateAdvisories(advisoryContext);
 
   const analysisGuidance =
     "IMPORTANT: Many capabilities flagged by analysis tools (API imports like GetProcAddress/VirtualProtect, " +
@@ -612,11 +623,25 @@ export async function handleAnalyzeFile(
       suggestedNextSteps,
       analysisGuidance,
       workflowHint,
+      advisories.length > 0
+        ? advisories.map((a) => ({
+            priority: a.priority,
+            issue: a.issue,
+            remediation: a.remediation,
+          }))
+        : undefined,
     );
     return formatResponse("analyze_file", summary, startTime);
   }
 
   return formatResponse("analyze_file", {
+    ...(advisories.length > 0 && {
+      action_required: advisories.map((a) => ({
+        priority: a.priority,
+        issue: a.issue,
+        remediation: a.remediation,
+      })),
+    }),
     file: args.file,
     detected_type: fileOutput,
     matched_category: category.name,

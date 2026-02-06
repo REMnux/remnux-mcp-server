@@ -273,6 +273,8 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 
 #### Example: Using run_tool
 
+**Pre-execution warnings:** Some commands are blocked with guidance to use better alternatives. For example, raw `yara` is discouraged in favor of `yara-forge` (45+ curated rule sources) or `yara-rules` (capability detection), which are pre-configured with structured output parsers. If you need raw yara with custom rules, add `--acknowledge-raw` to the command to proceed.
+
 ```jsonc
 // Run capa to detect capabilities in a PE file
 {
@@ -446,13 +448,13 @@ The `depth` parameter controls which tools run during analysis. Higher tiers inc
 
 | File Type | Quick | Standard (adds) | Deep (adds) |
 |-----------|-------|-----------------|-------------|
-| **PE/DLL** | peframe, diec, strings, ssdeep | capa, floss, portex, pescan, manalyze, signsrch, yara-forge, yara-rules, upx, 1768 | capa-vv, pedump, brxor, xor-kpa, disitool |
-| **.NET** | peframe, diec | ilspycmd, capa, yara-forge, yara-rules | dotnetfile_dump |
+| **PE/DLL** | peframe, diec, strings, ssdeep | capa, floss, portex, pescan, manalyze, signsrch, yara-forge, upx, 1768 | capa-vv, pedump, brxor, xor-kpa, disitool, yara-rules |
+| **.NET** | peframe, diec | ilspycmd, capa, yara-forge | dotnetfile_dump, yara-rules |
 | **PDF** | pdfid, pdfcop | pdf-parser, pdfextract, pdftool, pdfresurrect, qpdf, pdftk | peepdf-3, pdfdecompress |
 | **Office (OLE2)** | oleid | olevba, oledump, pcodedmp, xlmdeobfuscator | — |
 | **Office (OOXML)** | oleid | olevba, zipdump, xmldump | — |
 | **RTF** | rtfdump | rtfobj | — |
-| **ELF** | readelf-header | readelf-sections, capa, yara-forge, yara-rules | — |
+| **ELF** | readelf-header | readelf-sections, capa, yara-forge | yara-rules |
 | **JavaScript** | js-beautify | box-js | jstillery, spidermonkey |
 | **VBScript** | decode-vbe | — | — |
 | **JAR/Java** | — | cfr, jadx | — |
@@ -462,14 +464,14 @@ The `depth` parameter controls which tools run during analysis. Higher tiers inc
 | **Data+PE ext** | speakeasy-sc-x64/x86 | strings, base64dump, xorsearch, 1768, csce | tracesc |
 | **PCAP** | tshark-conversations | tshark-http, tshark-dns, tshark-hierarchy | tshark-verbose |
 | **Memory** | vol3-info, vol3-pslist | vol3-pstree, vol3-netscan, vol3-cmdline, vol3-filescan, vol3-dlllist, vol3-psscan, vol3-hivelist, vol3-linux-pslist | vol3-malfind, vol3-handles |
-| **Fallback** | strings, ssdeep | exiftool, base64dump, xorsearch, yara-rules | sets |
+| **Fallback** | strings, ssdeep | exiftool, base64dump, xorsearch | sets, yara-rules |
 
 **Tier selection guidance:**
 - Use `quick` for initial triage or when processing many files — runs in seconds
 - Use `standard` (default) for most investigations — balances thoroughness with time
 - Use `deep` when standard analysis shows signs of packing, obfuscation, or encryption — adds brute-force deobfuscation and verbose output modes
 
-**Output format:** Returns JSON with `detected_type`, `matched_category`, `depth`, `tools_run` (with output), `tools_failed`, and `tools_skipped`.
+**Output format:** Returns JSON with `detected_type`, `matched_category`, `depth`, `tools_run` (with output), `tools_failed`, and `tools_skipped`. When cross-tool conditions indicate follow-up is needed (e.g., autoit-ripper fails but diec detected AutoIt), an `action_required` array appears at the top of the response with prioritized remediation steps.
 
 **Smart summarization:** When total tool output exceeds ~32KB, the response automatically switches to summary mode to prevent LLM context overflow. Summary mode includes:
 - Key findings per tool (top 5 most informative lines)
@@ -548,7 +550,7 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 | Threat | Target | Defense |
 |--------|--------|---------|
 | Command injection (prompt injection tricks AI into shell execution) | Analyst's workflow | Anti-injection patterns (`eval`, `$()`, backticks, etc.) |
-| Dangerous pipes (attacker code piped to interpreters) | Analyst's workflow | Pipe-to-interpreter blocking (`\| bash`, `\| python`) |
+| Dangerous pipes (attacker code piped to interpreters) | Analyst's workflow | Container/VM isolation; AI system prompt guidance |
 | Catastrophic commands (`rm -rf /`, `mkfs`) | Analysis session | Narrow pattern guards for root wipes and filesystem formatting |
 | Resource exhaustion (tools hang or consume excessive resources) | AI assistant / analysis session | Timeout enforcement (default 5 min), output budgets (40KB/tool default, 120KB total) |
 | Archive zip-slip (path traversal in archives) | Analysis session | Post-extraction validation rejects path escape attempts |
@@ -573,10 +575,13 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 
 The threat is command *substitution* (`$()`, `${}`), not variable *reference* (`$var`) or multi-command execution.
 
-**Dangerous pipe patterns (blocked):**
-- Pipes to interpreters: `| sh`, `| bash`, `| zsh`, `| fish`, `| python`, `| perl`, `| ruby`, `| node`, `| php`, `| lua`
+**Pipe patterns (historically blocked, now allowed):**
+- Pipes to interpreters (`| bash`, `| python`, etc.) were previously blocked but are now allowed
+- Container/VM isolation is the security boundary for code execution
+- The AI's system prompt warns against piping untrusted output to interpreters
+- Blocking was removed because it prevented legitimate analysis workflows (heredocs, batch decoding, script analysis)
 
-**All other pipes are allowed:** `| grep`, `| head`, `| tail`, `| sort`, `| uniq`, `| wc`, `| cut`, `| awk`, `| sed`, `| tee`, `| xargs`, `| dd`, etc.
+**All pipes are allowed:** `| grep`, `| head`, `| tail`, `| sort`, `| uniq`, `| wc`, `| cut`, `| awk`, `| sed`, `| tee`, `| xargs`, `| dd`, `| python`, `| bash`, etc.
 
 **Path sandboxing** (`--sandbox`) is available as an opt-in workflow aid to restrict file operations to the samples/output directories. It is off by default because all execution happens inside disposable REMnux — there is nothing to protect from path traversal.
 
@@ -592,7 +597,8 @@ These commands are intentionally allowed because REMnux is disposable and contai
 | `systemctl`, `service` | Ephemeral environment |
 | `mount`, `umount`, `iptables` | Container isolation handles this |
 | `dd` | Legitimate forensics tool for disk/memory carving |
-| `curl`, `wget` (without pipe to interpreter) | Network tools needed for analysis |
+| `curl`, `wget` | Network tools needed for analysis |
+| `\| python`, `\| bash`, `\| perl`, etc. | Container isolation handles code execution; blocking prevented legitimate workflows |
 | `/etc/`, `/proc/`, `/sys/`, `/dev/` | Container's own filesystem; useful for forensics |
 | `crontab`, `nohup`, `screen`, `tmux` | Ephemeral environment; timeouts still apply |
 | `tee`, `xargs` | Essential for saving output and batch operations |

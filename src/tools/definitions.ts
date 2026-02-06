@@ -102,7 +102,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     outputFormat: "text",
     timeout: 60,
     tags: ["pe", "dotnet", "elf", "yara"],
-    tier: "standard",
+    tier: "deep",  // yara-forge (standard) provides better family coverage; yara-rules for deep capability analysis
   },
   {
     name: "pecheck",

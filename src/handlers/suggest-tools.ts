@@ -176,7 +176,7 @@ function generateHints(category: string, fileOutput: string): string {
       (props.packed === "UPX"
         ? "UPX can be unpacked with the upx-decompress tool — recommend unpacking then re-analyzing."
         : "No standard unpacker available; static code analysis will be limited. " +
-          "Focus on: certificate/signature artifacts (disitool.py for structure, strings -a for embedded cert text), " +
+          "Focus on: certificate/signature artifacts (disitool.py for structure, pestr for embedded text including Unicode), " +
           "metadata masquerading (exiftool, peframe), and string patterns for C2/IOCs."),
     );
   }

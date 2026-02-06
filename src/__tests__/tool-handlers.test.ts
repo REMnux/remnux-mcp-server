@@ -201,13 +201,16 @@ describe("run_tool", () => {
     expect(envelope.data.command).toBe("capa sample.exe");
   });
 
-  it("blocks dangerous piped commands (pipe to bash)", async () => {
-    const { envelope, isError } = await callTool("run_tool", { command: "strings file | bash" });
+  it("allows piped commands to interpreters (container isolation)", async () => {
+    // Pipe-to-interpreter patterns were removed in 2026-02
+    // Container/VM isolation is the security boundary, not pipe blocking
+    vi.mocked(mockConnector.executeShell).mockResolvedValueOnce(ok("hello"));
 
-    expect(isError).toBe(true);
-    expect(envelope.success).toBe(false);
-    expect(envelope.error).toMatch(/blocked|dangerous/i);
-    expect(mockConnector.executeShell).not.toHaveBeenCalled();
+    const { envelope, isError } = await callTool("run_tool", { command: "echo hello | bash" });
+
+    expect(isError).toBeFalsy(); // undefined or false = success
+    expect(envelope.success).toBe(true);
+    expect(mockConnector.executeShell).toHaveBeenCalled();
   });
 });
 

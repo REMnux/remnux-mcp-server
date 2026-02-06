@@ -133,26 +133,21 @@ export function validateFilePath(
 }
 
 /**
- * Dangerous pipe patterns - commands piped to interpreters that could execute code
- * These are checked separately to allow safe pipes (e.g., grep, head, sort)
- * while blocking dangerous ones (e.g., | bash, | python)
+ * Dangerous pipe patterns - historically blocked pipes to interpreters
+ *
+ * REMOVED (2026-02): Pipe-to-interpreter blocking was overly aggressive and
+ * prevented legitimate analysis workflows (heredocs, batch decoding, script analysis).
+ * Container/VM isolation is the primary security boundary per the threat model.
+ * The AI's system prompt warns against piping untrusted output to interpreters.
  */
-export const DANGEROUS_PIPE_PATTERNS: BlockedPattern[] = [
-  // Pipe to code interpreters — prevents prompt injection from executing arbitrary code
-  { pattern: /\|\s*(ba)?sh\b/i, category: "pipe to shell" },
-  { pattern: /\|\s*zsh\b/i, category: "pipe to shell" },
-  { pattern: /\|\s*fish\b/i, category: "pipe to shell" },
-  { pattern: /\|\s*python[23]?\b/i, category: "pipe to interpreter" },
-  { pattern: /\|\s*perl\b/i, category: "pipe to interpreter" },
-  { pattern: /\|\s*ruby\b/i, category: "pipe to interpreter" },
-  { pattern: /\|\s*node\b/i, category: "pipe to interpreter" },
-  { pattern: /\|\s*php\b/i, category: "pipe to interpreter" },
-  { pattern: /\|\s*lua\b/i, category: "pipe to interpreter" },
-];
+export const DANGEROUS_PIPE_PATTERNS: BlockedPattern[] = [];
 
 /**
  * Check if a command string is safe to execute
- * Validates against both BLOCKED_PATTERNS and DANGEROUS_PIPE_PATTERNS
+ * Validates against BLOCKED_PATTERNS (shell injection patterns)
+ *
+ * Note: DANGEROUS_PIPE_PATTERNS was removed in 2026-02; container isolation
+ * is the security boundary for code execution via pipes.
  *
  * @param command - The full command string to validate
  * @returns { safe: boolean, error?: string }

@@ -61,9 +61,16 @@ export interface ToolSummary {
   saved_to?: string;
 }
 
+export interface ActionRequired {
+  priority: number;
+  issue: string;
+  remediation: string;
+}
+
 export interface AnalysisSummary {
   [key: string]: unknown;
   mode: "summary";
+  action_required?: ActionRequired[];
   file: string;
   detected_type: string;
   matched_category: string;
@@ -209,6 +216,7 @@ export function generateSummary(
   nextSteps: string[],
   analysisGuidance: string,
   workflowHint?: string,
+  advisories?: ActionRequired[],
 ): AnalysisSummary {
   const toolSummaries: ToolSummary[] = [];
   const savedFiles: string[] = [];
@@ -236,6 +244,7 @@ export function generateSummary(
 
   return {
     mode: "summary",
+    ...(advisories && advisories.length > 0 && { action_required: advisories }),
     file,
     detected_type: detectedType,
     matched_category: category,
