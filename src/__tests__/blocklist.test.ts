@@ -25,17 +25,18 @@ describe("BLOCKED_PATTERNS", () => {
     BLOCKED_PATTERNS.some(({ pattern }) => pattern.test(input));
 
   describe("Control character injection (anti-injection)", () => {
-    it("should block newline characters", () => {
-      expect(isBlocked("file\nrm -rf /")).toBe(true);
-      expect(isBlocked("file\r\nrm -rf /")).toBe(true);
-    });
-
-    it("should block carriage return", () => {
-      expect(isBlocked("test\rcommand")).toBe(true);
-    });
-
     it("should block null bytes", () => {
+      // Null bytes truncate paths in C-based functions - actual injection vector
       expect(isBlocked("file\x00name")).toBe(true);
+    });
+
+    it("should allow newlines and carriage returns (container handles isolation)", () => {
+      // Newlines enable multi-command execution, but:
+      // 1. AI can already do this via multiple tool calls
+      // 2. Container isolation is the security boundary
+      // 3. Shell injection patterns ($(), eval, |bash) are still blocked
+      expect(isBlocked("strings sample.exe\nfile sample.exe")).toBe(false);
+      expect(isBlocked("test\rcommand")).toBe(false);
     });
   });
 
@@ -51,14 +52,18 @@ describe("BLOCKED_PATTERNS", () => {
     });
 
     it("should block ${} variable expansion", () => {
+      // ${} can contain complex expansion like ${IFS} which enables word splitting attacks
       expect(isBlocked("${PATH}")).toBe(true);
       expect(isBlocked("file${IFS}injection")).toBe(true);
     });
 
-    it("should block $VAR bare variable expansion", () => {
-      expect(isBlocked("echo $SECRET")).toBe(true);
-      expect(isBlocked("strings $EVIL")).toBe(true);
-      expect(isBlocked("file --output=$HOME/file")).toBe(true);
+    it("should allow simple $VAR (for-loops and legitimate shell)", () => {
+      // Simple $VAR references are normal shell syntax, not injection vectors
+      // Blocking them prevented legitimate analysis like: for f in extracted/*; do file "$f"; done
+      // The threat model concerns command substitution ($(), ${}), not variable reference
+      expect(isBlocked("echo $SECRET")).toBe(false);
+      expect(isBlocked('for f in extracted/*; do file "$f"; done')).toBe(false);
+      expect(isBlocked("file --output=$HOME/file")).toBe(false);
     });
 
     it("should block eval", () => {
@@ -165,6 +170,17 @@ describe("BLOCKED_PATTERNS", () => {
       expect(isBlocked("vol3 -f image.raw windows.info")).toBe(false);
       expect(isBlocked("vol3 -f image.raw windows.pslist")).toBe(false);
     });
+
+    it("should allow for-loops with $var (iterating over extracted files)", () => {
+      // This was previously blocked but is essential for analysis workflows
+      expect(isBlocked('for f in extracted/*; do file "$f"; done')).toBe(false);
+      expect(isBlocked('for i in *.dll; do strings "$i" | grep -i import; done')).toBe(false);
+    });
+
+    it("should allow python one-liners with newlines", () => {
+      // Newlines inside quoted strings are safe - needed for python -c analysis
+      expect(isBlocked('python3 -c "import re\\nprint(re.findall(r\\"Set (\\\\w+)=\\", open(\\"/tmp/test.txt\\").read()))"')).toBe(false);
+    });
   });
 });
 
@@ -253,9 +269,15 @@ describe("isCommandSafe", () => {
   });
 
   describe("should reject shell injection", () => {
-    it("rejects $VAR in command", () => {
+    it("allows simple $VAR (for-loops and legitimate shell)", () => {
+      // Simple $var is now allowed - see threat model review
       const result = isCommandSafe("echo $SECRET");
-      expect(result.safe).toBe(false);
+      expect(result.safe).toBe(true);
+    });
+
+    it("rejects ${} complex expansion", () => {
+      // ${} is still blocked - enables word splitting attacks
+      expect(isCommandSafe("echo ${PATH}").safe).toBe(false);
     });
 
     it("rejects eval", () => {

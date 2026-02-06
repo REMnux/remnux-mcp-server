@@ -27,8 +27,9 @@ export interface BlockedPattern {
 }
 
 export const BLOCKED_PATTERNS: BlockedPattern[] = [
-  // CRITICAL: Newline and control character injection
-  { pattern: /[\n\r\x00]/, category: "control character injection" },
+  // Null byte injection - truncates paths in C-based functions
+  // Newlines allowed: enables multi-line scripts; container isolation is security boundary
+  { pattern: /\x00/, category: "null byte injection" },
 
   // Shell escape / code execution — prevents prompt injection from triggering arbitrary code
   { pattern: /\beval\b/i, category: "shell escape" },
@@ -36,7 +37,8 @@ export const BLOCKED_PATTERNS: BlockedPattern[] = [
   { pattern: /`[^`]+`/, category: "shell escape (backtick)" },
   { pattern: /\$\([^)]+\)/, category: "shell escape (command substitution)" },
   { pattern: /\$\{[^}]+\}/, category: "shell escape (variable expansion)" },
-  { pattern: /\$[A-Za-z_][A-Za-z0-9_]*/, category: "shell escape (variable expansion)" },
+  // Note: Simple $var (like $f in for-loops) is intentionally NOT blocked
+  // The threat is command substitution ($(), ${}), not variable reference
   { pattern: /\$[0-9?$!@#]/, category: "shell escape (special variable)" },
 
   // Process substitution

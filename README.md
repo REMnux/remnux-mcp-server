@@ -563,9 +563,15 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 - Path traversal inside REMnux (nothing sensitive to protect)
 
 **Blocked command patterns (anti-injection):**
-- Control characters: newline, carriage return, null bytes
-- Shell escape: `eval`, `exec`, backticks, `$()`, `${}`, `$VAR`, process substitution `<()` `>()`
+- Null bytes (truncate paths in C functions)
+- Shell escape: `eval`, `exec`, backticks, `$()`, `${}`, process substitution `<()` `>()`
 - Shell sourcing: `source`
+
+**Deliberately NOT blocked (legitimate shell syntax):**
+- Simple `$VAR` references (needed for shell loops: `for f in *; do file "$f"; done`)
+- Newlines/carriage returns (enables multi-line scripts; container isolation is the security boundary)
+
+The threat is command *substitution* (`$()`, `${}`), not variable *reference* (`$var`) or multi-command execution.
 
 **Dangerous pipe patterns (blocked):**
 - Pipes to interpreters: `| sh`, `| bash`, `| zsh`, `| fish`, `| python`, `| perl`, `| ruby`, `| node`, `| php`, `| lua`
