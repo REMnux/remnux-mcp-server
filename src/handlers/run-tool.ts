@@ -42,10 +42,14 @@ const ADVISORY_PATTERNS: AdvisoryPattern[] = [
   {
     match: (cmd) => {
       const firstWord = cmd.trim().split(/\s/)[0].replace(/^.*\//, "");
-      return firstWord === "strings";
+      if (firstWord !== "strings") return false;
+      // Don't advise if already extracting Unicode (-e with encoding specifier)
+      // -el = little-endian 16-bit, -eb = big-endian 16-bit, -eL/-eB = 32-bit
+      if (/-e[lbLB]/.test(cmd)) return false;
+      return true;
     },
     advisory:
-      "INCOMPLETE: 'strings' extracts ASCII only. To capture Unicode strings: " +
+      "Tip: 'strings' extracts ASCII only. To capture Unicode strings: " +
       "PE files → use 'pestr' instead (extracts both ASCII+Unicode with section context). " +
       "Other files → also run 'strings -el <file>' for Unicode (little-endian 16-bit).",
   },

@@ -207,7 +207,7 @@ describe("handleRunTool", () => {
 
       const env = parseEnvelope(result);
       expect(env.success).toBe(true);
-      expect(env.data.advisory).toContain("INCOMPLETE");
+      expect(env.data.advisory).toContain("Tip:");
       expect(env.data.advisory).toContain("pestr");
       expect(env.data.advisory).toContain("strings -el");
     });
@@ -232,6 +232,33 @@ describe("handleRunTool", () => {
       const result = await handleRunTool(deps, {
         command: "pestr",
         input_file: "sample.exe",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true);
+      expect(env.data.advisory).toBeUndefined();
+    });
+
+    it("does not return advisory when strings already uses -el (Unicode)", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("output"));
+
+      const result = await handleRunTool(deps, {
+        command: "strings -el",
+        input_file: "sample.bin",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true);
+      expect(env.data.advisory).toBeUndefined();
+    });
+
+    it("does not return advisory for strings -eb (big-endian Unicode)", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("output"));
+
+      const result = await handleRunTool(deps, {
+        command: "strings -eb sample.bin",
       });
 
       const env = parseEnvelope(result);
