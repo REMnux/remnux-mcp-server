@@ -147,9 +147,10 @@ describe("run_tool", () => {
     expect(envelope.data.exit_code).toBe(0);
     expect(envelope.metadata.elapsed_ms).toBeGreaterThanOrEqual(0);
     expect(isError).toBeFalsy();
+    // Without input_file parameter, cwd is not set (allows general commands without samples dir)
     expect(mockConnector.executeShell).toHaveBeenCalledWith(
       "file sample.exe",
-      expect.objectContaining({ cwd: testConfig.samplesDir }),
+      expect.objectContaining({ timeout: expect.any(Number) }),
     );
   });
 

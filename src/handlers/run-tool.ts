@@ -52,10 +52,16 @@ export async function handleRunTool(
   const MAX_STDERR_RESPONSE = 50 * 1024;
 
   try {
-    const result = await connector.executeShell(fullCommand, {
+    const execOptions: { timeout: number; cwd?: string } = {
       timeout: (args.timeout || config.timeout) * 1000,
-      cwd: config.samplesDir,
-    });
+    };
+
+    // Only set cwd when input_file is provided (file-based analysis)
+    if (args.input_file) {
+      execOptions.cwd = config.samplesDir;
+    }
+
+    const result = await connector.executeShell(fullCommand, execOptions);
 
     let stdout = result.stdout || "";
     let stderr = result.stderr || "";

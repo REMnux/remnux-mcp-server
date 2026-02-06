@@ -38,17 +38,29 @@ describe("handleRunTool", () => {
     const deps = createMockDeps({ timeout: 300 });
     vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(""));
 
+    // Without input_file, cwd is not set
     await handleRunTool(deps, { command: "strings foo", timeout: 60 });
 
     const call = vi.mocked(deps.connector.executeShell).mock.calls[0];
-    expect(call[1]).toEqual({ timeout: 60000, cwd: "/samples" });
+    expect(call[1]).toEqual({ timeout: 60000 });
   });
 
   it("falls back to config.timeout when args.timeout is undefined", async () => {
     const deps = createMockDeps({ timeout: 300 });
     vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(""));
 
+    // Without input_file, cwd is not set
     await handleRunTool(deps, { command: "strings foo" });
+
+    const call = vi.mocked(deps.connector.executeShell).mock.calls[0];
+    expect(call[1]).toEqual({ timeout: 300000 });
+  });
+
+  it("sets cwd to samplesDir when input_file is provided", async () => {
+    const deps = createMockDeps({ timeout: 300 });
+    vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(""));
+
+    await handleRunTool(deps, { command: "strings", input_file: "sample.exe" });
 
     const call = vi.mocked(deps.connector.executeShell).mock.calls[0];
     expect(call[1]).toEqual({ timeout: 300000, cwd: "/samples" });

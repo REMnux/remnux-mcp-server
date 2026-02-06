@@ -107,7 +107,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "pecheck",
     description: "Analyze static properties of PE files.",
-    command: "pecheck",
+    command: "pecheck.py",
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 60,
@@ -490,7 +490,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "rtfobj",
     description: "Extract embedded objects from RTF files.",
-    command: "rtfobj.py",
+    command: "rtfobj",
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 60,

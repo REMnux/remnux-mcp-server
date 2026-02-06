@@ -941,8 +941,8 @@
       "website": "https://github.com/blackberry/pe_tree"
     },
     {
-      "command": "pecheck",
-      "name": "pecheck.py",
+      "command": "pecheck.py",
+      "name": "pecheck",
       "category": "Examine Static Properties: PE Files",
       "description": "Analyze static properties of PE files.",
       "website": "https://blog.didierstevens.com/2020/03/15/pecheck-py-version-0-7-10/"
