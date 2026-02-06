@@ -167,7 +167,9 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tags: ["pe", "autoit", "decompilation"],
     tier: "standard",
     exitCodeHints: {
-      1: "Not an AutoIt compiled executable or unsupported AutoIt version.",
+      1: "Not an AutoIt compiled executable or unsupported version. " +
+         "If diec detected 'AutoIt', the script may be nested inside a wrapper (IExpress, CAB). " +
+         "Extract inner executables first with 7z or cabextract, then re-run autoit-ripper on extracted .exe files.",
     },
   },
 

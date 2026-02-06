@@ -89,6 +89,18 @@ function generateNextSteps(
       break;
   }
 
+  // AutoIt-specific guidance when autoit-ripper fails but diec detected AutoIt
+  const autoitRipperFailed = toolsRun.some(t => t.name === "autoit-ripper" && t.exit_code === 1);
+  const diecDetectedAutoIt = toolsRun.some(t =>
+    t.name === "diec" && t.output && /AutoIt|AU3!/i.test(t.output)
+  );
+  if (autoitRipperFailed && diecDetectedAutoIt) {
+    steps.push(
+      "autoit-ripper failed but diec detected AutoIt. The script is likely nested inside " +
+      "a wrapper (IExpress/CAB/SFX). Extract inner files with 7z or cabextract, then re-run autoit-ripper."
+    );
+  }
+
   // IOC-based suggestions
   if (iocCount > 0) {
     steps.push("Extracted IOCs are in the 'iocs' field — consider threat intel lookup for network indicators");

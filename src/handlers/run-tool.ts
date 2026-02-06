@@ -8,6 +8,25 @@ import { parseToolOutput, hasParser } from "../parsers/index.js";
 import { toolRegistry } from "../tools/registry.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
 
+/**
+ * Command-specific advisory guidance for suboptimal patterns.
+ * Returns advisory text when a better alternative exists.
+ */
+function getCommandAdvisory(command: string): string | undefined {
+  const firstWord = command.trim().split(/\s/)[0];
+  // Strip path prefix (/usr/bin/yara → yara) to match commands invoked with full path
+  const baseCmd = firstWord.replace(/^.*\//, "");
+  // Advise on raw yara but not yara-forge or yara-rules (the good alternatives)
+  if (baseCmd === "yara") {
+    return (
+      "Consider using 'yara-forge' (45+ curated rule sources) or 'yara-rules' " +
+      "(capability detection) instead of raw yara. These are run automatically " +
+      "by analyze_file and have structured output parsers."
+    );
+  }
+  return undefined;
+}
+
 export async function handleRunTool(
   deps: HandlerDeps,
   args: RunToolArgs
@@ -92,6 +111,9 @@ export async function handleRunTool(
       }
     }
 
+    // Check for command-specific advisory guidance
+    const advisory = getCommandAdvisory(fullCommand);
+
     return formatResponse("run_tool", {
       command: fullCommand,
       stdout,
@@ -103,6 +125,7 @@ export async function handleRunTool(
         full_stdout_length: fullStdoutLength,
       }),
       ...(findings && { findings, parsed_metadata: parsedMetadata }),
+      ...(advisory && { advisory }),
     }, startTime);
   } catch (error) {
     return formatError("run_tool", toREMnuxError(error, config.mode), startTime);

@@ -74,6 +74,11 @@ describe("BLOCKED_PATTERNS", () => {
       expect(isBlocked("exec /bin/sh")).toBe(true);
     });
 
+    it("should allow find -exec (legitimate forensic tool)", () => {
+      expect(isBlocked("find . -name '*.exe' -exec file {} \\;")).toBe(false);
+      expect(isBlocked("find /path -exec strings {} \\;")).toBe(false);
+    });
+
     it("should block source", () => {
       expect(isBlocked("source /tmp/evil.sh")).toBe(true);
     });

@@ -33,7 +33,7 @@ export const BLOCKED_PATTERNS: BlockedPattern[] = [
 
   // Shell escape / code execution — prevents prompt injection from triggering arbitrary code
   { pattern: /\beval\b/i, category: "shell escape" },
-  { pattern: /\bexec\b/i, category: "shell escape" },
+  { pattern: /(?<!-)\bexec\b/i, category: "shell escape" },
   { pattern: /`[^`]+`/, category: "shell escape (backtick)" },
   { pattern: /\$\([^)]+\)/, category: "shell escape (command substitution)" },
   { pattern: /\$\{[^}]+\}/, category: "shell escape (variable expansion)" },
