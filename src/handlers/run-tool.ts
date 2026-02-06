@@ -49,7 +49,7 @@ const ADVISORY_PATTERNS: AdvisoryPattern[] = [
       return true;
     },
     advisory:
-      "Tip: 'strings' extracts ASCII only. To capture Unicode strings: " +
+      "INCOMPLETE: 'strings' extracts ASCII only. To capture Unicode strings: " +
       "PE files → use 'pestr' instead (extracts both ASCII+Unicode with section context). " +
       "Other files → also run 'strings -el <file>' for Unicode (little-endian 16-bit).",
   },

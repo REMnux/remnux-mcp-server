@@ -207,7 +207,7 @@ describe("handleRunTool", () => {
 
       const env = parseEnvelope(result);
       expect(env.success).toBe(true);
-      expect(env.data.advisory).toContain("Tip:");
+      expect(env.data.advisory).toContain("INCOMPLETE");
       expect(env.data.advisory).toContain("pestr");
       expect(env.data.advisory).toContain("strings -el");
     });
