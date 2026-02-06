@@ -367,6 +367,13 @@
       "website": "https://github.com/pan-unit42/dotnetfile"
     },
     {
+      "command": "monodis",
+      "name": "monodis",
+      "category": "Examine Static Properties: .NET",
+      "description": "List and extract embedded resources from .NET assemblies.",
+      "website": "https://www.mono-project.com/docs/tools+libraries/tools/monodis/"
+    },
+    {
       "command": "droidlysis",
       "name": "DroidLysis",
       "category": "Statically Analyze Code: Android",

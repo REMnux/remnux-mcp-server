@@ -2,22 +2,6 @@
 
 MCP server for using the [REMnux](https://REMnux.org) malware analysis toolkit via AI assistants.
 
-## Contents
-
-- [Overview](#overview)
-- [What This Server Provides](#what-this-server-provides)
-- [Architecture](#architecture)
-- [Quick Start](#quick-start)
-- [CLI Options](#cli-options)
-- [MCP Tools](#mcp-tools)
-- [Security Model](#security-model)
-- [File Workflow](#file-workflow)
-- [Troubleshooting](#troubleshooting)
-- [Development](#development)
-- [Design Decisions](#design-decisions)
-- [Related Projects](#related-projects)
-- [License](#license)
-
 ## Overview
 
 This server enables AI assistants (Claude Code, OpenCode, Cursor, etc.) to execute malware analysis tools on a REMnux system. It supports three deployment scenarios:
@@ -26,16 +10,13 @@ This server enables AI assistants (Claude Code, OpenCode, Cursor, etc.) to execu
 2. **AI tool and MCP server both on REMnux** — everything runs locally on the same REMnux system (simplest setup)
 3. **AI tool on your machine, MCP server on REMnux** — MCP server runs inside REMnux, your AI tool connects over HTTP
 
-The server includes built-in tool guidance via `suggest_tools` (file-type-aware recommendations) and `get_tool_help` (usage flags for any installed tool). For additional tool documentation, you can optionally enable the [REMnux docs MCP server](https://docs.remnux.org/~gitbook/mcp).
+Beyond raw command execution, the server encodes malware analysis domain expertise:
 
-## What This Server Provides
+- Recommends the right tools for each file type (`suggest_tools`) and retrieves usage flags for any installed tool (`get_tool_help`)
+- Runs appropriate tool chains automatically (`analyze_file`) with structured output and IOC extraction
+- Uses neutral language to counteract confirmation bias in AI-generated verdicts
 
-The server gives AI assistants structured access to REMnux tools with features purpose-built for malware analysis workflows. Beyond raw command execution, it guides the AI toward effective analysis strategies by recommending the right tools for each file type and providing structured output that the AI can reason about.
-
-- **Unified connection layer** — Docker exec, SSH, and local execution behind one interface. Switch deployment scenarios without changing how your AI assistant interacts with tools.
-- **File-type-aware analysis** — `analyze_file` detects file types and runs the appropriate tool chain automatically, returning structured output with IOC extraction. `suggest_tools` lets the AI agent request recommendations and decide what to run.
-- **Defense-in-depth guardrails** — Pattern blocking catches prompt injection via command substitution (`$()`, backticks, `${}`). Optional path sandboxing (`--sandbox`) restricts file operations to the samples and output directories. These complement the container or VM isolation that serves as the primary security boundary.
-- **Browsable tool registry** — MCP resources at `remnux://tools`, `remnux://tools/by-tag/{tag}`, and `remnux://tools/{name}` let the AI agent discover available tools and their metadata without external lookups.
+For additional tool documentation, you can optionally enable the [REMnux docs MCP server](https://docs.remnux.org/~gitbook/mcp).
 
 ## Architecture
 
@@ -264,16 +245,26 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `extract_archive` | Extract .zip, .7z, .rar archives with automatic password detection |
 | `upload_from_host` | Upload a file from the host to the samples directory (200MB limit) |
 | `download_from_url` | Download a file from a URL into the samples directory |
-| `download_file` | Download a file from the output directory to the host (password-protected archive by default) |
+| `download_file` | Download a file from the output directory to the host (password-protected archive by default; password: `infected`) |
 | `analyze_file` | Auto-select and run REMnux tools based on detected file type |
 | `extract_iocs` | Extract IOCs (IPs, domains, URLs, hashes, registry keys, etc.) from text with confidence scoring |
 | `suggest_tools` | Detect file type and return recommended tools with analysis hints (no execution) |
 | `get_tool_help` | Get usage help (`--help` output) for any installed REMnux tool |
 | `check_tools` | Check which REMnux analysis tools are installed and available |
 
-#### Example: Using run_tool
+### Key Behaviors
 
-**Pre-execution warnings:** Some commands are blocked with guidance to use better alternatives. For example, raw `yara` is discouraged in favor of `yara-forge` (45+ curated rule sources) or `yara-rules` (capability detection), which are pre-configured with structured output parsers. If you need raw yara with custom rules, add `--acknowledge-raw` to the command to proceed.
+**Discouraged patterns:** Some commands trigger warnings with guidance to use better alternatives. For example, raw `yara` is discouraged in favor of `yara-forge` or `yara-rules`, which are pre-configured with structured output parsers. Add `--acknowledge-raw` to proceed anyway.
+
+**Depth tiers:** `analyze_file` supports three depth levels — `quick` (fast triage, ~15 tools), `standard` (default, ~60 tools), and `deep` (maximum coverage, ~78 tools). Higher tiers include all tools from lower tiers. The tools selected depend on detected file type; examine the tool definitions in the source for specifics.
+
+**Tool advisories:** `analyze_file` includes per-tool `advisory` messages that frame findings in neutral language, prompting the AI to consider benign explanations before concluding malicious intent. When cross-tool conditions indicate follow-up is needed, an `action_required` array appears with prioritized remediation steps.
+
+**Auto-summarization:** When total tool output exceeds ~32KB, `analyze_file` automatically switches to summary mode to prevent LLM context overflow — key findings per tool, full IOC extraction, and paths to saved full outputs for drill-down via `download_file`.
+
+**Preprocessing:** Before analysis, `analyze_file` checks for conditions that prevent effective analysis (encrypted Office docs, bloated PEs, PyInstaller bundles) and applies automatic fixes. Results appear in the `preprocessing` field.
+
+### Example: run_tool
 
 ```jsonc
 // Run capa to detect capabilities in a PE file
@@ -283,131 +274,13 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
   "timeout": 600
 }
 
-// Analyze network traffic conversations
-{
-  "command": "tshark -q -z conv,tcp -r",
-  "input_file": "capture.pcap"
-}
-
 // Extract embedded content from OOXML document
 {
   "command": "zipdump.py -s 3 -d sample.docx | xmldump.py pretty"
 }
-
-// Examine PE sections with readelf (for ELF) or pedump
-{
-  "command": "pedump --sections",
-  "input_file": "sample.exe"
-}
-
-// Complex pipeline for string extraction
-{
-  "command": "strings -n 8 sample.exe | tr -d '\\0' | sort -u | head -100"
-}
 ```
 
-#### Example: Using extract_archive
-
-```jsonc
-// Extract a password-protected archive (tries common passwords automatically)
-{
-  "archive_file": "malware-sample.zip"
-}
-
-// Extract with a specific password
-{
-  "archive_file": "sample.7z",
-  "password": "secretpass"
-}
-
-// Extract to a specific subdirectory
-{
-  "archive_file": "samples.rar",
-  "output_subdir": "campaign-2024"
-}
-```
-
-**Password handling:** The tool automatically tries common malware archive passwords (`infected`, `malware`, `virus`) if the archive is encrypted. You can also provide a custom password via the `password` parameter, which will be tried first. The default password list is defined in [`src/config/archive-passwords.txt`](src/config/archive-passwords.txt) in the source repository.
-
-#### Example: Using upload_from_host
-
-```jsonc
-// Upload a file from the host filesystem
-{
-  "host_path": "/path/to/suspicious.exe"
-}
-
-// Upload with a different filename and overwrite if exists
-{
-  "host_path": "/path/to/sample.pdf",
-  "filename": "renamed.pdf",
-  "overwrite": true
-}
-```
-
-**File handling:**
-- Accepts an absolute host filesystem path — the MCP server reads the file locally and transfers it
-- Maximum file size: 200MB
-- Rejects symlinks, path traversal, and shell metacharacters
-- Returns SHA256 hash, size, and full path on success
-- For HTTP transport deployments, use scp/sftp to place files in the samples directory directly
-
-#### Example: Using download_from_url
-
-```jsonc
-// Download a file from a URL
-{
-  "url": "https://example.com/suspicious.exe"
-}
-
-// Download with custom headers (e.g., for authenticated endpoints)
-{
-  "url": "https://malware-bazaar.example.com/sample/abc123",
-  "headers": ["User-Agent: Mozilla/5.0", "X-Auth-Token: mytoken"],
-  "filename": "bazaar-sample.exe"
-}
-
-// Use thug honeyclient for JavaScript-heavy sites
-{
-  "url": "https://suspicious-landing-page.com/exploit",
-  "method": "thug",
-  "headers": ["User-Agent: Mozilla/5.0 (Windows NT 10.0)"]
-}
-```
-
-**Download methods:**
-- `curl` (default): Direct HTTP download with `-sSfL`, max 200MB, max 10 redirects
-- `thug`: Uses thug honeyclient (if installed) for sites requiring JavaScript execution. Supports `-u` (User-Agent) and `-r` (Referer) flags from custom headers
-
-**Security:** Only http:// and https:// URLs are allowed. URLs and headers are validated for injection characters before shell execution.
-
-#### Example: Using download_file
-
-```jsonc
-// Download as password-protected archive (default behavior)
-{
-  "file_path": "payload.exe",
-  "output_path": "/tmp/downloads"
-}
-// → Downloads payload.exe.zip with password "infected"
-
-// Download a harmless text report without archiving
-{
-  "file_path": "capa-results.json",
-  "output_path": "/tmp/downloads",
-  "archive": false
-}
-```
-
-**File handling:**
-- Maximum file size: 200MB
-- Only allows downloads from the output directory (not samples)
-- Downloads file to the specified `output_path` directory on the host
-- Returns host file path, SHA256 hash, and size
-- **Safe download (default):** Files are wrapped in a password-protected archive before transfer. This prevents AV/EDR from flagging malicious artifacts on the host. The default password is `infected`. If the file was previously extracted via `extract_archive`, the original archive format and password are reused.
-- Pass `archive: false` for harmless files like text reports or JSON output
-
-#### Example: Using analyze_file
+### Example: analyze_file
 
 ```jsonc
 // Auto-analyze a PE file (detects type, runs peframe, capa, floss, etc.)
@@ -415,137 +288,18 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
   "file": "sample.exe"
 }
 
-// Quick triage — fast tools only (peframe, pdfid, oleid, etc.)
+// Quick triage — fast tools only
 {
   "file": "sample.exe",
   "depth": "quick"
 }
-
-// Deep analysis — includes expensive tools (full decompilation, XOR brute-force, etc.)
-{
-  "file": "sample.exe",
-  "depth": "deep"
-}
-
-// With custom per-tool timeout (default: 60s)
-{
-  "file": "large-binary.elf",
-  "timeout_per_tool": 120
-}
 ```
-
-**Depth tiers:**
-
-The `depth` parameter controls which tools run during analysis. Higher tiers include all tools from lower tiers.
-
-| Tier | Purpose | When to Use |
-|------|---------|-------------|
-| `quick` | Fast triage (~15 tools) | Initial assessment, bulk processing, time-sensitive analysis |
-| `standard` | Comprehensive analysis (~60 tools) | Default — thorough analysis with reasonable time |
-| `deep` | Maximum coverage (~78 tools) | Deep-dive investigation, packed/obfuscated samples |
-
-**Tools by tier and file type:**
-
-| File Type | Quick | Standard (adds) | Deep (adds) |
-|-----------|-------|-----------------|-------------|
-| **PE/DLL** | peframe, diec, strings, ssdeep | capa, floss, portex, pescan, manalyze, signsrch, yara-forge, upx, 1768 | capa-vv, pedump, brxor, xor-kpa, disitool, yara-rules |
-| **.NET** | peframe, diec | ilspycmd, capa, yara-forge | dotnetfile_dump, yara-rules |
-| **PDF** | pdfid, pdfcop | pdf-parser, pdfextract, pdftool, pdfresurrect, qpdf, pdftk | peepdf-3, pdfdecompress |
-| **Office (OLE2)** | oleid | olevba, oledump, pcodedmp, xlmdeobfuscator | — |
-| **Office (OOXML)** | oleid | olevba, zipdump, xmldump | — |
-| **RTF** | rtfdump | rtfobj | — |
-| **ELF** | readelf-header | readelf-sections, capa, yara-forge | yara-rules |
-| **JavaScript** | js-beautify | box-js | jstillery, spidermonkey |
-| **VBScript** | decode-vbe | — | — |
-| **JAR/Java** | — | cfr, jadx | — |
-| **Python (.pyc)** | — | pycdc | — |
-| **Email** | msgconvert | emldump | — |
-| **Shellcode** | speakeasy-sc-x64/x86 | — | qltool-sc-x64/x86, tracesc |
-| **Data+PE ext** | speakeasy-sc-x64/x86 | strings, base64dump, xorsearch, 1768, csce | tracesc |
-| **PCAP** | tshark-conversations | tshark-http, tshark-dns, tshark-hierarchy | tshark-verbose |
-| **Memory** | vol3-info, vol3-pslist | vol3-pstree, vol3-netscan, vol3-cmdline, vol3-filescan, vol3-dlllist, vol3-psscan, vol3-hivelist, vol3-linux-pslist | vol3-malfind, vol3-handles |
-| **Fallback** | strings, ssdeep | exiftool, base64dump, xorsearch | sets, yara-rules |
-
-**Tier selection guidance:**
-- Use `quick` for initial triage or when processing many files — runs in seconds
-- Use `standard` (default) for most investigations — balances thoroughness with time
-- Use `deep` when standard analysis shows signs of packing, obfuscation, or encryption — adds brute-force deobfuscation and verbose output modes
-
-**Output format:** Returns JSON with `detected_type`, `matched_category`, `depth`, `tools_run` (with output), `tools_failed`, and `tools_skipped`. When cross-tool conditions indicate follow-up is needed (e.g., autoit-ripper fails but diec detected AutoIt), an `action_required` array appears at the top of the response with prioritized remediation steps.
-
-**Smart summarization:** When total tool output exceeds ~32KB, the response automatically switches to summary mode to prevent LLM context overflow. Summary mode includes:
-- Key findings per tool (top 5 most informative lines)
-- Full IOC extraction (preserved in full — high value, compact)
-- Triage summary and suggested next steps
-- Paths to saved full outputs for drill-down via `download_file`
-
-The `mode` field indicates whether the response is `"full"` or `"summary"`. In summary mode, use `download_file` to retrieve complete tool outputs when needed.
-
-**Supported file types:** PE/DLL, PDF, OLE2 Office (.doc/.xls/.ppt), OOXML (.docx/.xlsx/.pptx), RTF, ELF, JavaScript (.js/.hta/.wsf/.html), shell scripts/VBS/PowerShell (.sh/.vbs/.ps1/.bat), Python bytecode (.pyc), JAR, email (EML), Android APK, OneNote, shellcode (.bin/.sc), PCAP/pcapng network captures. Files with PE extensions (.exe/.dll/.sys) where `file` reports "data" are classified as potential raw shellcode or packed payloads and analyzed with emulation tools. Unknown types get fallback tools (strings, exiftool, base64dump, xorsearch).
-
-**Preprocessing:** Before running analysis tools, `analyze_file` checks for conditions that would prevent effective analysis and applies automatic fixes:
-
-| Preprocessor | Condition | Action |
-|--------------|-----------|--------|
-| msoffcrypto-tool | Office doc is encrypted | Decrypt with empty/default password before running olevba/oledump |
-| debloat | PE file is >50MB | Remove junk padding before running peframe/capa/etc |
-| pyinstxtractor | PE is a PyInstaller bundle | Extract Python files before analysis |
-
-Preprocessing results appear in the response under `preprocessing`. If a preprocessor fails (e.g., wrong password), analysis continues on the original file.
-
-#### Example: Using extract_iocs
-
-```jsonc
-// Extract IOCs from strings output
-{
-  "text": "C2 at 45.33.32.156\nHKLM\\Software\\Malware\\Run\nhttp://evil.example.com/payload.exe"
-}
-
-// Include noise (private IPs, known-good domains)
-{
-  "text": "192.168.1.1 google.com 45.33.32.156",
-  "include_noise": true
-}
-```
-
-**Output includes:**
-- Deduplicated IOCs with type classification (ipv4, domain, url, sha256, registry_key, windows_path, cve, etc.)
-- Confidence scores (0.0-1.0) based on specificity
-- Noise filtering (private IPs, known-good domains, empty hashes, stock OS paths)
-- Summary with counts by type
-
-**Supported IOC types:** IPv4/IPv6, domains, URLs, emails, MD5/SHA1/SHA256/SHA512/SSDEEP hashes, CVEs, BTC/ETH/XMR addresses, ASNs, MAC addresses, Windows registry keys, Windows file paths.
-
-### Response Format
-
-All tools return a consistent JSON envelope:
-
-```json
-{
-  "success": true,
-  "tool": "get_file_info",
-  "data": {
-    "file": "sample.exe",
-    "file_type": "PE32 executable",
-    "sha256": "abc123...",
-    "md5": "def456...",
-    "size_bytes": 142336
-  },
-  "metadata": {
-    "elapsed_ms": 142
-  }
-}
-```
-
-Error responses include `"success": false` and an `"error"` field. The MCP `isError` flag is set consistently on all error paths.
 
 ## Security Model
 
 ### Threat Model
 
 All three connection modes (docker, ssh, local) execute commands inside a disposable REMnux VM or container. **Container/VM isolation is the security boundary**, not this server's guardrails.
-
-**What actually needs protection:**
 
 | Threat | Target | Defense |
 |--------|--------|---------|
@@ -558,60 +312,18 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 
 **Other considerations:** A theoretical TOCTOU race exists between path validation and tool execution; container isolation is the primary mitigation (use immutable sample storage for high-security contexts). Tool description poisoning is mitigated by using build-time constants rather than runtime lookups from external sources.
 
-**What does NOT need protection (container/VM's job):**
-- REMnux filesystem, packages, services (disposable)
-- REMnux privileges (container-isolated)
-- REMnux network config, devices, mounts (container-isolated)
-- Path traversal inside REMnux (nothing sensitive to protect)
-
-**Blocked command patterns (anti-injection):**
-- Null bytes (truncate paths in C functions)
-- Shell escape: backticks, `$()`, `${}`, process substitution `<()` `>()`
-
-**Deliberately NOT blocked (legitimate shell syntax):**
-- `eval`, `exec`, `source` — same threat class as pipe-to-interpreter (already allowed); without `$()` or backticks, these only operate on literal strings; container/VM isolation handles residual risk
-- Simple `$VAR` references (needed for shell loops: `for f in *; do file "$f"; done`)
-- Newlines/carriage returns (enables multi-line scripts; container isolation is the security boundary)
-
-The threat is command *substitution* (`$()`, `${}`), not variable *reference* (`$var`) or multi-command execution.
-
-**Pipe patterns (historically blocked, now allowed):**
-- Pipes to interpreters (`| bash`, `| python`, etc.) were previously blocked but are now allowed
-- Container/VM isolation is the security boundary for code execution
-- The AI's system prompt warns against piping untrusted output to interpreters
-- Blocking was removed because it prevented legitimate analysis workflows (heredocs, batch decoding, script analysis)
-
-**All pipes are allowed:** `| grep`, `| head`, `| tail`, `| sort`, `| uniq`, `| wc`, `| cut`, `| awk`, `| sed`, `| tee`, `| xargs`, `| dd`, `| python`, `| bash`, etc.
-
-**Path sandboxing** (`--sandbox`) is available as an opt-in workflow aid to restrict file operations to the samples/output directories. It is off by default because all execution happens inside disposable REMnux — there is nothing to protect from path traversal.
-
-### Deliberately NOT Blocked
-
-These commands are intentionally allowed because REMnux is disposable and container-isolated:
-
-| Command | Why allowed |
-|---------|-------------|
-| `rm`, `rmdir`, `shred` | Ephemeral environment — rebuilt after use |
-| `sudo`, `su`, `chmod`, `chown` | Container isolation handles privileges |
-| `apt`, `pip install`, `npm install` | Ephemeral environment — install what you need |
-| `systemctl`, `service` | Ephemeral environment |
-| `mount`, `umount`, `iptables` | Container isolation handles this |
-| `dd` | Legitimate forensics tool for disk/memory carving |
-| `curl`, `wget` | Network tools needed for analysis |
-| `\| python`, `\| bash`, `\| perl`, etc. | Container isolation handles code execution; blocking prevented legitimate workflows |
-| `eval`, `exec`, `source` | Same threat class as pipe-to-interpreter; `$()` blocking already covers injection vectors |
-| `/etc/`, `/proc/`, `/sys/`, `/dev/` | Container's own filesystem; useful for forensics |
-| `crontab`, `nohup`, `screen`, `tmux` | Ephemeral environment; timeouts still apply |
-| `tee`, `xargs` | Essential for saving output and batch operations |
+**What does NOT need protection (container/VM's job):** REMnux filesystem, packages, services, privileges, network config, devices, mounts, and path traversal inside REMnux — all disposable and container-isolated.
 
 ### Defense in Depth
 
 1. **Container/VM isolation**: REMnux runs isolated — the primary security boundary (user responsibility)
-2. **Anti-injection**: Shell escape patterns block prompt injection from executing arbitrary code via `$()`, backticks, `${}`, and process substitution
+2. **Anti-injection**: Shell escape patterns block prompt injection from executing arbitrary code via `$()`, backticks, and `${}`
 3. **Shell escaping**: Proper single-quote escaping for SSH commands
 4. **Timeouts**: Long-running processes terminated (default 5 min)
 5. **Output budgets**: Per-tool (40KB default) and total (120KB) limits prevent AI context exhaustion
 6. **Path sandboxing** (opt-in via `--sandbox`): Restricts file operations to samples/output dirs
+
+The server deliberately allows commands like `rm`, `sudo`, `pip install`, `curl`, `dd`, pipes to interpreters, process substitution, `eval`/`exec`/`source`, and access to `/etc/`, `/proc/`, `/sys/`, `/dev/` — because REMnux is disposable and container-isolated. Beyond the injection vectors and catastrophic patterns listed above, nothing is blocked. See `src/security/blocklist.ts` for the exact patterns.
 
 ### Prompt Injection from Malware
 
@@ -661,7 +373,7 @@ Then reference mounted files using the subdirectory path:
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | "Container 'remnux' is not running" | Docker container stopped | Run `docker start remnux` |
-| "Command blocked: \<category\>" | Security pattern or pipe-to-interpreter triggered | Review command for injection patterns; avoid piping to interpreters |
+| "Command blocked: \<category\>" | Anti-injection security pattern triggered | Review command for shell injection patterns (`$()`, backticks, `${}`) |
 | "Invalid file path" | Path traversal or special chars | Use simple relative paths without `..` |
 | "Invalid file path" (with `--sandbox`) | Path outside samples/output dirs | Use a relative path or remove `--sandbox` |
 | "Command timed out" | Tool took too long | Increase `--timeout` value |
@@ -748,7 +460,7 @@ This server is self-sufficient for most workflows: `suggest_tools` recommends th
 ### Why blocklist-only (no allowlist)?
 
 - **Container isolation** is the real security boundary, not this server's guardrails
-- **Anti-injection patterns** prevent prompt injection from triggering arbitrary code execution via `$(cmd)`, backticks, `${}`, and process substitution
+- **Anti-injection patterns** prevent prompt injection from triggering arbitrary code execution via `$(cmd)`, backticks, and `${}`
 - **Simpler maintenance**: No need to parse salt-states or fetch remote tool lists
 - **Works offline**: No dependency on docs.remnux.org for tool validation
 - **Flexible**: Any installed tool can be used without updating an allowlist

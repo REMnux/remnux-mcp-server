@@ -19,6 +19,7 @@ const BASE_HINTS: Record<string, string> = {
     "floss extracts obfuscated strings. yara-forge identifies malware families. " +
     "yara-rules provides supplementary capability detection. " +
     "ilspycmd decompiles .NET to C# source. " +
+    "monodis --presources lists embedded resources; --mresources extracts them. " +
     "For deep analysis, capa -vv shows matched rule details with addresses.",
   PE:
     "Start with peframe and diec for triage — diec detects packers and compilers. " +
@@ -182,7 +183,7 @@ function generateHints(category: string, fileOutput: string): string {
   }
 
   if (props.isDotNet) {
-    extras.push("Detected .NET assembly — ilspycmd decompilation recommended for source-level analysis.");
+    extras.push("Detected .NET assembly — ilspycmd decompilation recommended for source-level analysis. monodis --presources lists embedded resources (payloads, config data).");
   }
 
   if (props.isDll) {

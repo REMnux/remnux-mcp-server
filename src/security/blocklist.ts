@@ -14,6 +14,10 @@
  * only operate on literal strings — equivalent to typing commands directly.
  * Container/VM isolation handles the residual risk.
  *
+ * Process substitution (<(), >()) is NOT blocked (removed 2026-02): same
+ * threat class as pipe-to-interpreter (already allowed). Container/VM
+ * isolation handles the risk.
+ *
  * Path sandboxing (isPathSafe, validateFilePath) is available as an opt-in
  * workflow aid via --sandbox, not as a security control.
  */
@@ -42,9 +46,6 @@ export const BLOCKED_PATTERNS: BlockedPattern[] = [
   // Note: Simple $var (like $f in for-loops) is intentionally NOT blocked
   // The threat is command substitution ($(), ${}), not variable reference
   { pattern: /\$[0-9?$!@#]/, category: "shell escape (special variable)" },
-
-  // Process substitution
-  { pattern: /[<>]\s*\(/, category: "process substitution" },
 
   // Catastrophic command guard — prevents AI from accidentally destroying the analysis session
   // Only blocks root-level wipes (rm -rf /), not targeted deletes (rm -rf subdir/)

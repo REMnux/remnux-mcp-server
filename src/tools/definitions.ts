@@ -157,6 +157,30 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
 
   {
+    name: "monodis-presources",
+    description: "List embedded manifest resources in a .NET assembly (names and offsets).",
+    command: "monodis",
+    inputStyle: "positional",
+    fixedArgs: ["--presources"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["dotnet"],
+    tier: "standard",
+  },
+  {
+    name: "monodis-mresources",
+    description: "Extract all embedded managed resources from a .NET assembly to the current directory.",
+    command: "monodis",
+    inputStyle: "positional",
+    fixedArgs: ["--mresources"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["dotnet"],
+    tier: "deep",
+    requiresUserArgs: true, // Writes to cwd with no output dir flag; use via run_tool
+  },
+
+  {
     name: "autoit-ripper",
     description: "Extract and decompile AutoIt scripts from compiled executables.",
     command: "autoit-ripper",

@@ -65,15 +65,6 @@ describe("BLOCKED_PATTERNS", () => {
       expect(isBlocked('for f in extracted/*; do file "$f"; done')).toBe(false);
       expect(isBlocked("file --output=$HOME/file")).toBe(false);
     });
-
-    it("should block <() process substitution", () => {
-      expect(isBlocked("diff <(cat file1) <(cat file2)")).toBe(true);
-      expect(isBlocked("cat <(echo malicious)")).toBe(true);
-    });
-
-    it("should block >() process substitution", () => {
-      expect(isBlocked("cat file | tee >(malicious)")).toBe(true);
-    });
   });
 
   describe("Catastrophic command guard (protects analysis session)", () => {
@@ -95,6 +86,23 @@ describe("BLOCKED_PATTERNS", () => {
   });
 
   describe("Deliberately NOT blocked (container is disposable)", () => {
+    // Process substitution REMOVED (2026-02): Same threat class as pipe-to-interpreter
+    // (already allowed). Container/VM isolation handles the risk.
+    it("should allow <() process substitution (container isolation)", () => {
+      expect(isBlocked("diff <(cat file1) <(cat file2)")).toBe(false);
+      expect(isBlocked("cat <(echo test)")).toBe(false);
+    });
+
+    it("should allow >() process substitution (container isolation)", () => {
+      expect(isBlocked("cat file | tee >(wc -l)")).toBe(false);
+    });
+
+    it("should allow heredocs containing comparison operators with parentheses", () => {
+      // Previously false-positive: < (expr) in Python code matched process substitution regex
+      expect(isBlocked("python3 << 'EOF'\nif x < (y + 1):\n    pass\nEOF")).toBe(false);
+      expect(isBlocked("python3 << 'EOF'\nif x > (y - 1):\n    pass\nEOF")).toBe(false);
+    });
+
     // eval/exec/source REMOVED (2026-02): Same threat class as pipe-to-interpreter
     // (already allowed). Without $() or backticks, these can only operate on literal
     // strings. Container/VM isolation handles the residual risk.
