@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-02-05",
+  "updated": "2026-02-06",
   "tools": [
     {
       "command": "1768",
@@ -710,6 +710,13 @@
       "website": "https://mitmproxy.org/"
     },
     {
+      "command": "monodis",
+      "name": "monodis",
+      "category": "Examine Static Properties: .NET",
+      "description": "Disassemble and extract resources from .NET assemblies.",
+      "website": "https://www.mono-project.com/docs/tools+libraries/tools/monodis/"
+    },
+    {
       "command": "msg-extractor",
       "name": "msg-extractor",
       "category": "Analyze Documents: Email Messages",
@@ -941,8 +948,8 @@
       "website": "https://github.com/blackberry/pe_tree"
     },
     {
-      "command": "pecheck.py",
-      "name": "pecheck",
+      "command": "pecheck",
+      "name": "pecheck.py",
       "category": "Examine Static Properties: PE Files",
       "description": "Analyze static properties of PE files.",
       "website": "https://blog.didierstevens.com/2020/03/15/pecheck-py-version-0-7-10/"
