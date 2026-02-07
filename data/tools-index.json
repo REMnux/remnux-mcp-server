@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-02-06",
+  "updated": "2026-02-07",
   "tools": [
     {
       "command": "1768",
@@ -139,7 +139,7 @@
       "command": "bytehist",
       "name": "Bytehist",
       "category": "Statically Analyze Code: Unpacking",
-      "description": "Generate byte-usage-histograms for all types of files with a focus PE files.",
+      "description": "Generate byte-usage-histograms for all types of files with a focus on PE files.",
       "website": "https://www.cert.at/downloads/software/bytehist_en.html"
     },
     {
@@ -154,7 +154,7 @@
       "name": "capa",
       "category": "Statically Analyze Code: PE Files",
       "description": "Detect suspicious capabilities in PE files.",
-      "website": "https://github.com/fireeye/capa"
+      "website": "https://github.com/mandiant/capa"
     },
     {
       "command": "cast",
@@ -224,7 +224,7 @@
       "name": "cURL",
       "category": "General Utilities",
       "description": "Interact with servers via supported protocols, including HTTP, HTTPS, FTP, IMAP, etc. using this command-line tool.",
-      "website": "https://curl.haxx.se"
+      "website": "https://curl.se"
     },
     {
       "command": "cut-bytes",
@@ -367,13 +367,6 @@
       "website": "https://github.com/pan-unit42/dotnetfile"
     },
     {
-      "command": "monodis",
-      "name": "monodis",
-      "category": "Examine Static Properties: .NET",
-      "description": "List and extract embedded resources from .NET assemblies.",
-      "website": "https://www.mono-project.com/docs/tools+libraries/tools/monodis/"
-    },
-    {
       "command": "droidlysis",
       "name": "DroidLysis",
       "category": "Statically Analyze Code: Android",
@@ -448,7 +441,7 @@
       "name": "FakeNet-NG",
       "category": "Explore Network Interactions: Services",
       "description": "Emulate common network services and interact with malware.",
-      "website": "https://github.com/fireeye/flare-fakenet-ng"
+      "website": "https://github.com/mandiant/flare-fakenet-ng"
     },
     {
       "command": "feh",
@@ -998,7 +991,7 @@
     },
     {
       "command": "powershell-core",
-      "name": "PowerShell  Core",
+      "name": "PowerShell Core",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Run PowerShell scripts and commands.",
       "website": "https://github.com/powershell/powershell"
@@ -1183,7 +1176,7 @@
       "name": "Speakeasy",
       "category": "Statically Analyze Code: PE Files",
       "description": "Emulate code execution, including shellcode, Windows drivers, and Windows PE files.",
-      "website": "https://github.com/fireeye/speakeasy"
+      "website": "https://github.com/mandiant/speakeasy"
     },
     {
       "command": "spidermonkey",
