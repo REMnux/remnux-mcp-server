@@ -206,7 +206,7 @@ function generateTriageSummary(
   if (hasAnomaly) findings.push("PE anomalies detected");
   if (hasCapabilities) findings.push("Notable capabilities identified");
   if (hasMacros) findings.push("VBA macros present");
-  if (hasFamilyDetection) findings.push("Malware family identified");
+  if (hasFamilyDetection) findings.push("YARA family signature matched");
   if (hasYaraMatches) findings.push("YARA rules matched");
 
   if (highCount > 0) findings.push(`${highCount} high-severity finding(s)`);
@@ -604,7 +604,16 @@ export async function handleAnalyzeFile(
     "(2) Do multiple findings together suggest malicious purpose, or are they individually " +
     "explainable as normal development practices? " +
     "(3) What concrete evidence distinguishes this from a benign program? " +
-    "State your confidence level (low/medium/high) and what evidence supports or contradicts a malicious verdict.";
+    "State your confidence level (low/medium/high) and what evidence supports or contradicts a malicious verdict. " +
+    "ATTRIBUTION AND CLASSIFICATION: " +
+    "YARA family signatures (yara-forge) indicate resemblance to known families, not confirmed identity — " +
+    "signatures can match shared code, libraries, or techniques reused across unrelated families. " +
+    "YARA behavioral rules and capa detections flag code patterns, not confirmed runtime behaviors — " +
+    "a 'keylogger' rule match means keylogging-related code patterns were detected, but static analysis " +
+    "alone cannot confirm the sample actually performs keylogging at runtime. " +
+    "When multiple tools converge on a classification, this strengthens the hypothesis " +
+    "but does not confirm it. Use 'consistent with' or 'matches patterns associated with' rather than " +
+    "'confirms' or 'identified as'. State attribution confidence separately from detection confidence.";
 
   // Check if output exceeds budget - return summary instead of full output
   if (shouldSummarize(toolsRun)) {

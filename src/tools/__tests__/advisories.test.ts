@@ -91,15 +91,68 @@ describe("advisories", () => {
           { name: "diec", exit_code: 0, output: "AutoIt v3" },
           { name: "autoit-ripper", exit_code: 1, output: "Failed" },
           { name: "capa", exit_code: 14, output: "Packed" },
+          { name: "yara-forge", exit_code: 0, output: "MALWARE_Win_Qulab" },
         ],
         category: "PE",
       };
 
       const advisories = evaluateAdvisories(context);
-      expect(advisories).toHaveLength(2);
-      // autoit-wrapper has priority 10, capa-packed has priority 9
+      expect(advisories).toHaveLength(3);
+      // autoit-wrapper=10, capa-packed=9, yara-family-attribution=7
       expect(advisories[0].name).toBe("autoit-wrapper");
       expect(advisories[1].name).toBe("capa-packed");
+      expect(advisories[2].name).toBe("yara-family-attribution");
+    });
+
+    it("detects yara-family-attribution when yara-forge has match lines", () => {
+      const context: AdvisoryContext = {
+        toolsRun: [
+          { name: "yara-forge", exit_code: 0, output: "MALWARE_Win_Qulab sample.exe\nMALWARE_Win_AgentTesla sample.exe" },
+        ],
+        category: "PE",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      expect(advisories).toHaveLength(1);
+      expect(advisories[0].name).toBe("yara-family-attribution");
+      expect(advisories[0].issue).toContain("resemblance");
+      expect(advisories[0].remediation).toContain("Cross-reference");
+    });
+
+    it("does not trigger yara-family-attribution when output is only warnings", () => {
+      const context: AdvisoryContext = {
+        toolsRun: [
+          { name: "yara-forge", exit_code: 0, output: "warning: slow rule\nwarning: skipped rule" },
+        ],
+        category: "PE",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      expect(advisories).toEqual([]);
+    });
+
+    it("does not trigger yara-family-attribution when yara-forge has no output", () => {
+      const context: AdvisoryContext = {
+        toolsRun: [
+          { name: "yara-forge", exit_code: 0, output: "" },
+        ],
+        category: "PE",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      expect(advisories).toEqual([]);
+    });
+
+    it("does not trigger yara-family-attribution when yara-forge was not run", () => {
+      const context: AdvisoryContext = {
+        toolsRun: [
+          { name: "capa", exit_code: 0, output: "Found capabilities" },
+        ],
+        category: "PE",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      expect(advisories).toEqual([]);
     });
   });
 });

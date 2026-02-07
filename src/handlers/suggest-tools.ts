@@ -16,7 +16,7 @@ const BASE_HINTS: Record<string, string> = {
     "Start with peframe and diec for triage. diec detects packers/protectors. " +
     "For string extraction, pestr extracts both ASCII and Unicode with section info. " +
     "capa identifies capabilities like C2, persistence, or file manipulation. " +
-    "floss extracts obfuscated strings. yara-forge identifies malware families. " +
+    "floss extracts obfuscated strings. yara-forge scans for malware family signatures (matches indicate resemblance, not confirmed attribution). " +
     "yara-rules provides supplementary capability detection. " +
     "ilspycmd decompiles .NET to C# source. " +
     "monodis --presources lists embedded resources; --mresources extracts them. " +
@@ -26,7 +26,7 @@ const BASE_HINTS: Record<string, string> = {
     "For string extraction, use pestr (extracts both ASCII and Unicode with section info) — prefer over generic strings command. " +
     "capa maps capabilities to MITRE ATT&CK. floss extracts obfuscated strings. " +
     "portex provides comprehensive PE structure analysis including anomaly detection. " +
-    "yara-forge identifies malware families using 45+ actively maintained sources (Malpedia, ReversingLabs). " +
+    "yara-forge scans for malware family signatures from 45+ sources (Malpedia, ReversingLabs). Matches indicate resemblance to known families, not confirmed attribution. " +
     "yara-rules provides supplementary capability/behavior detection (packers, anti-debug). " +
     "1768.py analyzes Cobalt Strike beacons. disitool.py examines Authenticode signatures. " +
     "For deep analysis, capa -vv shows matched rule details with addresses. " +

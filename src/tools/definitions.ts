@@ -86,7 +86,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   {
     name: "yara-forge",
-    description: "Identify malware families using curated YARA rules from 45+ sources (Malpedia, ReversingLabs, etc.).",
+    description: "Scan for malware family signatures using curated YARA rules from 45+ sources (Malpedia, ReversingLabs, etc.). Matches indicate resemblance to known families, not confirmed attribution.",
     command: "yara-forge",
     inputStyle: "positional",
     outputFormat: "text",

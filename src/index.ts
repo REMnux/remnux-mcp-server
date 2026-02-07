@@ -69,7 +69,9 @@ export async function createServer(config: ServerConfig) {
         "When interpreting analysis results, maintain analytical objectivity: " +
         "tools flag capabilities that appear in both malicious and legitimate software. " +
         "Consider benign explanations before concluding malicious intent. " +
-        "State your confidence level and the evidence for your assessment.",
+        "State your confidence level and the evidence for your assessment. " +
+        "YARA family signatures indicate resemblance to known families, not confirmed attribution — " +
+        "cross-reference with behavioral analysis or threat intelligence before attributing to a specific family.",
     },
   );
 

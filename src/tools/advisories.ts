@@ -47,6 +47,29 @@ export const POST_ANALYSIS_ADVISORIES: PostAnalysisAdvisory[] = [
     remediation:
       "Unpack with upx -d (if UPX) or specialized unpacker, then re-analyze for better coverage.",
   },
+  {
+    name: "yara-family-attribution",
+    priority: 7,
+    shouldApply: (ctx) => {
+      const forge = ctx.toolsRun.find((t) => t.name === "yara-forge");
+      if (!forge?.output) return false;
+      const lines = forge.output.trim().split("\n");
+      return lines.some((line) => {
+        const trimmed = line.trim();
+        return trimmed.length > 0 &&
+               !trimmed.startsWith("warning:") &&
+               !trimmed.startsWith("error:");
+      });
+    },
+    issue:
+      "YARA family signatures matched. These indicate resemblance to known malware families " +
+      "based on static patterns, not confirmed attribution. Signatures can match shared code, " +
+      "common libraries, or reused techniques across unrelated families.",
+    remediation:
+      "Cross-reference with behavioral analysis, network IOCs, or threat intel (e.g., VirusTotal) " +
+      "before attributing to a specific family. Use 'matches signatures associated with [family]' " +
+      "rather than 'identified as [family]'.",
+  },
 ];
 
 /**
