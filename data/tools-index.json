@@ -392,7 +392,7 @@
       "name": "EPIC IRC Client",
       "category": "Explore Network Interactions: Connecting",
       "description": "Examine IRC activities with this IRC client.",
-      "website": "http://www.epicsol.org/"
+      "website": "https://www.epicsol.org/"
     },
     {
       "command": "evilclippy",
@@ -420,7 +420,7 @@
       "name": "ex_pe_xor.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Search an XOR'ed file for indications of executable binaries.",
-      "website": "http://hooked-on-mnemonics.blogspot.com/2014/04/expexorpy.html"
+      "website": "https://hooked-on-mnemonics.blogspot.com/2014/04/expexorpy.html"
     },
     {
       "command": "fakedns",
@@ -455,7 +455,7 @@
       "name": "file",
       "category": "Examine Static Properties: General",
       "description": "Identify file type using \"magic\" numbers.",
-      "website": "http://astron.com/pub/file/README"
+      "website": "https://github.com/file/file"
     },
     {
       "command": "file-magic",
@@ -854,7 +854,7 @@
       "name": "oletools",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Microsoft Office OLE2 compound documents.",
-      "website": "http://www.decalage.info/python/oletools"
+      "website": "https://www.decalage.info/python/oletools"
     },
     {
       "command": "onedump",
@@ -1253,7 +1253,7 @@
       "name": "tcpflow",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Analyze the flow of network traffic.",
-      "website": "http://downloads.digitalcorpora.org/downloads/tcpflow/"
+      "website": "https://downloads.digitalcorpora.org/downloads/tcpflow/"
     },
     {
       "command": "tcpick",
