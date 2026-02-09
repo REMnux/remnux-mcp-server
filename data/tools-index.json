@@ -1039,6 +1039,13 @@
       "website": "https://github.com/extremecoders-re/pyinstxtractor"
     },
     {
+      "command": "pyinstxtractor-ng",
+      "name": "pyinstxtractor-ng",
+      "category": "Statically Analyze Code: Python",
+      "description": "Extract contents of PyInstaller-generated executables without requiring a matching Python version.",
+      "website": "https://github.com/pyinstxtractor/pyinstxtractor-ng"
+    },
+    {
       "command": "qiling",
       "name": "Qiling",
       "category": "Statically Analyze Code: General",
