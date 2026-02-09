@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-02-07",
+  "updated": "2026-02-09",
   "tools": [
     {
       "command": "1768",
@@ -526,6 +526,13 @@
       "category": "Explore Network Interactions: Connecting",
       "description": "Interact with servers via HTTP, HTTPS, FTP, and FTPS using this command-line tool.",
       "website": "https://www.gnu.org/software/wget/"
+    },
+    {
+      "command": "goresym",
+      "name": "GoReSym",
+      "category": "Examine Static Properties: General",
+      "description": "Extract metadata and symbols from Go binaries, including stripped ones.",
+      "website": "https://github.com/mandiant/GoReSym"
     },
     {
       "command": "hachoir",
