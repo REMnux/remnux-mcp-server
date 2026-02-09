@@ -664,7 +664,7 @@
       "command": "lief",
       "name": "LIEF",
       "category": "Examine Static Properties: General",
-      "description": "Parse and analyze PE, ELF, MachO, DEX, OAT, VDEX, and ART executable formats.",
+      "description": "Parse and analyze PE, ELF, MachO, DEX, OAT, VDEX, ART, and DWARF executable formats.",
       "website": "https://lief.re"
     },
     {
