@@ -530,7 +530,7 @@
     {
       "command": "goresym",
       "name": "GoReSym",
-      "category": "Examine Static Properties: General",
+      "category": "Examine Static Properties: Go",
       "description": "Extract metadata and symbols from Go binaries, including stripped ones.",
       "website": "https://github.com/mandiant/GoReSym"
     },
