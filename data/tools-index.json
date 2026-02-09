@@ -52,6 +52,13 @@
       "website": "https://github.com/izm1chael/Anomy"
     },
     {
+      "command": "apkid",
+      "name": "APKiD",
+      "category": "Statically Analyze Code: Android",
+      "description": "Identify compilers, packers, and obfuscators used to protect Android APK and DEX files.",
+      "website": "https://github.com/rednaga/APKiD"
+    },
+    {
       "command": "apktool",
       "name": "apktool",
       "category": "Statically Analyze Code: Android",
