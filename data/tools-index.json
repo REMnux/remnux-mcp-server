@@ -661,6 +661,13 @@
       "website": "https://github.com/libyal/libolecf"
     },
     {
+      "command": "lief",
+      "name": "LIEF",
+      "category": "Examine Static Properties: General",
+      "description": "Parse and analyze PE, ELF, MachO, DEX, OAT, VDEX, and ART executable formats.",
+      "website": "https://lief.re"
+    },
+    {
       "command": "ltrace",
       "name": "ltrace",
       "category": "Dynamically Reverse-Engineer Code: ELF Files",
