@@ -1361,6 +1361,13 @@
       "website": "https://www.wireshark.org"
     },
     {
+      "command": "uncompyle6",
+      "name": "uncompyle6",
+      "category": "Statically Analyze Code: Python",
+      "description": "Python cross-version bytecode decompiler for Python 1.0 through 3.8.",
+      "website": "https://github.com/rocky/python-uncompyle6"
+    },
+    {
       "command": "unfurl",
       "name": "Unfurl",
       "category": "Explore Network Interactions: Connecting",
