@@ -43,9 +43,13 @@ const SALT_TO_MCP_CATEGORY: Record<string, string> = {
   // Office (OLE2, OOXML, RTF share tools)
   "Analyze Documents: Microsoft Office": "OLE2",
 
-  // ELF
+  // ELF / Go
   "Examine Static Properties: ELF Files": "ELF",
+  "Examine Static Properties: Go": "ELF",
   "Dynamically Reverse-Engineer Code: ELF Files": "ELF",
+
+  // Python
+  "Statically Analyze Code: Python": "Python",
 
   // Scripts
   "Statically Analyze Code: Scripts": "Script",
@@ -87,9 +91,9 @@ class ToolCatalog {
   readonly updated: string;
 
   constructor(index: ToolsIndex) {
-    this.tools = index.tools;
-    this.version = index.version;
-    this.updated = index.updated;
+    this.tools = index.tools ?? [];
+    this.version = index.version ?? "0.0.0";
+    this.updated = index.updated ?? "unknown";
 
     // Index by salt-states category
     this.bySaltCategory = new Map();
@@ -147,5 +151,15 @@ function loadIndex(): ToolsIndex {
   return JSON.parse(raw) as ToolsIndex;
 }
 
+/** Load index with graceful fallback so a missing/corrupt file doesn't crash the server. */
+function loadIndexSafe(): ToolsIndex {
+  try {
+    return loadIndex();
+  } catch (err) {
+    console.error("WARNING: Failed to load tool catalog — additional_tools will be unavailable:", err);
+    return { version: "0.0.0", updated: "unknown", tools: [] };
+  }
+}
+
 /** Singleton catalog instance. */
-export const toolCatalog = new ToolCatalog(loadIndex());
+export const toolCatalog = new ToolCatalog(loadIndexSafe());

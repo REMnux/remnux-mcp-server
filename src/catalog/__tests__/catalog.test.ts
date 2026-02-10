@@ -50,4 +50,28 @@ describe("ToolCatalog", () => {
   it("returns empty array for unknown salt-states category", () => {
     expect(toolCatalog.forSaltCategory("Fake Category")).toEqual([]);
   });
+
+  // ── New category mappings (Python, Go→ELF, Android→APK) ──────────────
+
+  it("maps 'Statically Analyze Code: Python' to MCP Python category", () => {
+    const pythonTools = toolCatalog.forMcpCategory("Python");
+    const saltCats = new Set(pythonTools.map((t) => t.category));
+    expect(saltCats).toContain("Statically Analyze Code: Python");
+  });
+
+  it("maps Go salt-states category to ELF when tools exist", () => {
+    // "Examine Static Properties: Go" is mapped to ELF in SALT_TO_MCP_CATEGORY.
+    // Once update-docs.py syncs redress into tools-index.json, Go tools will
+    // appear in forMcpCategory("ELF"). For now verify ELF includes its base categories.
+    const elfTools = toolCatalog.forMcpCategory("ELF");
+    expect(elfTools.length).toBeGreaterThan(0);
+    const saltCats = new Set(elfTools.map((t) => t.category));
+    expect(saltCats).toContain("Examine Static Properties: ELF Files");
+  });
+
+  it("maps 'Statically Analyze Code: Android' to MCP APK category", () => {
+    const apkTools = toolCatalog.forMcpCategory("APK");
+    const saltCats = new Set(apkTools.map((t) => t.category));
+    expect(saltCats).toContain("Statically Analyze Code: Android");
+  });
 });

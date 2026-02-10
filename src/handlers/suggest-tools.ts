@@ -4,9 +4,28 @@ import { validateFilePath } from "../security/blocklist.js";
 import { matchFileType, CATEGORY_TAG_MAP } from "../file-type-mappings.js";
 import type { DepthTier } from "../file-type-mappings.js";
 import { toolRegistry } from "../tools/registry.js";
+import { toolCatalog } from "../catalog/index.js";
 import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
+
+/**
+ * Maps catalog command identifiers to their corresponding registry commands.
+ * The catalog uses salt-states package names while the registry uses actual
+ * CLI commands. One catalog entry may correspond to multiple registry tools
+ * when a package ships several binaries.
+ */
+const CATALOG_ALIASES: Record<string, string[]> = {
+  "readpe-formerly-pev": ["pescan", "pestr"],
+  "ilspy": ["ilspycmd"],
+  "origamindee": ["pdfcop", "pdfextract", "pdfdecompress"],
+  "pdftk-java": ["pdftk"],
+  "peepdf-3": ["peepdf"],
+  "xlmmacrodeobfuscator": ["xlmdeobfuscator"],
+  "oletools": ["oleid", "olevba", "rtfobj"],
+  "decompyle": ["pycdc"],
+  "pyinstaller-extractor": ["pyinstxtractor-ng"],
+};
 
 /**
  * Base per-category expert guidance for the AI agent.
@@ -29,6 +48,7 @@ const BASE_HINTS: Record<string, string> = {
     "yara-forge scans for malware family signatures from 45+ sources (Malpedia, ReversingLabs). Matches indicate resemblance to known families, not confirmed attribution. " +
     "yara-rules provides supplementary capability/behavior detection (packers, anti-debug). " +
     "1768.py analyzes Cobalt Strike beacons. disitool.py examines Authenticode signatures. " +
+    "redress recovers Go compiler info, packages, and types from Go-compiled executables — returns minimal output on non-Go PE files. " +
     "For deep analysis, capa -vv shows matched rule details with addresses. " +
     "pedump shows raw PE structure and brxor bruteforces XOR-encoded strings.",
   PDF:
@@ -63,6 +83,7 @@ const BASE_HINTS: Record<string, string> = {
     "readelf -h shows ELF header (type, arch, entry point). " +
     "readelf -S lists sections — look for unusual section names or sizes. " +
     "capa detects capabilities in ELF binaries similar to PE analysis. " +
+    "redress analyzes Go binaries — recovers package names, types, compiler version, and source structure. On non-Go ELF files it returns minimal output (just OS/arch). " +
     "For deep analysis, capa -vv shows matched rule details with addresses.",
   JavaScript:
     "js-beautify reformats and deobfuscates JavaScript — look for eval(), " +
@@ -81,8 +102,8 @@ const BASE_HINTS: Record<string, string> = {
     "translate.py applies byte-level transforms. numbers-to-string.py decodes numeric payloads.",
   Python:
     "pycdc decompiles Python bytecode (.pyc) to readable source code. " +
-    "For PyInstaller bundles (which produce PE files), use pyinstxtractor via run_tool " +
-    "to extract contents, then analyze the resulting .pyc files with pycdc.",
+    "uncompyle6 is an alternative decompiler supporting Python 1.0 through 3.8 — use when pycdc fails or for older Python versions. " +
+    "For PyInstaller bundles, pyinstxtractor-ng extracts contents without requiring a matching Python version — invoke via run_tool.",
   JAR:
     "zipdump lists the JAR archive contents (JAR files are ZIP format). " +
     "Look for unusual class files, embedded resources, or manifest entries. " +
@@ -93,6 +114,7 @@ const BASE_HINTS: Record<string, string> = {
     "Look for notable attachments, embedded URLs, and header anomalies. " +
     "Extract attachments for further analysis with appropriate tools.",
   APK:
+    "apkid identifies compilers, packers, and obfuscators — use it for triage alongside droidlysis to understand what protections are applied. " +
     "apktool decompiles the APK to smali and extracts resources. " +
     "droidlysis performs static analysis identifying permissions, API calls, and risk indicators. " +
     "Look for excessive permissions, obfuscation, and notable network activity.",
@@ -286,6 +308,42 @@ export async function handleSuggestTools(
     ...(availableCommands.has(t.command) ? {} : { available: false as const }),
   }));
 
+  // Query catalog for additional tools not in the registry
+  let additionalTools: Array<{ command: string; name: string; description: string; website: string }> = [];
+  try {
+    const normalize = (c: string) => c.replace(/\.py$/, '');
+    const registryCommands = new Set(tools.map((t) => normalize(t.command)));
+
+    // Check if a catalog tool is already covered by the registry
+    const isCovered = (catalogCmd: string): boolean => {
+      // Direct match (with .py normalization)
+      if (registryCommands.has(normalize(catalogCmd))) return true;
+      // Alias match (catalog package name → registry CLI commands)
+      // Alias match: catalog package name → registry CLI commands.
+      // Uses some() deliberately: if ANY tool from the package is recommended,
+      // the catalog package entry is hidden to avoid confusing overlap.
+      const aliases = CATALOG_ALIASES[catalogCmd];
+      return aliases !== undefined && aliases.some((a) => registryCommands.has(normalize(a)));
+    };
+
+    const seen = new Set<string>();
+    additionalTools = toolCatalog.forMcpCategory(category.name)
+      .filter((ct) => !isCovered(ct.command))
+      .filter((ct) => {
+        if (seen.has(ct.command)) return false;
+        seen.add(ct.command);
+        return true;
+      })
+      .map((ct) => ({
+        command: ct.command,
+        name: ct.name,
+        description: ct.description,
+        website: ct.website,
+      }));
+  } catch (err) {
+    console.error("WARNING: Catalog query failed for additional_tools:", err);
+  }
+
   return formatResponse("suggest_tools", {
     file: args.file,
     detected_type: fileOutput,
@@ -296,6 +354,12 @@ export async function handleSuggestTools(
       warning: `No tools registered for category "${category.name}" at depth "${depth}". Try depth "deep" or use run_tool directly.`,
     }),
     analysis_hints: generateHints(category.name, fileOutput),
+    ...(additionalTools.length > 0 && {
+      additional_tools: additionalTools,
+      additional_tools_note:
+        "Additional tools available on REMnux for this file type. " +
+        "Not auto-run by analyze_file. Use run_tool to invoke manually.",
+    }),
   }, startTime);
   } catch (error) {
     return formatError("suggest_tools", toREMnuxError(error, deps.config.mode), startTime);

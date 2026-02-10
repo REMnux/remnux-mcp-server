@@ -524,6 +524,19 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tier: "standard",
   },
 
+  // ── Go binary analysis ─────────────────────────────────────────────────
+  {
+    name: "redress",
+    description: "Analyze Go binaries to recover package names, type definitions, source structure, and compiler version.",
+    command: "redress",
+    inputStyle: "positional",
+    fixedArgs: ["info"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["elf", "pe"],
+    tier: "standard",
+  },
+
   // ── ELF analysis ────────────────────────────────────────────────────────
   {
     name: "readelf-header",
@@ -639,6 +652,27 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tags: ["python"],
     tier: "standard",
   },
+  {
+    name: "uncompyle6",
+    description: "Decompile Python bytecode (.pyc) to source code. Supports Python 1.0 through 3.8.",
+    command: "uncompyle6",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["python", "decompilation"],
+    tier: "deep",
+  },
+  {
+    name: "pyinstxtractor-ng",
+    description: "Extract contents of PyInstaller executables without requiring a matching Python version.",
+    command: "pyinstxtractor-ng",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pe", "python"],
+    tier: "standard",
+    requiresUserArgs: true, // Extracts to filesystem; better used via run_tool
+  },
 
   // ── JAR ─────────────────────────────────────────────────────────────────
   // zipdump already covers JAR (tagged "jar")
@@ -689,6 +723,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
 
   // ── APK ─────────────────────────────────────────────────────────────────
+  {
+    name: "apkid",
+    description: "Identify compilers, packers, and obfuscators used to protect Android APK and DEX files.",
+    command: "apkid",
+    inputStyle: "positional",
+    fixedArgs: ["-j"],
+    outputFormat: "json",
+    timeout: 120,
+    tags: ["apk", "packer-detection"],
+    tier: "standard",
+  },
   {
     name: "apktool",
     description: "Reverse-engineer Android APK files.",

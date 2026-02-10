@@ -56,14 +56,17 @@ export const PREPROCESSORS: Preprocessor[] = [
     timeout: 60000,
   },
   {
-    name: "pyinstxtractor",
+    name: "pyinstxtractor-ng",
     description: "Extract files from PyInstaller bundles",
     categories: ["PE"],
     // Check for PyInstaller magic bytes at end of file
     detectCommand: (fp) =>
       `python3 -c "import sys; f=open(sys.argv[1],'rb'); f.seek(-24,2); exit(0 if f.read(13)==b'MEI\\x0c\\x0b\\x0a\\x0b\\x0e' else 1)" ${shellEscape(fp)}`,
-    processCommand: (fp, out) =>
-      `pyinstxtractor ${shellEscape(fp)} -d ${shellEscape(out)}`,
+    processCommand: (fp, out) => {
+      const basename = fp.split('/').pop() ?? fp;
+      return `(pyinstxtractor-ng ${shellEscape(fp)} && mv ${shellEscape(basename + '_extracted')} ${shellEscape(out)}) || ` +
+        `(pyinstxtractor.py ${shellEscape(fp)} && mv ${shellEscape(basename + '_extracted')} ${shellEscape(out)})`;
+    },
     timeout: 60000,
   },
 ];
