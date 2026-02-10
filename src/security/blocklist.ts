@@ -6,17 +6,15 @@
  * boundary — not this module.
  *
  * This module prevents:
- * 1. Shell injection — malware output containing prompt injection could trick
- *    the AI into executing arbitrary code via $(), backticks, ${}, etc.
+ * 1. Null byte injection (truncates paths in C-based functions).
+ * 2. Catastrophic commands (rm -rf /, mkfs) that destroy the analysis session.
  *
- * eval/exec/source are NOT blocked (removed 2026-02): same threat class as
- * pipe-to-interpreter (already allowed). Without $() or backticks, these can
- * only operate on literal strings — equivalent to typing commands directly.
- * Container/VM isolation handles the residual risk.
- *
- * Process substitution (<(), >()) is NOT blocked (removed 2026-02): same
- * threat class as pipe-to-interpreter (already allowed). Container/VM
- * isolation handles the risk.
+ * Shell injection patterns ($(), backticks, ${}, eval, exec, source, pipes to
+ * interpreters, process substitution) are NOT blocked: same threat class —
+ * all allow arbitrary code execution inside the container. Blocking one while
+ * allowing others is inconsistent and blocks legitimate analysis workflows
+ * (e.g., file $(which python3), echo ${PATH}). Container/VM isolation is the
+ * security boundary, not in-band command filtering.
  *
  * Path sandboxing (isPathSafe, validateFilePath) is available as an opt-in
  * workflow aid via --sandbox, not as a security control.
@@ -39,13 +37,9 @@ export const BLOCKED_PATTERNS: BlockedPattern[] = [
   // Newlines allowed: enables multi-line scripts; container isolation is security boundary
   { pattern: /\x00/, category: "null byte injection" },
 
-  // Shell escape / code execution — prevents prompt injection from triggering arbitrary code
-  { pattern: /`[^`]+`/, category: "shell escape (backtick)" },
-  { pattern: /\$\([^)]+\)/, category: "shell escape (command substitution)" },
-  { pattern: /\$\{[^}]+\}/, category: "shell escape (variable expansion)" },
-  // Note: Simple $var (like $f in for-loops) is intentionally NOT blocked
-  // The threat is command substitution ($(), ${}), not variable reference
-  { pattern: /\$[0-9?$!@#]/, category: "shell escape (special variable)" },
+  // Shell expansion ($(), ${}, backticks, $VAR) is NOT blocked (removed 2026-02):
+  // Same threat class as eval/pipe-to-interpreter (already allowed).
+  // Container/VM isolation is the security boundary.
 
   // Catastrophic command guard — prevents AI from accidentally destroying the analysis session
   // Only blocks root-level wipes (rm -rf /), not targeted deletes (rm -rf subdir/)
@@ -144,10 +138,10 @@ export const DANGEROUS_PIPE_PATTERNS: BlockedPattern[] = [];
 
 /**
  * Check if a command string is safe to execute
- * Validates against BLOCKED_PATTERNS (shell injection patterns)
+ * Validates against BLOCKED_PATTERNS (null byte injection, catastrophic commands)
  *
- * Note: DANGEROUS_PIPE_PATTERNS was removed in 2026-02; container isolation
- * is the security boundary for code execution via pipes.
+ * Note: Shell injection and pipe-to-interpreter patterns were removed in 2026-02;
+ * container/VM isolation is the security boundary for code execution.
  *
  * @param command - The full command string to validate
  * @returns { safe: boolean, error?: string }

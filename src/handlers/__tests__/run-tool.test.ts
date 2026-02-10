@@ -76,13 +76,22 @@ describe("handleRunTool", () => {
     expect(env.data.stdout).toBe("");
   });
 
-  it("rejects blocked commands", async () => {
+  it("rejects blocked commands (null byte injection)", async () => {
     const deps = createMockDeps();
 
-    const result = await handleRunTool(deps, { command: "echo $(whoami)" });
+    const result = await handleRunTool(deps, { command: "cat file\x00.txt" });
     const env = parseEnvelope(result);
     expect(env.success).toBe(false);
     expect(env.error_code).toBe("COMMAND_BLOCKED");
+  });
+
+  it("allows shell expansion (container isolation)", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("root"));
+
+    const result = await handleRunTool(deps, { command: "echo $(whoami)" });
+    const env = parseEnvelope(result);
+    expect(env.success).toBe(true);
   });
 
   it("rejects invalid input_file path when sandbox is enabled", async () => {

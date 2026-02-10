@@ -34,36 +34,41 @@ describe("BLOCKED_PATTERNS", () => {
       // Newlines enable multi-command execution, but:
       // 1. AI can already do this via multiple tool calls
       // 2. Container isolation is the security boundary
-      // 3. Shell injection patterns ($(), backticks) are still blocked
       expect(isBlocked("strings sample.exe\nfile sample.exe")).toBe(false);
       expect(isBlocked("test\rcommand")).toBe(false);
     });
   });
 
-  describe("Shell injection patterns (anti-injection)", () => {
-    it("should block backtick command substitution", () => {
-      expect(isBlocked("`whoami`")).toBe(true);
-      expect(isBlocked("file `id`")).toBe(true);
+  describe("Shell expansion (now allowed — container isolation)", () => {
+    it("should allow backtick command substitution", () => {
+      expect(isBlocked("`whoami`")).toBe(false);
+      expect(isBlocked("file `id`")).toBe(false);
     });
 
-    it("should block $() command substitution", () => {
-      expect(isBlocked("$(whoami)")).toBe(true);
-      expect(isBlocked("--output=$(id)")).toBe(true);
+    it("should allow $() command substitution", () => {
+      expect(isBlocked("$(whoami)")).toBe(false);
+      expect(isBlocked("--output=$(id)")).toBe(false);
     });
 
-    it("should block ${} variable expansion", () => {
-      // ${} can contain complex expansion like ${IFS} which enables word splitting attacks
-      expect(isBlocked("${PATH}")).toBe(true);
-      expect(isBlocked("file${IFS}injection")).toBe(true);
+    it("should allow ${} variable expansion", () => {
+      expect(isBlocked("${PATH}")).toBe(false);
+      expect(isBlocked("file${IFS}injection")).toBe(false);
     });
 
     it("should allow simple $VAR (for-loops and legitimate shell)", () => {
-      // Simple $VAR references are normal shell syntax, not injection vectors
-      // Blocking them prevented legitimate analysis like: for f in extracted/*; do file "$f"; done
-      // The threat model concerns command substitution ($(), ${}), not variable reference
       expect(isBlocked("echo $SECRET")).toBe(false);
       expect(isBlocked('for f in extracted/*; do file "$f"; done')).toBe(false);
       expect(isBlocked("file --output=$HOME/file")).toBe(false);
+    });
+
+    it("should allow special variables ($?, $$, $0 — read-only)", () => {
+      expect(isBlocked('echo "Exit: $?"')).toBe(false);
+      expect(isBlocked("echo $$")).toBe(false);
+      expect(isBlocked("echo $!")).toBe(false);
+      expect(isBlocked("echo $0")).toBe(false);
+      expect(isBlocked("echo $@")).toBe(false);
+      expect(isBlocked("echo $#")).toBe(false);
+      expect(isBlocked("echo $1")).toBe(false);
     });
   });
 
@@ -104,9 +109,8 @@ describe("BLOCKED_PATTERNS", () => {
     });
 
     // eval/exec/source REMOVED (2026-02): Same threat class as pipe-to-interpreter
-    // (already allowed). Without $() or backticks, these can only operate on literal
-    // strings. Container/VM isolation handles the residual risk.
-    it("should allow eval (container isolation — $() blocking covers injection)", () => {
+    // (already allowed). Container/VM isolation handles the risk.
+    it("should allow eval (container isolation)", () => {
       expect(isBlocked("eval 'echo hello'")).toBe(false);
       expect(isBlocked("eval malicious")).toBe(false);
     });
@@ -296,19 +300,23 @@ describe("isCommandSafe", () => {
     });
   });
 
-  describe("should reject shell injection", () => {
+  describe("shell expansion and code execution (container isolation)", () => {
     it("allows simple $VAR (for-loops and legitimate shell)", () => {
       // Simple $var is now allowed - see threat model review
       const result = isCommandSafe("echo $SECRET");
       expect(result.safe).toBe(true);
     });
 
-    it("rejects ${} complex expansion", () => {
-      // ${} is still blocked - enables word splitting attacks
-      expect(isCommandSafe("echo ${PATH}").safe).toBe(false);
+    it("allows special variables like $? (read-only, no injection risk)", () => {
+      expect(isCommandSafe('echo "Exit: $?"').safe).toBe(true);
+      expect(isCommandSafe("tmpfile=/tmp/out.$$").safe).toBe(true);
     });
 
-    it("allows eval (container isolation — $() blocking covers injection)", () => {
+    it("allows ${} variable expansion (container isolation)", () => {
+      expect(isCommandSafe("echo ${PATH}").safe).toBe(true);
+    });
+
+    it("allows eval (container isolation)", () => {
       expect(isCommandSafe("eval 'echo hello'").safe).toBe(true);
     });
 

@@ -165,13 +165,22 @@ describe("run_tool", () => {
     );
   });
 
-  it("blocks shell injection commands", async () => {
-    const { envelope, isError } = await callTool("run_tool", { command: "echo $(whoami)" });
+  it("blocks null byte injection", async () => {
+    const { envelope, isError } = await callTool("run_tool", { command: "cat file\x00.txt" });
 
     expect(isError).toBe(true);
     expect(envelope.success).toBe(false);
     expect(envelope.error).toMatch(/blocked/i);
     expect(mockConnector.executeShell).not.toHaveBeenCalled();
+  });
+
+  it("allows shell expansion (container isolation)", async () => {
+    vi.mocked(mockConnector.executeShell).mockResolvedValueOnce(ok("root"));
+
+    const { envelope } = await callTool("run_tool", { command: "echo $(whoami)" });
+
+    expect(envelope.success).toBe(true);
+    expect(mockConnector.executeShell).toHaveBeenCalled();
   });
 
   it("allows safe piped commands", async () => {
@@ -523,28 +532,31 @@ describe("analyze_file", () => {
     vi.mocked(mockConnector.execute).mockResolvedValueOnce(
       ok("sample.exe: PE32 executable")
     );
-    // Preprocessing detect calls (debloat, pyinstxtractor) return non-zero (not applicable)
+    // Preprocessing detect calls (debloat, pyinstxtractor-ng) return non-zero (not applicable)
     // Then first tool not found, rest succeed
     vi.mocked(mockConnector.executeShell)
-      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // debloat detect
-      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // pyinstxtractor detect
+      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // debloat size-check
+      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // pyinstxtractor-ng detect
       .mockResolvedValueOnce({ stdout: "", stderr: "peframe: command not found", exitCode: 127 })
       .mockResolvedValue(ok("output"));
 
     const { envelope } = await callTool("analyze_file", { file: "sample.exe" });
 
-    expect((envelope.data.tools_skipped as Array<{ name: string }>).length).toBe(1);
-    expect((envelope.data.tools_skipped as Array<{ name: string }>)[0].name).toBe("peframe");
+    const skipped = envelope.data.tools_skipped as Array<{ name: string }>;
+    // peframe skipped (not found) + pyinstxtractor-ng skipped (requiresUserArgs)
+    expect(skipped.length).toBe(2);
+    expect(skipped.map((s) => s.name)).toContain("peframe");
+    expect(skipped.map((s) => s.name)).toContain("pyinstxtractor-ng");
   });
 
   it("reports timed-out tools as failed", async () => {
     vi.mocked(mockConnector.execute).mockResolvedValueOnce(
       ok("sample.exe: PE32 executable")
     );
-    // Preprocessing detect calls (debloat, pyinstxtractor) return non-zero (not applicable)
+    // Preprocessing detect calls (debloat, pyinstxtractor-ng) return non-zero (not applicable)
     vi.mocked(mockConnector.executeShell)
-      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // debloat detect
-      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // pyinstxtractor detect
+      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // debloat size-check
+      .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // pyinstxtractor-ng detect
       .mockRejectedValueOnce(new Error("Command timeout"))
       .mockResolvedValue(ok("output"));
 
