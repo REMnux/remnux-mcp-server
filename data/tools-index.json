@@ -1095,6 +1095,13 @@
       "website": "https://github.com/mentebinaria/readpe"
     },
     {
+      "command": "redress",
+      "name": "Redress",
+      "category": "Examine Static Properties: Go",
+      "description": "Analyze stripped Go binaries to recover symbols, types, source structure, and integrate with Radare2.",
+      "website": "https://github.com/goretk/redress"
+    },
+    {
       "command": "remnux-installer",
       "name": "REMnux Installer",
       "category": "General Utilities",
