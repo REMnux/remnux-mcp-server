@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-02-09",
+  "updated": "2026-02-10",
   "tools": [
     {
       "command": "1768",
@@ -1070,7 +1070,7 @@
       "command": "radare2",
       "name": "radare2",
       "category": "Dynamically Reverse-Engineer Code: General",
-      "description": "Examine binary files, including disassembling and debugging.",
+      "description": "Examine binary files, including disassembling and debugging. Includes r2ai and decai plugins for LLM-powered analysis (API key or local Ollama required).",
       "website": "https://www.radare.org/n/radare2.html"
     },
     {
