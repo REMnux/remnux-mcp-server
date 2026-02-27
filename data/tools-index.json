@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-02-10",
+  "updated": "2026-02-27",
   "tools": [
     {
       "command": "1768",
@@ -694,6 +694,13 @@
       "category": "Analyze Documents: Email Messages",
       "description": "Parse raw SMTP and .MSG email messages and generate a parsed object from them.",
       "website": "https://github.com/SpamScope/mail-parser"
+    },
+    {
+      "command": "malcat-lite",
+      "name": "Malcat Lite",
+      "category": "Examine Static Properties: General",
+      "description": "Analyze binary files using a hex editor, disassembler, and file dissector.",
+      "website": "https://malcat.fr"
     },
     {
       "command": "malchive",
