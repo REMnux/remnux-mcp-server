@@ -474,9 +474,7 @@ To counteract this confirmation bias, the server uses neutral language ("notable
 ## Related Projects
 
 - [REMnux](https://remnux.org) - Linux toolkit for malware analysis
-- [REMnux Docs MCP](https://docs.remnux.org/~gitbook/mcp) - Tool discovery and documentation
 - [REMnux salt-states](https://github.com/REMnux/salt-states) - Tool definitions and installation
-- [Model Context Protocol](https://modelcontextprotocol.io) - MCP specification
 - [Using AI Agents to Analyze Malware on REMnux](https://zeltser.com/ai-malware-analysis-remnux) - Walkthrough of AI-assisted malware analysis using this MCP server
 
 ## License
