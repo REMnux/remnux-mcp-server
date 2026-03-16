@@ -8,6 +8,7 @@ describe("handleGetFileInfo", () => {
     const exec = vi.mocked(deps.connector.execute);
 
     exec
+      .mockResolvedValueOnce(ok(""))                             // test -f (exists)
       .mockResolvedValueOnce(ok("sample.exe: PE32 executable"))  // file
       .mockResolvedValueOnce(ok("abc123  /samples/sample.exe"))  // sha256sum
       .mockResolvedValueOnce(ok("def456  /samples/sample.exe"))  // md5sum
@@ -28,6 +29,7 @@ describe("handleGetFileInfo", () => {
     const exec = vi.mocked(deps.connector.execute);
 
     exec
+      .mockResolvedValueOnce(ok(""))                             // test -f (exists)
       .mockResolvedValueOnce(ok("sample.exe: data"))             // file
       .mockResolvedValueOnce(ok("abc123  /samples/sample.exe"))  // sha256sum
       .mockResolvedValueOnce(ok("def456  /samples/sample.exe"))  // md5sum
@@ -40,17 +42,28 @@ describe("handleGetFileInfo", () => {
     expect(env.data.size_bytes).toBe(2048);
   });
 
-  it("returns error when all commands fail (no file type, no hashes)", async () => {
+  it("returns FILE_NOT_FOUND when file does not exist", async () => {
     const deps = createMockDeps();
     const exec = vi.mocked(deps.connector.execute);
 
-    // All commands throw
+    exec.mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 }); // test -f fails
+
+    const result = await handleGetFileInfo(deps, { file: "missing.exe" });
+    const env = parseEnvelope(result);
+    expect(env.success).toBe(false);
+    expect(env.error_code).toBe("FILE_NOT_FOUND");
+  });
+
+  it("returns FILE_NOT_FOUND when existence check throws", async () => {
+    const deps = createMockDeps();
+    const exec = vi.mocked(deps.connector.execute);
+
     exec.mockRejectedValue(new Error("command failed"));
 
     const result = await handleGetFileInfo(deps, { file: "missing.exe" });
     const env = parseEnvelope(result);
     expect(env.success).toBe(false);
-    expect(env.error_code).toBe("EMPTY_OUTPUT");
+    expect(env.error_code).toBe("FILE_NOT_FOUND");
   });
 
   it("skips path validation when noSandbox is true", async () => {
@@ -58,6 +71,7 @@ describe("handleGetFileInfo", () => {
     const exec = vi.mocked(deps.connector.execute);
 
     exec
+      .mockResolvedValueOnce(ok(""))        // test -f (exists)
       .mockResolvedValueOnce(ok("data"))    // file
       .mockResolvedValueOnce(ok("abc 1"))   // sha256
       .mockResolvedValueOnce(ok("def 1"))   // md5
@@ -74,6 +88,7 @@ describe("handleGetFileInfo", () => {
     const exec = vi.mocked(deps.connector.execute);
 
     exec
+      .mockResolvedValueOnce(ok(""))                             // test -f (exists)
       .mockResolvedValueOnce(ok("sample: data"))                 // file
       .mockResolvedValueOnce(ok("abc123  file"))                 // sha256
       .mockResolvedValueOnce(ok("def456  file"))                 // md5

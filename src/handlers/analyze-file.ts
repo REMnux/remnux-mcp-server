@@ -13,6 +13,8 @@ import { toREMnuxError } from "../errors/error-mapper.js";
 import { extractIOCs } from "../ioc/extractor.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
 import { filterMetadataLines } from "../utils/metadata-filter.js";
+import { resolveSamplePath } from "../utils/resolve-sample-path.js";
+import { checkFileExists } from "../utils/check-file-exists.js";
 import { getPreprocessors } from "../tools/preprocessors.js";
 import { shouldSummarize, generateSummary } from "../analysis/index.js";
 import {
@@ -296,8 +298,12 @@ export async function handleAnalyzeFile(
     }
   }
 
-  const filePath = (config.mode === "local" && args.file.startsWith("/")) ? args.file : `${config.samplesDir}/${args.file}`;
+  const { filePath, normalizedFile } = resolveSamplePath(args.file, config.samplesDir, config.mode);
   const perToolTimeout = (args.timeout_per_tool || 60) * 1000;
+
+  // Check file exists before running tools
+  const fileError = await checkFileExists(connector, filePath);
+  if (fileError) return formatError("analyze_file", fileError, startTime);
 
   // Step 1: Detect file type
   let fileOutput: string;
@@ -340,7 +346,7 @@ export async function handleAnalyzeFile(
   } catch { /* best effort — if hashing fails, we just skip filtering */ }
 
   // Step 2: Match to category and get tools from registry by tag + depth
-  const category = matchFileType(fileOutput, args.file);
+  const category = matchFileType(fileOutput, normalizedFile);
   const tag = CATEGORY_TAG_MAP[category.name] ?? "fallback";
   const tools = toolRegistry.byTagAndTier(tag, depth);
 

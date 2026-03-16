@@ -8,6 +8,8 @@ import { toolCatalog } from "../catalog/index.js";
 import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
+import { resolveSamplePath } from "../utils/resolve-sample-path.js";
+import { checkFileExists } from "../utils/check-file-exists.js";
 
 /**
  * Maps catalog command identifiers to their corresponding registry commands.
@@ -248,7 +250,11 @@ export async function handleSuggestTools(
     }
   }
 
-  const filePath = (config.mode === "local" && args.file.startsWith("/")) ? args.file : `${config.samplesDir}/${args.file}`;
+  const { filePath, normalizedFile } = resolveSamplePath(args.file, config.samplesDir, config.mode);
+
+  // Check file exists before running commands
+  const fileError = await checkFileExists(connector, filePath);
+  if (fileError) return formatError("suggest_tools", fileError, startTime);
 
   // Detect file type
   let fileOutput: string;
@@ -274,7 +280,7 @@ export async function handleSuggestTools(
   }
 
   // Match category and get tools from registry
-  const category = matchFileType(fileOutput, args.file);
+  const category = matchFileType(fileOutput, normalizedFile);
 
   const primaryTag = CATEGORY_TAG_MAP[category.name] ?? "fallback";
   const tools = toolRegistry.byTagAndTier(primaryTag, depth);

@@ -4,6 +4,8 @@ import { validateFilePath } from "../security/blocklist.js";
 import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
+import { resolveSamplePath } from "../utils/resolve-sample-path.js";
+import { checkFileExists } from "../utils/check-file-exists.js";
 
 export async function handleGetFileInfo(
   deps: HandlerDeps,
@@ -26,7 +28,12 @@ export async function handleGetFileInfo(
     }
   }
 
-  const filePath = (config.mode === "local" && args.file.startsWith("/")) ? args.file : `${config.samplesDir}/${args.file}`;
+  const { filePath } = resolveSamplePath(args.file, config.samplesDir, config.mode);
+
+  // Check file exists before running commands
+  const fileError = await checkFileExists(connector, filePath);
+  if (fileError) return formatError("get_file_info", fileError, startTime);
+
   let fileType = "";
   let sha256 = "";
   let md5 = "";

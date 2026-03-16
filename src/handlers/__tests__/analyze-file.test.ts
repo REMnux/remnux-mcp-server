@@ -128,4 +128,31 @@ describe("handleAnalyzeFile", () => {
     const standardTotal = standardEnv.data.tools_run.length + standardEnv.data.tools_skipped.length + standardEnv.data.tools_failed.length;
     expect(quickTotal).toBeLessThan(standardTotal);
   });
+
+  it("returns FILE_NOT_FOUND when file does not exist", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValueOnce(
+      { stdout: "", stderr: "", exitCode: 1 } // test -f fails
+    );
+
+    const result = await handleAnalyzeFile(deps, { file: "nonexistent.exe" });
+    const env = parseEnvelope(result);
+    expect(env.success).toBe(false);
+    expect(env.error_code).toBe("FILE_NOT_FOUND");
+  });
+
+  it("strips duplicate samples/ prefix from file parameter", async () => {
+    const deps = createMockDeps();
+    const exec = vi.mocked(deps.connector.execute);
+    exec.mockResolvedValue(ok("/samples/test.exe: PE32 executable"));
+    vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("tool output"));
+
+    await handleAnalyzeFile(deps, { file: "samples/test.exe" });
+
+    // The test -f call should use /samples/test.exe, not /samples/samples/test.exe
+    expect(exec).toHaveBeenCalledWith(
+      ["test", "-f", "/samples/test.exe"],
+      { timeout: 5000 },
+    );
+  });
 });

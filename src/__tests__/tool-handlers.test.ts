@@ -230,6 +230,7 @@ describe("run_tool", () => {
 describe("get_file_info", () => {
   it("returns structured file info with parsed hashes", async () => {
     vi.mocked(mockConnector.execute)
+      .mockResolvedValueOnce(ok(""))                             // test -f (exists)
       .mockResolvedValueOnce(ok("sample.exe: PE32 executable"))  // file
       .mockResolvedValueOnce(ok("abc123  sample.exe"))           // sha256sum
       .mockResolvedValueOnce(ok("def456  sample.exe"))           // md5sum
@@ -245,7 +246,7 @@ describe("get_file_info", () => {
     expect(envelope.data.md5).toBe("def456");
     expect(envelope.data.size_bytes).toBe(1024);
     expect(envelope.metadata.elapsed_ms).toBeGreaterThanOrEqual(0);
-    expect(mockConnector.execute).toHaveBeenCalledTimes(5);
+    expect(mockConnector.execute).toHaveBeenCalledTimes(6);
   });
 
   it("rejects path traversal attempts", async () => {
@@ -258,6 +259,7 @@ describe("get_file_info", () => {
 
   it("returns partial results when a command fails", async () => {
     vi.mocked(mockConnector.execute)
+      .mockResolvedValueOnce(ok(""))                         // test -f (exists)
       .mockResolvedValueOnce(ok("sample.exe: data"))
       .mockRejectedValueOnce(new Error("sha256sum failed"))
       .mockResolvedValueOnce(ok("aaa111  sample.exe"))       // md5sum
@@ -487,10 +489,11 @@ describe("download_file", () => {
 
 describe("analyze_file", () => {
   it("detects PE file and runs PE tools", async () => {
-    // file command returns PE type
-    vi.mocked(mockConnector.execute).mockResolvedValueOnce(
-      ok("sample.exe: PE32 executable (GUI) Intel 80386, for MS Windows")
-    );
+    // test -f (exists) + file command returns PE type + hash command
+    vi.mocked(mockConnector.execute)
+      .mockResolvedValueOnce(ok(""))  // test -f
+      .mockResolvedValueOnce(ok("sample.exe: PE32 executable (GUI) Intel 80386, for MS Windows"))
+      .mockResolvedValue(ok(""));  // hash commands
     // Each tool runs via executeShell
     vi.mocked(mockConnector.executeShell)
       .mockResolvedValue(ok("tool output"));
@@ -507,9 +510,10 @@ describe("analyze_file", () => {
   });
 
   it("detects PDF and runs PDF tools", async () => {
-    vi.mocked(mockConnector.execute).mockResolvedValueOnce(
-      ok("report.pdf: PDF document, version 1.7")
-    );
+    vi.mocked(mockConnector.execute)
+      .mockResolvedValueOnce(ok(""))  // test -f
+      .mockResolvedValueOnce(ok("report.pdf: PDF document, version 1.7"))
+      .mockResolvedValue(ok(""));  // hash commands
     vi.mocked(mockConnector.executeShell).mockResolvedValue(ok("pdf output"));
 
     const { envelope } = await callTool("analyze_file", { file: "report.pdf" });
@@ -519,7 +523,10 @@ describe("analyze_file", () => {
   });
 
   it("falls back to Unknown for unrecognized types", async () => {
-    vi.mocked(mockConnector.execute).mockResolvedValueOnce(ok("mystery.dat: data"));
+    vi.mocked(mockConnector.execute)
+      .mockResolvedValueOnce(ok(""))  // test -f
+      .mockResolvedValueOnce(ok("mystery.dat: data"))
+      .mockResolvedValue(ok(""));  // hash commands
     vi.mocked(mockConnector.executeShell).mockResolvedValue(ok("strings output"));
 
     const { envelope } = await callTool("analyze_file", { file: "mystery.dat" });
@@ -529,9 +536,10 @@ describe("analyze_file", () => {
   });
 
   it("reports tools not found as skipped", async () => {
-    vi.mocked(mockConnector.execute).mockResolvedValueOnce(
-      ok("sample.exe: PE32 executable")
-    );
+    vi.mocked(mockConnector.execute)
+      .mockResolvedValueOnce(ok(""))  // test -f
+      .mockResolvedValueOnce(ok("sample.exe: PE32 executable"))
+      .mockResolvedValue(ok(""));  // hash commands
     // Preprocessing detect calls (debloat, pyinstxtractor-ng) return non-zero (not applicable)
     // Then first tool not found, rest succeed
     vi.mocked(mockConnector.executeShell)
@@ -550,9 +558,10 @@ describe("analyze_file", () => {
   });
 
   it("reports timed-out tools as failed", async () => {
-    vi.mocked(mockConnector.execute).mockResolvedValueOnce(
-      ok("sample.exe: PE32 executable")
-    );
+    vi.mocked(mockConnector.execute)
+      .mockResolvedValueOnce(ok(""))  // test -f
+      .mockResolvedValueOnce(ok("sample.exe: PE32 executable"))
+      .mockResolvedValue(ok(""));  // hash commands
     // Preprocessing detect calls (debloat, pyinstxtractor-ng) return non-zero (not applicable)
     vi.mocked(mockConnector.executeShell)
       .mockResolvedValueOnce({ stdout: "", stderr: "", exitCode: 1 })  // debloat size-check
@@ -574,13 +583,16 @@ describe("analyze_file", () => {
     expect(mockConnector.execute).not.toHaveBeenCalled();
   });
 
-  it("returns error when file command fails", async () => {
-    vi.mocked(mockConnector.execute).mockRejectedValueOnce(new Error("No such file"));
+  it("returns error when file does not exist", async () => {
+    vi.mocked(mockConnector.execute).mockResolvedValueOnce(
+      { stdout: "", stderr: "", exitCode: 1 }  // test -f fails
+    );
 
     const { envelope, isError } = await callTool("analyze_file", { file: "nonexistent.bin" });
 
     expect(isError).toBe(true);
     expect(envelope.success).toBe(false);
+    expect(envelope.error_code).toBe("FILE_NOT_FOUND");
   });
 });
 
