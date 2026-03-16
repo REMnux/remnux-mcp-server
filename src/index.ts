@@ -87,6 +87,7 @@ export async function createServer(config: ServerConfig) {
       timeout: config.timeout,
       noSandbox: config.noSandbox ?? false,
       mode: config.mode,
+      transport: config.transport,
     },
     sessionState,
   };
@@ -126,14 +127,25 @@ export async function createServer(config: ServerConfig) {
 
   // Tool: upload_from_host - Upload a file from the host filesystem
   const uploadDescription = (() => {
-    const base = "Upload a file from the host filesystem to the samples directory for analysis. " +
-      "Accepts an absolute host path — the MCP server reads the file locally and transfers it. " +
-      "Maximum file size: 200MB. ";
+    const isHttp = config.transport === "http";
+    const base = isHttp
+      ? "Upload a file from the REMnux filesystem (where the MCP server runs) to the samples directory for analysis. " +
+        "Accepts an absolute path on the REMnux machine — this does NOT read files from the remote client. " +
+        "To transfer files from a remote workstation, use scp/sftp to place them on REMnux first, " +
+        "or use download_from_url to fetch from an HTTP server on the remote machine. " +
+        "Maximum file size: 200MB. "
+      : "Upload a file from the host filesystem to the samples directory for analysis. " +
+        "Accepts an absolute host path — the MCP server reads the file locally and transfers it. " +
+        "Maximum file size: 200MB. ";
     switch (config.mode) {
       case "local":
-        return base +
-          "Files can also be referenced by absolute path in analysis tools, bypassing the need to upload. " +
-          "For files outside the samples directory, pass the full path to get_file_info, analyze_file, or run_tool.";
+        return isHttp
+          ? base +
+            "Files already on REMnux can also be referenced by absolute path in analysis tools, " +
+            "bypassing the need to upload."
+          : base +
+            "Files can also be referenced by absolute path in analysis tools, bypassing the need to upload. " +
+            "For files outside the samples directory, pass the full path to get_file_info, analyze_file, or run_tool.";
       case "ssh":
         return base +
           "For larger files (memory images, disk images, PCAPs), " +

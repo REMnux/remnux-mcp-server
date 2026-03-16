@@ -136,6 +136,24 @@ describe("handleUploadFromHost", () => {
     expect(uploadSampleFromHost).not.toHaveBeenCalled();
   });
 
+  it("includes remote-deployment hint when transport is http and upload fails", async () => {
+    const deps = createMockDeps({ transport: "http", mode: "local" });
+    vi.mocked(uploadSampleFromHost).mockResolvedValue({
+      success: false,
+      error: "File not found: /mnt/rd01-triage/C/Windows/System32/STUN.exe",
+    });
+
+    const result = await handleUploadFromHost(deps, {
+      host_path: "/mnt/rd01-triage/C/Windows/System32/STUN.exe",
+      overwrite: false,
+    });
+
+    const env = parseEnvelope(result);
+    expect(env.success).toBe(false);
+    expect(env.remediation).toContain("REMnux machine where the MCP server runs");
+    expect(env.remediation).toContain("not the remote client");
+  });
+
   it("rejects invalid override filenames before calling uploadSampleFromHost", async () => {
     const deps = createMockDeps();
 

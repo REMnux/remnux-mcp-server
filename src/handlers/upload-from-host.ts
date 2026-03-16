@@ -49,11 +49,15 @@ export async function handleUploadFromHost(
     if (result.success) {
       return formatResponse("upload_from_host", result as unknown as Record<string, unknown>, startTime);
     } else {
+      const hint = config.transport === "http"
+        ? "The path is resolved on the REMnux machine where the MCP server runs, not the remote client. " +
+          "Use scp/sftp to transfer the file to REMnux first, or use download_from_url."
+        : "Check that the file exists and is readable on the host filesystem";
       return formatError("upload_from_host", new REMnuxError(
         result.error || "Upload failed",
         "UPLOAD_FAILED",
         "tool_failure",
-        "Check that the file exists and is readable on the host filesystem",
+        hint,
       ), startTime);
     }
   } catch (error) {

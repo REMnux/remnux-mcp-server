@@ -25,7 +25,7 @@ export const extractArchiveSchema = z.object({
 export type ExtractArchiveArgs = z.infer<typeof extractArchiveSchema>;
 
 export const uploadFromHostSchema = z.object({
-  host_path: z.string().describe("Absolute path on the host filesystem to the file to upload"),
+  host_path: z.string().describe("Absolute path to the file on the machine where the MCP server runs (not the remote client in HTTP deployments)"),
   filename: z.string().optional().describe("Override filename in samples dir (defaults to basename of host_path)"),
   overwrite: z.boolean().optional().default(false).describe("Whether to overwrite if file exists. Default: false"),
 });

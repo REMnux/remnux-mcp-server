@@ -7,6 +7,7 @@ export interface HandlerConfig {
   timeout: number;
   noSandbox: boolean;
   mode: "docker" | "ssh" | "local";
+  transport?: "stdio" | "http";
 }
 
 export interface HandlerDeps {
