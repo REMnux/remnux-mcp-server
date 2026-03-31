@@ -2,7 +2,7 @@
  * Local live integration tests — runs MCP tools against the local filesystem.
  *
  * Skipped by default. Run with:
- *   LOCAL_LIVE_TEST=1 npx vitest run src/__tests__/local-live-integration.test.ts
+ *   LOCAL_LIVE_TEST=1 pnpm exec vitest run src/__tests__/local-live-integration.test.ts
  *
  * Prerequisites:
  *   - REMnux tools installed locally (local mode)

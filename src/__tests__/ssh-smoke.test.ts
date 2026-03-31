@@ -5,7 +5,7 @@
  * container running sshd. Skipped by default — enable by setting env vars.
  *
  * To run:
- *   SSH_SMOKE_HOST=<host> SSH_SMOKE_USER=<user> npx vitest run src/__tests__/ssh-smoke.test.ts
+ *   SSH_SMOKE_HOST=<host> SSH_SMOKE_USER=<user> pnpm exec vitest run src/__tests__/ssh-smoke.test.ts
  *
  * Optional env vars:
  *   SSH_SMOKE_PORT     - SSH port (default: 22)

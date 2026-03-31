@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env tsx
 /**
  * Validates definitions.ts against the catalog from salt-states.
  *
@@ -6,7 +6,7 @@
  * update-docs.py --sync-mcp. This script ensures that all tools defined in
  * definitions.ts actually exist in the REMnux distro.
  *
- * Run: bun run scripts/validate-tools.ts
+ * Run: pnpm exec tsx scripts/validate-tools.ts
  */
 
 import { readFileSync } from "fs";

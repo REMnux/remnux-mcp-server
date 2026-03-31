@@ -1,0 +1,8 @@
+# Supply chain security policies
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
+  - cpu-features
+# 10080 minutes = 7 days (pnpm 10.x uses minutes despite docs saying seconds)
+minimumReleaseAge: 10080
+blockExoticSubdeps: true

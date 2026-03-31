@@ -13,16 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      - run: npm ci --ignore-scripts
-      - run: npm run build
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
 
-      - name: Upgrade npm and publish
-        run: |
-          npm install -g npm@latest
-          echo "npm version: $(npm --version)"
-          npm publish --access public
+      - name: Publish to npm
+        run: npm publish --access public

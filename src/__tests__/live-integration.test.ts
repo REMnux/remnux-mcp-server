@@ -2,7 +2,7 @@
  * Live integration tests — runs MCP tools against a real Docker container.
  *
  * Skipped by default. Run with:
- *   LIVE_TEST=1 npx vitest run src/__tests__/live-integration.test.ts
+ *   LIVE_TEST=1 pnpm exec vitest run src/__tests__/live-integration.test.ts
  *
  * Prerequisites:
  *   - Docker container named "remnux" running from remnux/remnux-distro:noble

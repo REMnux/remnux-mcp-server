@@ -1,10 +1,10 @@
-#!/usr/bin/env bun
+#!/usr/bin/env tsx
 /**
  * Checks if dist/ is stale (older than src/).
  *
  * Prevents testing against outdated compiled code. Run automatically before tests.
  *
- * Run: bun run scripts/check-stale-build.ts
+ * Run: pnpm exec tsx scripts/check-stale-build.ts
  */
 
 import { statSync, existsSync, readdirSync } from "fs";
@@ -20,7 +20,7 @@ const distDir = join(projectRoot, "dist");
 
 // Check if dist/ exists
 if (!existsSync(distDir)) {
-  console.error("❌ dist/ directory does not exist. Run 'npm run build' first.");
+  console.error("❌ dist/ directory does not exist. Run 'pnpm run build' first.");
   process.exit(1);
 }
 
@@ -78,7 +78,7 @@ if (srcNewest > distNewest) {
   console.error("❌ dist/ is stale! Source files are newer than compiled output.");
   console.error(`   Newest src/ file: ${srcDate}`);
   console.error(`   Newest dist/ file: ${distDate}`);
-  console.error("\n   Run 'npm run build' to rebuild.");
+  console.error("\n   Run 'pnpm run build' to rebuild.");
   process.exit(1);
 }
 

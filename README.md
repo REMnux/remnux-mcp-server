@@ -400,36 +400,36 @@ If a legitimate command is blocked, the blocked patterns are defined in [`src/se
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Build
-npm run build
+pnpm run build
 
 # Run locally
-npm start -- --mode=docker --container=remnux
+pnpm start -- --mode=docker --container=remnux
 
 # Development mode (watch)
-npm run dev
+pnpm run dev
 
 # Run tests
-npm test
+pnpm test
 
 # Lint
-npm run lint
+pnpm run lint
 
 # SSH smoke test (against a real VM)
 SSH_SMOKE_HOST=YOUR_VM_IP SSH_SMOKE_USER=remnux SSH_SMOKE_PASSWORD=YOUR_PASSWORD \
-  npx vitest run src/__tests__/ssh-smoke.test.ts
+  pnpm exec vitest run src/__tests__/ssh-smoke.test.ts
 
 # Docker live integration test (needs running container + client.exe sample)
-LIVE_TEST=1 npx vitest run src/__tests__/live-integration.test.ts
+LIVE_TEST=1 pnpm exec vitest run src/__tests__/live-integration.test.ts
 
 # SSH live integration test (needs reachable VM + client.exe sample)
 SSH_LIVE_TEST=1 SSH_LIVE_HOST=YOUR_VM_IP SSH_LIVE_USER=remnux SSH_LIVE_PASSWORD=YOUR_PASSWORD \
-  npx vitest run src/__tests__/ssh-live-integration.test.ts
+  pnpm exec vitest run src/__tests__/ssh-live-integration.test.ts
 
 # Local live integration test (runs tools on local filesystem)
-LOCAL_LIVE_TEST=1 npx vitest run src/__tests__/local-live-integration.test.ts
+LOCAL_LIVE_TEST=1 pnpm exec vitest run src/__tests__/local-live-integration.test.ts
 ```
 
 ## Design Decisions

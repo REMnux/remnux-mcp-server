@@ -1,6 +1,7 @@
 {
   "name": "@remnux/mcp-server",
   "version": "0.1.37",
+  "packageManager": "pnpm@10.33.0",
   "description": "MCP server for using the REMnux malware analysis toolkit via AI assistants",
   "type": "module",
   "main": "dist/index.js",
@@ -13,11 +14,11 @@
     "start": "node dist/cli.js",
     "lint": "eslint src/",
     "test": "vitest run",
-    "pretest": "bun run scripts/check-stale-build.ts",
-    "validate:tools": "bun run scripts/validate-tools.ts",
-    "preversion": "npm run validate:tools && npm test",
+    "pretest": "pnpm exec tsx scripts/check-stale-build.ts",
+    "validate:tools": "pnpm exec tsx scripts/validate-tools.ts",
+    "preversion": "pnpm run validate:tools && pnpm test",
     "prepare": "husky",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "pnpm run build"
   },
   "keywords": [
     "mcp",
@@ -64,6 +65,7 @@
     "eslint": "^9.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "tsx": "^4",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.54.0",
     "vitest": "^1.6.0"

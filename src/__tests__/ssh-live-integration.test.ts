@@ -3,7 +3,7 @@
  *
  * Skipped by default. Run with:
  *   SSH_LIVE_TEST=1 SSH_LIVE_HOST=172.16.118.195 SSH_LIVE_USER=remnux SSH_LIVE_PASSWORD=malware \
- *     npx vitest run src/__tests__/ssh-live-integration.test.ts
+ *     pnpm exec vitest run src/__tests__/ssh-live-integration.test.ts
  *
  * Prerequisites:
  *   - REMnux VM reachable via SSH
