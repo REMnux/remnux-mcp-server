@@ -24,7 +24,9 @@ jobs:
       - run: pnpm run build
 
       - name: Publish to npm
-        run: npm publish --access public --provenance
+        run: |
+          npm install -g npm@latest
+          npm publish --access public --provenance
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
           COREPACK_ENABLE_STRICT: '0'
