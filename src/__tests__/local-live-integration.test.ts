@@ -128,19 +128,21 @@ describe.skipIf(!runLive)("Local live integration", () => {
     expect(names).toContain("test-sample.txt");
   }, 15_000);
 
-  // ─── upload_sample ────────────────────────────────────────────────
+  // ─── upload_from_host ──────────────────────────────────────────────
 
-  it("upload_sample writes a file to samples dir", async () => {
-    const content = Buffer.from("uploaded content").toString("base64");
+  it("upload_from_host uploads a file to samples dir", async () => {
+    // Write a temp file on the host to upload
+    const hostFile = join(tempOutputDir, "host-upload-src.txt");
+    writeFileSync(hostFile, "uploaded content");
 
-    const { envelope, isError } = await callTool("upload_sample", {
+    const { envelope, isError } = await callTool("upload_from_host", {
+      host_path: hostFile,
       filename: "uploaded-test.txt",
-      content_base64: content,
     });
 
     expect(isError).toBeFalsy();
     expect(envelope.success).toBe(true);
-    expect(envelope.tool).toBe("upload_sample");
+    expect(envelope.tool).toBe("upload_from_host");
     expect(envelope.data.sha256).toBeTruthy();
   }, 15_000);
 
