@@ -31,8 +31,17 @@ export function buildCommandFromDefinition(
   const escaped = shellEscape(filePath);
   const parts: string[] = [tool.command];
 
-  // Replace /tmp/ in args with outputDir to avoid concurrent analysis collisions
+  // Resolve %OUTPUT%/ sentinel (and legacy /tmp/) to the actual output directory
   const resolveArg = (arg: string): string => {
+    if (arg.startsWith("%OUTPUT%/")) {
+      const suffix = arg.slice("%OUTPUT%/".length);
+      if (!outputDir) {
+        throw new Error(
+          `outputDir is required for tool ${tool.name} but was not provided`,
+        );
+      }
+      return `${outputDir}/${suffix}`;
+    }
     if (outputDir && arg.startsWith("/tmp/")) {
       return arg.replace("/tmp/", outputDir + "/");
     }
