@@ -70,4 +70,51 @@ describe("buildCommandFromDefinition", () => {
     const cmd = buildCommandFromDefinition(baseTool, "/samples/file's.exe");
     expect(cmd).toBe("testtool '/samples/file'\\''s.exe'");
   });
+
+  it("resolves %OUTPUT%/ sentinel in suffixArgs when outputDir is provided", () => {
+    const tool: ToolDefinition = {
+      ...baseTool,
+      suffixArgs: ["%OUTPUT%/autoit-out"],
+    };
+    const cmd = buildCommandFromDefinition(tool, "/samples/file.exe", "/output");
+    expect(cmd).toBe("testtool '/samples/file.exe' /output/autoit-out");
+  });
+
+  it("resolves %OUTPUT%/ sentinel in fixedArgs when outputDir is provided", () => {
+    const tool: ToolDefinition = {
+      ...baseTool,
+      fixedArgs: ["-d", "%OUTPUT%/jadx-out", "--no-debug-info"],
+    };
+    const cmd = buildCommandFromDefinition(tool, "/samples/file.apk", "/output");
+    expect(cmd).toBe("testtool -d /output/jadx-out --no-debug-info '/samples/file.apk'");
+  });
+
+  it("throws when %OUTPUT%/ sentinel is used without outputDir", () => {
+    const tool: ToolDefinition = {
+      ...baseTool,
+      suffixArgs: ["%OUTPUT%/autoit-out"],
+    };
+    expect(() => buildCommandFromDefinition(tool, "/samples/file.exe")).toThrow(
+      "outputDir is required for tool test-tool but was not provided",
+    );
+  });
+
+  it("still resolves legacy /tmp/ prefix when outputDir is provided", () => {
+    const tool: ToolDefinition = {
+      ...baseTool,
+      suffixArgs: ["/tmp/legacy-out"],
+    };
+    const cmd = buildCommandFromDefinition(tool, "/samples/file.exe", "/output");
+    expect(cmd).toBe("testtool '/samples/file.exe' /output/legacy-out");
+  });
+
+  it("leaves /tmp/ prefix unchanged when outputDir is not provided", () => {
+    const tool: ToolDefinition = {
+      ...baseTool,
+      suffixArgs: ["/tmp/legacy-out"],
+    };
+    const cmd = buildCommandFromDefinition(tool, "/samples/file.exe");
+    expect(cmd).toBe("testtool '/samples/file.exe' /tmp/legacy-out");
+  });
+
 });
