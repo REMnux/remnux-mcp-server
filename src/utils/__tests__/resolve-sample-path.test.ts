@@ -28,6 +28,15 @@ describe("resolveSamplePath", () => {
     expect(result.normalizedFile).toBe("/tmp/evil.bin");
   });
 
+  it("returns absolute path unchanged in docker mode (no samplesDir duplication)", () => {
+    // Regression: an absolute path (e.g. extract_archive's `extracted_to`) must not be
+    // re-rooted under samplesDir, which produced "/samples//home/.../sample" and a
+    // confusing "file not found" in docker/ssh mode.
+    const result = resolveSamplePath("/home/remnux/files/samples/sub/evil.bin", samplesDir, "docker");
+    expect(result.filePath).toBe("/home/remnux/files/samples/sub/evil.bin");
+    expect(result.normalizedFile).toBe("/home/remnux/files/samples/sub/evil.bin");
+  });
+
   it("prepends samplesDir for relative path in local mode", () => {
     const result = resolveSamplePath("test.exe", samplesDir, "local");
     expect(result.filePath).toBe("/home/remnux/files/samples/test.exe");

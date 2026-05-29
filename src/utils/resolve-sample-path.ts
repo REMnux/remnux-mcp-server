@@ -9,12 +9,18 @@ import { basename } from "path";
 export function resolveSamplePath(
   file: string,
   samplesDir: string,
-  mode: string,
+  _mode: string,
 ): { filePath: string; normalizedFile: string } {
   let normalizedFile = file;
 
-  // In local mode, absolute paths bypass samplesDir
-  if (mode === "local" && file.startsWith("/")) {
+  // Absolute paths are resolved as-is on the target system — the host in local mode,
+  // the container/VM in docker/ssh mode. They are never re-rooted under samplesDir,
+  // which would otherwise duplicate the prefix (e.g. "/samples//home/.../sample") and
+  // fail with a confusing "file not found". This matters for the extract -> analyze
+  // chain, where extract_archive returns an absolute `extracted_to`. Sandbox mode, when
+  // enabled, is enforced separately by validateFilePath() in each handler, so allowing
+  // absolute paths here does not weaken the sandbox.
+  if (file.startsWith("/")) {
     return { filePath: file, normalizedFile: file };
   }
 
