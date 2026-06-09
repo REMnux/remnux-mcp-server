@@ -4,7 +4,7 @@ import { validateFilePath } from "../security/blocklist.js";
 import { matchFileType, CATEGORY_TAG_MAP } from "../file-type-mappings.js";
 import type { DepthTier } from "../file-type-mappings.js";
 import { toolRegistry } from "../tools/registry.js";
-import { buildCommandFromDefinition } from "../tools/invoker.js";
+import { buildCommandFromDefinition, resolveOutputPath, buildInvocationTemplate } from "../tools/invoker.js";
 import { parseToolOutput } from "../parsers/index.js";
 import type { Finding } from "../parsers/types.js";
 import { formatResponse, formatError } from "../response.js";
@@ -36,6 +36,7 @@ interface ToolFailed { name: string; command: string; error: string }
 interface ToolSkipped {
   name: string;
   command: string;
+  invocation?: string;
   reason: string;
   /** Categorizes why the tool was skipped for clearer UX */
   skip_type: "not_installed" | "not_applicable" | "requires_user_args";
@@ -87,7 +88,7 @@ export function generateNextSteps(
       steps.push("Extract encoded content: run_tool command='base64dump.py -n 20 <file>'");
       break;
     case "PCAP":
-      steps.push("Extract HTTP objects: run_tool command='tshark -r <file> --export-objects http,/tmp/http-objects'");
+      steps.push("Extract HTTP objects: run_tool command='tshark -r <file> --export-objects http,%OUTPUT%/http-objects'");
       steps.push("Follow TCP stream: run_tool command='tshark -r <file> -z follow,tcp,ascii,0'");
       break;
     case "Memory":
@@ -412,22 +413,35 @@ export async function handleAnalyzeFile(
       toolsSkipped.push({
         name: tool.name,
         command: tool.command,
+        invocation: buildInvocationTemplate(tool),
         reason: "Requires user-supplied arguments (use run_tool manually)",
         skip_type: "requires_user_args",
       });
       continue;
     }
 
-    const cmd = buildCommandFromDefinition(tool, analysisPath, config.outputDir);
+    let cmd: string;
+    try {
+      cmd = buildCommandFromDefinition(tool, analysisPath, config.outputDir);
+    } catch (error) {
+      // A tool needs an output dir but none is configured — fail just this tool
+      // (per-tool isolation) instead of aborting the whole analyze_file run.
+      toolsFailed.push({
+        name: tool.name,
+        command: tool.command,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+      continue;
+    }
 
     // Ensure output directories exist for tools that write to --output-dir
     if (tool.fixedArgs && config.outputDir) {
       const dirIdx = tool.fixedArgs.indexOf("--output-dir");
       if (dirIdx !== -1 && tool.fixedArgs[dirIdx + 1]) {
         const rawDir = tool.fixedArgs[dirIdx + 1];
-        const resolvedDir = rawDir.startsWith("/tmp/")
-          ? rawDir.replace("/tmp/", config.outputDir + "/")
-          : rawDir;
+        // Resolve %OUTPUT% (and legacy /tmp/) the same way buildCommandFromDefinition
+        // does, so the dir we pre-create is exactly the dir the command writes to.
+        const resolvedDir = resolveOutputPath(rawDir, config.outputDir, tool.name);
         try {
           await connector.execute(["mkdir", "-p", resolvedDir], { timeout: 5000 });
         } catch { /* best effort */ }

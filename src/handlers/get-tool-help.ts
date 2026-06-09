@@ -3,6 +3,8 @@ import type { GetToolHelpArgs } from "../schemas/tools.js";
 import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
+import { toolRegistry } from "../tools/registry.js";
+import { buildInvocationTemplate } from "../tools/invoker.js";
 
 const TOOL_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
@@ -24,13 +26,19 @@ export async function handleGetToolHelp(
       ), startTime);
     }
 
+    // Resolve a registry name to its real executable (e.g. "emldump" →
+    // "emldump.py", "vol3-pslist" → "vol3") so help works regardless of which
+    // form the model passes. Unknown tokens fall through unchanged.
+    const def = toolRegistry.get(tool);
+    const resolved = def?.command ?? tool;
+
     // Try --help first, fall back to -h
     let output = "";
     let exitCode = 0;
 
     for (const flag of ["--help", "-h"]) {
       try {
-        const result = await connector.execute([tool, flag], { timeout: 10000 });
+        const result = await connector.execute([resolved, flag], { timeout: 10000 });
         const combined = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
         exitCode = result.exitCode;
 
@@ -73,6 +81,7 @@ export async function handleGetToolHelp(
 
     return formatResponse("get_tool_help", {
       tool,
+      ...(def ? { invocation: buildInvocationTemplate(def) } : {}),
       help: output,
       exit_code: exitCode,
     }, startTime);

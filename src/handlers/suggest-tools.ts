@@ -4,6 +4,7 @@ import { validateFilePath } from "../security/blocklist.js";
 import { matchFileType, CATEGORY_TAG_MAP } from "../file-type-mappings.js";
 import type { DepthTier } from "../file-type-mappings.js";
 import { toolRegistry } from "../tools/registry.js";
+import { buildInvocationTemplate } from "../tools/invoker.js";
 import { toolCatalog } from "../catalog/index.js";
 import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
@@ -308,6 +309,7 @@ export async function handleSuggestTools(
 
   const recommended = tools.map((t) => ({
     name: t.name,
+    invocation: buildInvocationTemplate(t),
     description: t.description,
     tier: t.tier,
     tags: t.tags ?? [],
@@ -356,6 +358,10 @@ export async function handleSuggestTools(
     matched_category: category.name,
     depth,
     recommended_tools: recommended,
+    ...(recommended.length > 0 && {
+      invocation_note:
+        "Each tool's `invocation` is the exact command for run_tool: replace `<file>` with the sample path, and pass `%OUTPUT%/` through literally (the server resolves it to the session output directory).",
+    }),
     ...(recommended.length === 0 && {
       warning: `No tools registered for category "${category.name}" at depth "${depth}". Try depth "deep" or use run_tool directly.`,
     }),

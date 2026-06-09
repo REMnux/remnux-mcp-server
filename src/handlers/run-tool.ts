@@ -7,6 +7,7 @@ import { toREMnuxError } from "../errors/error-mapper.js";
 import { parseToolOutput, hasParser } from "../parsers/index.js";
 import { toolRegistry } from "../tools/registry.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
+import { OUTPUT_SENTINEL } from "../tools/invoker.js";
 
 /**
  * Pre-execution warning patterns for discouraged commands.
@@ -82,8 +83,29 @@ export async function handleRunTool(
   const startTime = Date.now();
   const { connector, config } = deps;
 
+  // Resolve a bare registry name to its real command for the ".py" case
+  // (e.g. "emldump" → "emldump.py"). suggest_tools surfaces full invocations,
+  // but a model may still type the bare name; the ".py" rewrite is the only
+  // zero-false-positive resolution. Aliases (a different binary, e.g.
+  // "vol3-pslist" → "vol3") are deliberately left alone — they pass through and
+  // fail naturally rather than risk shadowing a real command that shares a name.
+  // Normalize leading whitespace so a pasted " emldump …" still resolves.
+  let command = args.command.replace(/^\s+/, "");
+  const firstToken = command.split(/\s/)[0];
+  const def = toolRegistry.get(firstToken);
+  if (def && def.command === `${firstToken}.py`) {
+    command = def.command + command.slice(firstToken.length);
+  }
+
+  // Resolve the %OUTPUT% sentinel on the model-supplied command BEFORE the
+  // sample path is appended, so a filename that contains the sentinel substring
+  // is never rewritten. Done before the blocklist so security sees the real command.
+  if (config.outputDir && command.includes(OUTPUT_SENTINEL)) {
+    command = command.split(OUTPUT_SENTINEL).join(`${config.outputDir}/`);
+  }
+
   // Build full command
-  let fullCommand = args.command;
+  let fullCommand = command;
   if (args.input_file) {
     // Validate input file path (skip unless --sandbox)
     if (!config.noSandbox) {
@@ -101,7 +123,7 @@ export async function handleRunTool(
     // Escape any single quotes in the path as defense-in-depth (isPathSafe also rejects them)
     const escapedFile = args.input_file.replace(/'/g, "'\\''");
     const resolvedInputFile = (config.mode === "local" && args.input_file.startsWith("/")) ? escapedFile : `${config.samplesDir}/${escapedFile}`;
-    fullCommand = `${args.command} '${resolvedInputFile}'`;
+    fullCommand = `${command} '${resolvedInputFile}'`;
   }
 
   // Security: Validate command against blocklist
