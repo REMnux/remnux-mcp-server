@@ -67,7 +67,10 @@ export function parseDiecOutput(rawOutput: string): ParsedToolOutput {
     }
 
     if (data && typeof data === "object" && !Array.isArray(data)) {
-      result.metadata.filetype = data.filetype;
+      // filetype is top-level in synthetic output, but per-detect in real
+      // `diec --json` output (detects[i].filetype).
+      const typed = Array.isArray(detects) ? detects.find((d) => d && d.filetype) : undefined;
+      result.metadata.filetype = data.filetype ?? typed?.filetype;
     }
   } catch {
     // JSON parse failed — return unparsed
