@@ -7,6 +7,27 @@
 
 import type { ParsedToolOutput, Finding } from "./types.js";
 
+/**
+ * Parse diec's JSON, tolerating the informational lines it can prepend to
+ * stdout before the JSON body (e.g. "[!] Heuristic scan is disabled ...").
+ * Tries the raw output first (clean object/array forms), then falls back to
+ * the JSON object between the first '{' and the last '}'. The warning line
+ * itself starts with '[', so naive bracket-trimming is not safe.
+ */
+function extractDiecJson(raw: string) {
+  const trimmed = raw.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start !== -1 && end > start) {
+      return JSON.parse(trimmed.slice(start, end + 1));
+    }
+    throw new SyntaxError("no JSON object found in diec output");
+  }
+}
+
 export function parseDiecOutput(rawOutput: string): ParsedToolOutput {
   const result: ParsedToolOutput = {
     tool: "diec",
@@ -17,7 +38,7 @@ export function parseDiecOutput(rawOutput: string): ParsedToolOutput {
   };
 
   try {
-    const data = JSON.parse(rawOutput);
+    const data = extractDiecJson(rawOutput);
     result.parsed = true;
 
     // diec JSON has a "detects" array

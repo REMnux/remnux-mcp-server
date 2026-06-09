@@ -70,4 +70,19 @@ describe("parseDiecOutput", () => {
     const result = parseDiecOutput(input);
     expect(result.findings[0].description).toBe("detection: unknown");
   });
+
+  it("parses JSON even when diec prepends a warning line to stdout", () => {
+    // Real `diec --json` prepends an informational line before the JSON body.
+    const input =
+      "[!] Heuristic scan is disabled. Use '--heuristicscan' to enable\n" +
+      JSON.stringify({
+        filetype: "PE64",
+        detects: [{ values: [{ type: "Packer", name: "UPX", version: "3.96" }] }],
+      });
+    const result = parseDiecOutput(input);
+    expect(result.parsed).toBe(true);
+    expect(result.metadata.filetype).toBe("PE64");
+    expect(result.findings).toHaveLength(1);
+    expect(result.findings[0].description).toBe("Packer: UPX");
+  });
 });
