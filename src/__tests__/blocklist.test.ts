@@ -73,20 +73,43 @@ describe("BLOCKED_PATTERNS", () => {
   });
 
   describe("Catastrophic command guard (protects analysis session)", () => {
+    // Root-wipe detection is token-aware and lives in isCommandSafe (not the
+    // pattern array), so exercise the real entry point here.
+    const blocked = (input: string): boolean => !isCommandSafe(input).safe;
+
     it("should block rm -rf / (root wipe)", () => {
-      expect(isBlocked("rm -rf /")).toBe(true);
-      expect(isBlocked("rm -rf /*")).toBe(true);
-      expect(isBlocked("rm -Rf /")).toBe(true);
+      expect(blocked("rm -rf /")).toBe(true);
+      expect(blocked("rm -rf /*")).toBe(true);
+      expect(blocked("rm -Rf /")).toBe(true);
     });
 
     it("should allow rm -rf on subdirectories", () => {
-      expect(isBlocked("rm -rf subdir/")).toBe(false);
-      expect(isBlocked("rm -rf /tmp/analysis")).toBe(false);
+      expect(blocked("rm -rf subdir/")).toBe(false);
+      expect(blocked("rm -rf /tmp/analysis")).toBe(false);
+    });
+
+    it("should block root wipes regardless of flag order, trailing options, or comments", () => {
+      expect(blocked("rm -rf / --no-preserve-root")).toBe(true);
+      expect(blocked("rm --no-preserve-root -rf /")).toBe(true);
+      expect(blocked("rm -rf / # cleanup")).toBe(true);
+      expect(blocked("sudo rm -rf / --no-preserve-root")).toBe(true);
+      expect(blocked("rm -fr /")).toBe(true);
+      expect(blocked("rm -r -f /")).toBe(true);
+      expect(blocked("rm --recursive --force /")).toBe(true);
+      expect(blocked("rm / -rf")).toBe(true);
+      expect(blocked('rm -rf "/"')).toBe(true);
+      expect(blocked("cat /etc/passwd && rm -rf /")).toBe(true);
+    });
+
+    it("should still allow targeted recursive deletes and quoted echoes", () => {
+      expect(blocked("rm -rf ./out")).toBe(false);
+      expect(blocked("rm -rf /home/remnux/files/output/box-js-out")).toBe(false);
+      expect(blocked('echo "rm -rf /"')).toBe(false);
     });
 
     it("should block mkfs", () => {
-      expect(isBlocked("mkfs /dev/sda")).toBe(true);
-      expect(isBlocked("mkfs.ext4 /dev/sda1")).toBe(true);
+      expect(blocked("mkfs /dev/sda")).toBe(true);
+      expect(blocked("mkfs.ext4 /dev/sda1")).toBe(true);
     });
   });
 

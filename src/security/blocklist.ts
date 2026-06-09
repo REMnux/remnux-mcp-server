@@ -41,10 +41,11 @@ export const BLOCKED_PATTERNS: BlockedPattern[] = [
   // Same threat class as eval/pipe-to-interpreter (already allowed).
   // Container/VM isolation is the security boundary.
 
-  // Catastrophic command guard — prevents AI from accidentally destroying the analysis session
-  // Only blocks root-level wipes (rm -rf /), not targeted deletes (rm -rf subdir/)
-  { pattern: /rm\s+-[rR].*\s\/\s*$/, category: "catastrophic command (root wipe)" },
-  { pattern: /rm\s+-[rR].*\s\/\*/, category: "catastrophic command (root wipe)" },
+  // Catastrophic filesystem format guard. Root wipes (rm -rf /) are handled by
+  // the token-aware isRootWipe() in isCommandSafe — the old end-anchored regex
+  // here matched only when "/" was the last token, so the real destructive form
+  // (rm -rf / --no-preserve-root) slipped past while the harmless bare form was
+  // blocked.
   { pattern: /\bmkfs\b/, category: "catastrophic command (format filesystem)" },
 ];
 
@@ -137,6 +138,40 @@ export function validateFilePath(
 export const DANGEROUS_PIPE_PATTERNS: BlockedPattern[] = [];
 
 /**
+ * Detect a recursive `rm` targeting the root filesystem (`/` or `/*`).
+ *
+ * Token- and segment-aware so it can't be evaded by flag order, combined or
+ * long flags (-rf / -fr / -r -f / --recursive), trailing options
+ * (--no-preserve-root), comments, a leading sudo, or a quoted root operand —
+ * all of which slipped past the old end-anchored regex. Targeted deletes
+ * (rm -rf subdir/, rm -rf /tmp/analysis) remain allowed.
+ *
+ * Session-preservation guardrail only — container/VM isolation is the security
+ * boundary, not this check.
+ */
+export function isRootWipe(command: string): boolean {
+  // Split into command segments so flags and operands from different commands
+  // are never combined (e.g. "ls -r / ; rm foo").
+  for (const segment of command.split(/[;\n]|&&|\|\||[|&]/)) {
+    const tokens = segment.trim().split(/\s+/).filter(Boolean);
+    const rmIdx = tokens.findIndex((t) => t === "rm" || t.endsWith("/rm"));
+    if (rmIdx === -1) continue;
+
+    // Strip surrounding quotes the shell would remove, e.g. rm -rf "/".
+    const operands = tokens
+      .slice(rmIdx + 1)
+      .map((t) => t.replace(/^['"]+|['"]+$/g, ""));
+
+    const hasRecursive = operands.some(
+      (t) => /^-[a-zA-Z]*[rR][a-zA-Z]*$/.test(t) || t === "--recursive",
+    );
+    const targetsRoot = operands.some((t) => t === "/" || t === "/*");
+    if (hasRecursive && targetsRoot) return true;
+  }
+  return false;
+}
+
+/**
  * Check if a command string is safe to execute
  * Validates against BLOCKED_PATTERNS (null byte injection, catastrophic commands)
  *
@@ -150,6 +185,14 @@ export function isCommandSafe(command: string): { safe: boolean; error?: string 
   // Reject empty or whitespace-only commands
   if (!command || command.trim() === "") {
     return { safe: false, error: "Empty command" };
+  }
+
+  // Catastrophic root wipe (rm -rf /) — token/segment-aware guard
+  if (isRootWipe(command)) {
+    return {
+      safe: false,
+      error: "Command blocked: catastrophic command (root wipe)",
+    };
   }
 
   // Check against blocked patterns
