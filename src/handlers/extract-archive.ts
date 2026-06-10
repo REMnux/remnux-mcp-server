@@ -54,6 +54,31 @@ export async function handleExtractArchive(
     }
   }
 
+  // Security: validate the password up front (argument/option injection guard).
+  // This is not a path-sandbox aid, so it applies even with --no-sandbox: a
+  // leading "-" would be parsed by unzip as an option (["-P", password]), and
+  // shell metacharacters are rejected as defense-in-depth. Surfacing the error
+  // here gives a clear message instead of it being swallowed by the password
+  // retry loop in extractArchive (getExtractionCommand enforces the same rules).
+  if (args.password) {
+    if (args.password.startsWith("-")) {
+      return formatError("extract_archive", new REMnuxError(
+        "Password cannot start with '-' (option injection)",
+        "INVALID_PASSWORD",
+        "validation",
+        "Provide a password that does not begin with a hyphen",
+      ), startTime);
+    }
+    if (/[;&|`$\n\r'"\\]/.test(args.password)) {
+      return formatError("extract_archive", new REMnuxError(
+        "Password contains invalid characters",
+        "INVALID_PASSWORD",
+        "validation",
+        "Remove shell metacharacters from the password",
+      ), startTime);
+    }
+  }
+
   // Verify archive type is supported
   const archiveType = detectArchiveType(args.archive_file);
   if (!archiveType) {

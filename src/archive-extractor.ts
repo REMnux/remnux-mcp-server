@@ -83,6 +83,14 @@ export function getExtractionCommand(
     throw new Error("Password contains invalid characters");
   }
 
+  // Reject a leading "-": for zip the password is passed as a standalone argv
+  // token (["-P", password]), so a value like "--help" would be parsed by unzip
+  // as an option rather than a password (argument injection). 7z/rar glue it as
+  // -p<password> so they are unaffected, but reject uniformly for consistency.
+  if (password && password.startsWith("-")) {
+    throw new Error("Password cannot start with '-' (option injection)");
+  }
+
   switch (archiveType) {
     case "7z":
       // 7z x archive.7z -ooutputdir -ppassword -y
@@ -210,6 +218,103 @@ function validateExtractedPaths(files: string[], outputDir: string): string[] {
   }
 
   return escapeAttempts;
+}
+
+/** A symlink discovered in the extracted tree: its path (relative to outputDir) and target. */
+export interface ExtractedSymlink {
+  name: string;
+  target: string;
+}
+
+/**
+ * List symlinks in the extracted tree along with their targets.
+ *
+ * The name-based check in validateExtractedPaths only inspects regular-file
+ * names (find -type f). A malicious archive can instead ship a symlink whose
+ * target escapes outputDir (e.g. "link" -> "/home/remnux") followed by an entry
+ * "link/evil" that the extractor writes THROUGH the symlink, landing outside
+ * outputDir. find -type f never lists the symlink and reports "link/evil" as a
+ * path that lexically resolves inside outputDir, so the escape is invisible.
+ * Enumerating symlinks and resolving their targets closes that gap.
+ */
+async function listExtractedSymlinks(
+  connector: Connector,
+  outputDir: string
+): Promise<ExtractedSymlink[]> {
+  try {
+    // GNU find: %P = path relative to outputDir, %l = symlink target.
+    const result = await connector.execute(
+      ["find", outputDir, "-type", "l", "-printf", "%P\\t%l\\n"],
+      { timeout: 30000 }
+    );
+
+    if (result.exitCode === 0) {
+      return result.stdout
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .map((line) => {
+          const [name, ...rest] = line.split("\t");
+          return { name: name ?? "", target: rest.join("\t") };
+        })
+        .filter((s) => s.name.length > 0);
+    }
+
+    // BSD/portable fallback: find lacks -printf. List symlink paths only; we
+    // cannot resolve targets here, so fail closed — treat any symlink as an
+    // escape attempt rather than letting an unresolved one through.
+    const lsResult = await connector.execute(
+      ["find", outputDir, "-type", "l"],
+      { timeout: 30000 }
+    );
+    if (lsResult.exitCode === 0 && lsResult.stdout) {
+      return lsResult.stdout
+        .split("\n")
+        .map((f) => f.trim())
+        .filter((f) => f.length > 0)
+        .map((f) => ({ name: f, target: "" }));
+    }
+
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Return the names of symlinks whose resolved target escapes outputDir.
+ *
+ * A target is safe only if it stays within outputDir. Absolute targets are
+ * resolved as-is; relative targets are resolved against the symlink's own
+ * directory. An empty target (unresolved on the portable fallback path) is
+ * treated as an escape — fail closed. Internal symlinks (target stays inside
+ * outputDir) are preserved so legitimate archives are unaffected.
+ */
+export function findEscapingSymlinks(
+  symlinks: ExtractedSymlink[],
+  outputDir: string
+): string[] {
+  const normalizedBase = resolve(outputDir);
+  const escapes: string[] = [];
+
+  for (const link of symlinks) {
+    if (link.target.length === 0) {
+      // Unresolved target (portable fallback) — fail closed.
+      escapes.push(link.name);
+      continue;
+    }
+
+    const linkDir = dirname(resolve(outputDir, link.name));
+    const resolvedTarget = resolve(linkDir, link.target);
+    if (
+      resolvedTarget !== normalizedBase &&
+      !resolvedTarget.startsWith(normalizedBase + "/")
+    ) {
+      escapes.push(link.name);
+    }
+  }
+
+  return escapes;
 }
 
 /**
@@ -365,6 +470,26 @@ export async function extractArchive(
             success: false,
             files: [],
             error: `Archive contains path escape attempts (zip-slip): ${escapeAttempts.slice(0, 3).join(", ")}${escapeAttempts.length > 3 ? ` and ${escapeAttempts.length - 3} more` : ""}`,
+            outputDir,
+          };
+        }
+
+        // Validate for zip-slip via symlink indirection: a symlink whose target
+        // escapes outputDir lets a follow-on entry write through it (the
+        // name-based check above cannot see this). Resolve symlink targets and
+        // reject any that leave outputDir. Note: detection is post-extraction, so
+        // a file already written THROUGH an escaping symlink lands outside
+        // outputDir and is not reverted by the rm -rf below; container/VM
+        // isolation remains the boundary (TOCTOU is accepted per the threat model).
+        const symlinks = await listExtractedSymlinks(connector, outputDir);
+        const symlinkEscapes = findEscapingSymlinks(symlinks, outputDir);
+        if (symlinkEscapes.length > 0) {
+          // Clean up potentially malicious files
+          await connector.execute(["rm", "-rf", outputDir], { timeout: 30000 });
+          return {
+            success: false,
+            files: [],
+            error: `Archive contains symlink path escape attempts (zip-slip): ${symlinkEscapes.slice(0, 3).join(", ")}${symlinkEscapes.length > 3 ? ` and ${symlinkEscapes.length - 3} more` : ""}`,
             outputDir,
           };
         }

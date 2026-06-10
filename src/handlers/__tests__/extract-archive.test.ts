@@ -102,6 +102,47 @@ describe("handleExtractArchive", () => {
     expect(result.isError).toBe(true);
   });
 
+  it("rejects a leading-dash password up front (option injection)", async () => {
+    const deps = createMockDeps();
+
+    const result = await handleExtractArchive(deps, {
+      archive_file: "test.zip",
+      password: "--help",
+    });
+
+    const env = parseEnvelope(result);
+    expect(env.success).toBe(false);
+    expect(env.error_code).toBe("INVALID_PASSWORD");
+    expect(vi.mocked(extractArchive)).not.toHaveBeenCalled();
+  });
+
+  it("rejects shell metacharacters in the password up front", async () => {
+    const deps = createMockDeps();
+
+    const result = await handleExtractArchive(deps, {
+      archive_file: "test.zip",
+      password: "a;b",
+    });
+
+    const env = parseEnvelope(result);
+    expect(env.success).toBe(false);
+    expect(env.error_code).toBe("INVALID_PASSWORD");
+    expect(vi.mocked(extractArchive)).not.toHaveBeenCalled();
+  });
+
+  it("rejects an injecting password even with noSandbox (injection guard, not path aid)", async () => {
+    const deps = createMockDeps({ noSandbox: true });
+
+    const result = await handleExtractArchive(deps, {
+      archive_file: "test.zip",
+      password: "-x",
+    });
+
+    const env = parseEnvelope(result);
+    expect(env.success).toBe(false);
+    expect(env.error_code).toBe("INVALID_PASSWORD");
+  });
+
   it("rejects unsupported archive format", async () => {
     const deps = createMockDeps();
 
