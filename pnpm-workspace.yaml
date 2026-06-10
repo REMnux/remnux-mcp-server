@@ -1,8 +1,31 @@
+blockExoticSubdeps: true
+# 10080 minutes = 7 days (pnpm 10.x uses minutes despite docs saying seconds)
+minimumReleaseAge: 10080
 # Supply chain security policies
 onlyBuiltDependencies:
   - esbuild
   - workerd
   - cpu-features
-# 10080 minutes = 7 days (pnpm 10.x uses minutes despite docs saying seconds)
-minimumReleaseAge: 10080
-blockExoticSubdeps: true
+overrides:
+  '@hono/node-server@<1.19.13': '>=1.19.13'
+  '@protobufjs/utf8@<=1.1.0': '>=1.1.1'
+  brace-expansion@<1.1.13: '>=1.1.13'
+  brace-expansion@>=4.0.0 <5.0.5: '>=5.0.5'
+  brace-expansion@>=5.0.0 <5.0.6: '>=5.0.6'
+  esbuild@<=0.24.2: '>=0.25.0'
+  fast-uri@<=3.1.0: '>=3.1.1'
+  fast-uri@<=3.1.1: '>=3.1.2'
+  hono@<4.12.12: '>=4.12.12'
+  hono@<4.12.14: '>=4.12.14'
+  hono@<4.12.16: '>=4.12.16'
+  hono@<4.12.18: '>=4.12.18'
+  hono@<4.12.21: '>=4.12.21'
+  hono@>=4.0.0 <=4.12.11: '>=4.12.12'
+  ip-address@<=10.1.0: '>=10.1.1'
+  path-to-regexp@>=8.0.0 <8.4.0: '>=8.4.0'
+  postcss@<8.5.10: '>=8.5.10'
+  protobufjs@<7.5.5: '>=7.5.5'
+  protobufjs@<=7.5.5: '>=7.5.6'
+  protobufjs@<=7.5.7: '>=7.5.8'
+  qs@>=6.11.1 <=6.15.1: '>=6.15.2'
+  uuid@<11.1.1: '>=11.1.1'
