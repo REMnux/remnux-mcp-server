@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-06-18",
+  "updated": "2026-06-19",
   "tools": [
     {
       "command": "1768",
@@ -1065,13 +1065,6 @@
       "category": "Analyze Documents: PDF",
       "description": "Manipulate (merge, convert, transform) PDF files.",
       "website": "http://qpdf.sourceforge.net/"
-    },
-    {
-      "command": "r2mcp",
-      "name": "r2mcp",
-      "category": "Use Artificial Intelligence",
-      "description": "Model Context Protocol server that lets AI agents drive radare2 to open binaries, analyze code, decompile functions, and find vulnerabilities. Pre-configured for OpenCode as the radare2 MCP server.",
-      "website": "https://github.com/radareorg/radare2-mcp"
     },
     {
       "command": "r2pipe",
