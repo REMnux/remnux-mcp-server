@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-02-27",
+  "updated": "2026-06-18",
   "tools": [
     {
       "command": "1768",
@@ -1067,6 +1067,13 @@
       "website": "http://qpdf.sourceforge.net/"
     },
     {
+      "command": "r2mcp",
+      "name": "r2mcp",
+      "category": "Use Artificial Intelligence",
+      "description": "Model Context Protocol server that lets AI agents drive radare2 to open binaries, analyze code, decompile functions, and find vulnerabilities. Pre-configured for OpenCode as the radare2 MCP server (amd64 only).",
+      "website": "https://github.com/radareorg/radare2-mcp"
+    },
+    {
       "command": "r2pipe",
       "name": "r2pipe",
       "category": "Dynamically Reverse-Engineer Code: General",
@@ -1077,7 +1084,7 @@
       "command": "radare2",
       "name": "radare2",
       "category": "Dynamically Reverse-Engineer Code: General",
-      "description": "Examine binary files, including disassembling and debugging. Includes r2ai and decai plugins for LLM-powered analysis (API key or local Ollama required).",
+      "description": "Examine binary files, including disassembling and debugging. Includes r2ai and decai plugins for LLM-powered analysis (API key or local Ollama required), plus the r2ghidra plugin for Ghidra decompilation via the pdg command (amd64 only).",
       "website": "https://www.radare.org/n/radare2.html"
     },
     {
