@@ -220,4 +220,29 @@ describe("handleSuggestTools", () => {
     // OneNote has no catalog mapping, so additional_tools should be absent
     expect(env.data.additional_tools).toBeUndefined();
   });
+
+  it("recommends r2ghidra for native PE at deep depth and teaches pdg in hints", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/test.exe: PE32 executable (console) Intel 80386")
+    );
+    const result = await handleSuggestTools(deps, { file: "test.exe", depth: "deep" });
+    const env = parseEnvelope(result);
+    const r2g = env.data.recommended_tools.find((t: { name: string }) => t.name === "r2ghidra");
+    expect(r2g).toBeDefined();
+    expect(r2g.invocation).toContain("pdg @ entry0; pdg @ main");
+    expect(env.data.analysis_hints).toContain("pdg @ main");
+    expect(env.data.analysis_hints).toContain("afl");
+  });
+
+  it("does not recommend r2ghidra at standard depth but still teaches pdg in hints", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/test.exe: PE32 executable (console) Intel 80386")
+    );
+    const result = await handleSuggestTools(deps, { file: "test.exe", depth: "standard" });
+    const env = parseEnvelope(result);
+    expect(env.data.recommended_tools.map((t: { name: string }) => t.name)).not.toContain("r2ghidra");
+    expect(env.data.analysis_hints).toContain("pdg @ main");
+  });
 });

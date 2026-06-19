@@ -17,6 +17,22 @@ describe("handleAnalyzeFile", () => {
     expect(env.data.tools_run.length).toBeGreaterThan(0);
   });
 
+  it("surfaces r2ghidra as a skipped (manual) decompile step at deep depth, never auto-run", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/test.exe: PE32 executable")
+    );
+    vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("tool output"));
+
+    const result = await handleAnalyzeFile(deps, { file: "test.exe", depth: "deep" });
+    const env = parseEnvelope(result);
+    const skipped = env.data.tools_skipped.find((t: { name: string }) => t.name === "r2ghidra");
+    expect(skipped).toBeDefined();
+    expect(skipped.skip_type).toBe("requires_user_args");
+    expect(skipped.invocation).toContain("pdg @ entry0; pdg @ main");
+    expect(env.data.tools_run.map((t: { name: string }) => t.name)).not.toContain("r2ghidra");
+  });
+
   it("skips tools with exit code 127 (not installed)", async () => {
     const deps = createMockDeps();
     vi.mocked(deps.connector.execute).mockResolvedValue(

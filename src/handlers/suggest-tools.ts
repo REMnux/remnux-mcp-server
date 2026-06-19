@@ -53,7 +53,8 @@ const BASE_HINTS: Record<string, string> = {
     "1768.py analyzes Cobalt Strike beacons. disitool.py examines Authenticode signatures. " +
     "redress recovers Go compiler info, packages, and types from Go-compiled executables — returns minimal output on non-Go PE files. " +
     "For deep analysis, capa -vv shows matched rule details with addresses. " +
-    "pedump shows raw PE structure and brxor bruteforces XOR-encoded strings.",
+    "pedump shows raw PE structure and brxor bruteforces XOR-encoded strings. " +
+    "For native (non-.NET) code, r2ghidra decompiles to pseudo-C via radare2's Ghidra plugin and is function-scoped: list functions with run_tool command=\"r2 -A -q -c afl <file>\", then decompile a target with run_tool command=\"r2 -A -q -c 'pdg @ main' <file>\" ('pdg @ entry0', 'pdg @ sym.<name>', or 'pdg @ 0x<addr>'). Use 'pdc' instead of 'pdg' if the plugin is unavailable. For .NET assemblies use ilspycmd instead.",
   PDF:
     "Start with pdfid and pdfcop for triage — pdfid identifies notable elements " +
     "(/JS, /JavaScript, /OpenAction, /Launch), pdfcop detects malicious structures. " +
@@ -87,7 +88,8 @@ const BASE_HINTS: Record<string, string> = {
     "readelf -S lists sections — look for unusual section names or sizes. " +
     "capa detects capabilities in ELF binaries similar to PE analysis. " +
     "redress analyzes Go binaries — recovers package names, types, compiler version, and source structure. On non-Go ELF files it returns minimal output (just OS/arch). " +
-    "For deep analysis, capa -vv shows matched rule details with addresses.",
+    "For deep analysis, capa -vv shows matched rule details with addresses. " +
+    "r2ghidra decompiles ELF functions to pseudo-C (Ghidra plugin under radare2): list functions with run_tool command=\"r2 -A -q -c afl <file>\", then run_tool command=\"r2 -A -q -c 'pdg @ main' <file>\" for a target ('pdg @ sym.<name>' or 'pdg @ 0x<addr>'). 'pdc' is the native fallback if the plugin is absent.",
   JavaScript:
     "js-beautify reformats and deobfuscates JavaScript — look for eval(), " +
     "document.write(), String.fromCharCode(), and unescape() patterns. " +

@@ -537,6 +537,40 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tier: "standard",
   },
 
+  // ── Native decompilation (r2ghidra) ─────────────────────────────────────
+  {
+    name: "r2ghidra",
+    description:
+      "Decompile native PE/ELF functions to pseudo-C using the r2ghidra (Ghidra) decompiler in radare2. " +
+      "Function-scoped — one function per 'pdg'. List functions first: run_tool command=\"r2 -A -q -c afl <file>\", " +
+      "then decompile a target: run_tool command=\"r2 -A -q -c 'pdg @ main' <file>\" " +
+      "('pdg @ entry0', 'pdg @ sym.<name>', or 'pdg @ 0x<addr>'). " +
+      "If the Ghidra plugin is unavailable, use radare2's native 'pdc' instead of 'pdg' (lower fidelity, no plugin). " +
+      "Decompiled output can be fed to extract_iocs.",
+    command: "r2",
+    inputStyle: "positional",
+    // bash -c reparses the assembled string, so the inner single-quotes hold as one -c argument.
+    // Default template decompiles entry0 (always resolves) + main (added value when present).
+    // -e log.quiet=true silences r2's analysis-progress logs (verified on REMnux radare2 6.1.6).
+    // Do NOT add bin.relocs.apply=true: r2 warns relocs aren't applied and suggests it, but on
+    // test it renders calls as raw addresses ((**0x22f98)) instead of the informative
+    // _reloc.<symbol> names — measurably worse decompilation. The warning is benign here.
+    fixedArgs: ["-A", "-q", "-e", "scr.color=0", "-e", "log.quiet=true", "-c", "'pdg @ entry0; pdg @ main'"],
+    outputFormat: "text",
+    timeout: 180,
+    tags: ["pe", "elf", "decompilation"],
+    tier: "deep",
+    // Not literally "needs user args" — repurposed (as autoit-ripper/uncompyle6 are) to mean
+    // "don't auto-run; surface the invocation." Native decompile is function-scoped and empty
+    // on packed/stripped samples, so it runs on demand via run_tool.
+    requiresUserArgs: true,
+    // r2 exits 0 even when pdg finds nothing (verified on REMnux), so empty output is not an
+    // error code — the description covers the stripped/packed "no output" case (list via afl).
+    exitCodeHints: {
+      127: "r2 (radare2) or the r2ghidra 'pdg' plugin is unavailable. Verify: r2 -qc 'pdg?' /bin/ls. Native fallback: use 'pdc' instead of 'pdg'.",
+    },
+  },
+
   // ── ELF analysis ────────────────────────────────────────────────────────
   {
     name: "readelf-header",
@@ -683,7 +717,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 120,
-    tags: ["jar"],
+    tags: ["jar", "decompilation"],
     tier: "standard",
   },
 
@@ -763,7 +797,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     fixedArgs: ["-d", "%OUTPUT%/jadx-out", "--no-debug-info"],
     outputFormat: "text",
     timeout: 120,
-    tags: ["apk"],
+    tags: ["apk", "decompilation"],
     tier: "standard",
   },
 

@@ -40,7 +40,11 @@ export interface ToolDefinition {
   tags?: string[];
   /** Minimum depth tier that includes this tool */
   tier: DepthTier;
-  /** Tool requires user-supplied arguments and cannot run in automated analysis */
+  /**
+   * Skip in automated analyze_file runs — surfaced as a manual run_tool invocation
+   * in tools_skipped instead. Either the tool needs user-supplied arguments, or it
+   * has a sensible default but is better driven manually (e.g. autoit-ripper, r2ghidra).
+   */
   requiresUserArgs?: boolean;
   /** Human-readable hints for specific non-zero exit codes */
   exitCodeHints?: Record<number, string>;

@@ -36,4 +36,14 @@ describe("tool definition guards", () => {
       }
     }
   });
+
+  it("r2ghidra surfaces the quoted pdg script as one intact -c argument", () => {
+    const r2g = TOOL_DEFINITIONS.find((d) => d.name === "r2ghidra");
+    expect(r2g).toBeDefined();
+    const inv = buildInvocationTemplate(r2g!);
+    // bash -c reparses the assembled string, so the single-quoted script must
+    // render intact — guards the fixedArgs join against silently splitting it.
+    expect(inv).toContain("-c 'pdg @ entry0; pdg @ main'");
+    expect(inv.split(" ")[0]).toBe("r2");
+  });
 });

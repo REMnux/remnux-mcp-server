@@ -83,4 +83,23 @@ describe("ToolRegistry", () => {
     expect(vol3info!.inputFlag).toBe("-f");
     expect(vol3info!.suffixArgs).toEqual(["windows.info"]);
   });
+
+  it("registers r2ghidra for native PE/ELF decompilation at deep tier only", () => {
+    const r2g = toolRegistry.get("r2ghidra");
+    expect(r2g).toBeDefined();
+    expect(r2g!.command).toBe("r2");
+    expect(r2g!.tier).toBe("deep");
+    expect(r2g!.requiresUserArgs).toBe(true);
+    expect(r2g!.tags).toEqual(expect.arrayContaining(["pe", "elf", "decompilation"]));
+
+    expect(toolRegistry.byTagAndTier("pe", "deep").map((t) => t.name)).toContain("r2ghidra");
+    expect(toolRegistry.byTagAndTier("elf", "deep").map((t) => t.name)).toContain("r2ghidra");
+    // deep-tier tool: not surfaced during quick/standard analysis
+    expect(toolRegistry.byTagAndTier("pe", "standard").map((t) => t.name)).not.toContain("r2ghidra");
+  });
+
+  it("marks cfr and jadx with the cross-cutting 'decompilation' tag", () => {
+    expect(toolRegistry.get("cfr")!.tags).toContain("decompilation");
+    expect(toolRegistry.get("jadx")!.tags).toContain("decompilation");
+  });
 });
