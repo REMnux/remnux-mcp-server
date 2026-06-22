@@ -639,6 +639,34 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tags: ["javascript"],
     tier: "deep",
   },
+  {
+    name: "js-deobfuscator",
+    description: "Deobfuscate JavaScript by removing string arrays, proxy functions, and other common obfuscation.",
+    command: "js-deobfuscator",
+    inputStyle: "flag",
+    inputFlag: "-i",
+    suffixArgs: ["-o", "%OUTPUT%/js-deobfuscator-output.js"],
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["javascript"],
+    tier: "standard",
+    // Writes the deobfuscated result to -o (not stdout), so drive it manually
+    // and read the output file rather than auto-running it in analyze_file.
+    requiresUserArgs: true,
+  },
+  {
+    name: "gootloader-decode",
+    description: "Statically deobfuscate GootLoader JScript to recover the payload and extract C2 domains.",
+    command: "gootloader-decode",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["javascript"],
+    tier: "standard",
+    // GootLoader-family specific: run deliberately on suspected GootLoader JScript
+    // rather than auto-running on every JavaScript sample.
+    requiresUserArgs: true,
+  },
 
   // ── Script / text analysis ──────────────────────────────────────────────
   {
