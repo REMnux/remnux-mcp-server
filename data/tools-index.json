@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-06-19",
+  "updated": "2026-06-22",
   "tools": [
     {
       "command": "1768",
@@ -535,6 +535,13 @@
       "website": "https://www.gnu.org/software/wget/"
     },
     {
+      "command": "gootloaderautojsdecodepy",
+      "name": "GootLoaderAutoJsDecode.py",
+      "category": "Statically Analyze Code: Scripts",
+      "description": "Statically deobfuscate GootLoader (GOOTLOADER) malicious JScript to recover the payload and extract C2 domains.",
+      "website": "https://github.com/mandiant/gootloader"
+    },
+    {
       "command": "goresym",
       "name": "GoReSym",
       "category": "Examine Static Properties: Go",
@@ -624,6 +631,13 @@
       "category": "Statically Analyze Code: Java",
       "description": "Analyze Java IDX files.",
       "website": "https://github.com/digitalsleuth/Java_IDX_Parser"
+    },
+    {
+      "command": "javascript-deobfuscator",
+      "name": "JavaScript Deobfuscator",
+      "category": "Dynamically Reverse-Engineer Code: Scripts",
+      "description": "Deobfuscate JavaScript by removing common obfuscation techniques such as string arrays and proxy functions.",
+      "website": "https://github.com/ben-sb/javascript-deobfuscator"
     },
     {
       "command": "javassist",
