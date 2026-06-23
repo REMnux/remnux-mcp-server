@@ -1270,6 +1270,13 @@
       "website": "https://ssdeep-project.github.io/ssdeep/index.html"
     },
     {
+      "command": "sshpass",
+      "name": "sshpass",
+      "category": "General Utilities",
+      "description": "Supply a password to SSH non-interactively for automated logins.",
+      "website": "https://sourceforge.net/projects/sshpass/"
+    },
+    {
       "command": "ssview",
       "name": "SSView",
       "category": "Analyze Documents: Microsoft Office",
