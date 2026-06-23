@@ -3,6 +3,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch: {}  # manual build check; skips publish (see guard on the publish step)
 
 jobs:
   publish:
@@ -11,11 +12,11 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
@@ -24,6 +25,7 @@ jobs:
       - run: pnpm run build
 
       - name: Publish to npm
+        if: github.event_name == 'push'  # tag pushes only; manual dispatch builds without publishing
         run: |
           npm install -g npm@latest
           npm publish --access public --provenance
