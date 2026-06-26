@@ -32,13 +32,18 @@ export async function handleGetToolHelp(
     const def = toolRegistry.get(tool);
     const resolved = def?.command ?? tool;
 
-    // Try --help first, fall back to -h
+    // Most tools expose help via --help/-h; some (e.g. radare2 plugins decai/r2ai)
+    // expose it through a plugin subcommand, declared via def.helpArgs.
+    const helpInvocations: string[][] = def?.helpArgs
+      ? [def.helpArgs]
+      : [["--help"], ["-h"]];
+
     let output = "";
     let exitCode = 0;
 
-    for (const flag of ["--help", "-h"]) {
+    for (const helpArgs of helpInvocations) {
       try {
-        const result = await connector.execute([resolved, flag], { timeout: 10000 });
+        const result = await connector.execute([resolved, ...helpArgs], { timeout: 10000 });
         const combined = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
         exitCode = result.exitCode;
 
@@ -60,13 +65,13 @@ export async function handleGetToolHelp(
         const msg = error instanceof Error ? error.message : String(error);
         if (/timeout/i.test(msg)) {
           return formatError("get_tool_help", new REMnuxError(
-            `Timed out running '${tool} ${flag}'`,
+            `Timed out running '${tool} ${helpArgs.join(" ")}'`,
             "COMMAND_TIMEOUT",
             "timeout",
             "The tool may require input or not support help flags",
           ), startTime);
         }
-        // Continue to next flag
+        // Continue to next help invocation
       }
     }
 
