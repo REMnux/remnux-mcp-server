@@ -48,6 +48,14 @@ export interface ToolDefinition {
   requiresUserArgs?: boolean;
   /** Human-readable hints for specific non-zero exit codes */
   exitCodeHints?: Record<number, string>;
+  /**
+   * Override how get_tool_help fetches help. By default the help handler tries
+   * `<command> --help` then `<command> -h`. Some tools expose help through a
+   * plugin subcommand instead (e.g. radare2 plugins decai/r2ai, whose help is
+   * `r2 -qc '<plugin> -h' --`); set the exact args here and they run as
+   * `<command> <helpArgs...>`.
+   */
+  helpArgs?: string[];
 }
 
 /**

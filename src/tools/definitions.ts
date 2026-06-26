@@ -571,6 +571,61 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     },
   },
 
+  // ── AI-assisted decompilation (radare2 r2ai / decai plugins) ─────────────
+  // These need a configured LLM backend (API key or local Ollama). They run on
+  // demand via run_tool, never auto-run. Offline alternative: r2ghidra (pdg).
+  {
+    name: "decai",
+    description:
+      "AI-assisted decompiler: turn a native PE/ELF function into readable pseudo-C with the decai radare2 plugin. " +
+      "REQUIRES a configured LLM backend — an API key or a local Ollama, set via 'decai -e' (e.g. 'decai -e api=openai'); " +
+      "without one it returns an error, not code. Function-scoped: first list functions with " +
+      "run_tool command=\"r2 -A -q -c afl <file>\", then decompile a target by seeking to it: " +
+      "run_tool command=\"r2 -A -q -c 's main; decai -d' <file>\" (or 's sym.<name>;', 's 0x<addr>;'). " +
+      "Check availability and settings with get_tool_help tool=\"decai\". " +
+      "For deterministic, offline decompilation that needs no API key, use r2ghidra (pdg) instead.",
+    command: "r2",
+    inputStyle: "positional",
+    // Single-quoted -c script stays one argument (bash -c reparses it). Seeks to main
+    // then decompiles; the AI adapts the seek per the description when main is absent.
+    fixedArgs: ["-A", "-q", "-e", "scr.color=0", "-e", "log.quiet=true", "-c", "'s main; decai -d'"],
+    outputFormat: "text",
+    timeout: 180,
+    tags: ["pe", "elf", "decompilation", "ai"],
+    tier: "deep",
+    // Needs an LLM backend + a chosen function, so surface the invocation rather
+    // than auto-running it (same repurposing as r2ghidra).
+    requiresUserArgs: true,
+    // get_tool_help tool="decai" returns decai's own help (plugin subcommand),
+    // not generic `r2 --help`.
+    helpArgs: ["-qc", "decai -h", "--"],
+    exitCodeHints: {
+      127: "r2 (radare2) or the decai plugin is unavailable. Verify: r2 -qc 'decai -h' --. decai also needs an LLM backend (API key or local Ollama) — see 'decai -e'. Offline alternative: r2ghidra 'pdg'.",
+    },
+  },
+  {
+    name: "r2ai",
+    description:
+      "AI assistant for radare2 (r2ai plugin): decompile or ask natural-language questions about the current function. " +
+      "REQUIRES a configured LLM backend — an API key or a local Ollama; without one it returns an error. " +
+      "Seek to a function first, then: run_tool command=\"r2 -A -q -c 's main; r2ai -d' <file>\" to decompile, or " +
+      "run_tool command=\"r2 -A -q -c 's main; r2ai -d what does this function do' <file>\" to ask about it. " +
+      "Check availability and settings with get_tool_help tool=\"r2ai\". " +
+      "For deterministic, offline decompilation that needs no API key, use r2ghidra (pdg) instead.",
+    command: "r2",
+    inputStyle: "positional",
+    fixedArgs: ["-A", "-q", "-e", "scr.color=0", "-e", "log.quiet=true", "-c", "'s main; r2ai -d'"],
+    outputFormat: "text",
+    timeout: 180,
+    tags: ["pe", "elf", "decompilation", "ai"],
+    tier: "deep",
+    requiresUserArgs: true,
+    helpArgs: ["-qc", "r2ai -h", "--"],
+    exitCodeHints: {
+      127: "r2 (radare2) or the r2ai plugin is unavailable. Verify: r2 -qc 'r2ai -h' --. r2ai also needs an LLM backend (API key or local Ollama). Offline alternative: r2ghidra 'pdg'.",
+    },
+  },
+
   // ── ELF analysis ────────────────────────────────────────────────────────
   {
     name: "readelf-header",
