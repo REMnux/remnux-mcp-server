@@ -10,8 +10,15 @@ const MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
 export class DockerConnector implements Connector {
   private docker: Docker;
   private containerName: string;
+  private execUser: string;
+  private execHome: string;
 
-  constructor(containerName: string) {
+  // execUser defaults to "remnux": the REMnux distro image is built --user=remnux,
+  // so per-user tooling (the radare2 plugins r2ai/decai, the r2pm package DB, dotfile
+  // config) lives under /home/remnux and is invisible to root. Running container
+  // commands as remnux with HOME set makes that tooling discoverable and keeps
+  // malware analysis off root.
+  constructor(containerName: string, execUser = "remnux") {
     // Docker container names can only contain [a-zA-Z0-9][a-zA-Z0-9_.-]*
     const sanitized = containerName.replace(/[^a-zA-Z0-9_.-]/g, "");
     if (sanitized !== containerName) {
@@ -19,6 +26,28 @@ export class DockerConnector implements Connector {
     }
     this.docker = new Docker();
     this.containerName = containerName;
+    // Coerce empty/falsy to remnux so an explicit "" never yields User:"" (silently
+    // root) with HOME=/home/. root keeps /root; everyone else gets /home/<user>.
+    this.execUser = execUser || "remnux";
+    this.execHome = this.execUser === "root" ? "/root" : `/home/${this.execUser}`;
+  }
+
+  // Build the dockerode exec-create options. Pure and side-effect-free so the
+  // user/HOME wiring can be unit-tested without dockerode's stream machinery.
+  buildExecCreateOptions(
+    command: string[],
+    options: ExecOptions = {},
+  ): Docker.ExecCreateOptions {
+    return {
+      Cmd: command,
+      AttachStdout: true,
+      AttachStderr: true,
+      WorkingDir: options.cwd || this.execHome,
+      User: this.execUser,
+      // Env AUGMENTS the image environment (PATH etc. preserved); we set HOME so
+      // r2/r2pm and other user tooling resolve under the exec user's home.
+      Env: [`HOME=${this.execHome}`],
+    };
   }
 
   async execute(command: string[], options: ExecOptions = {}): Promise<ExecResult> {
@@ -35,12 +64,7 @@ export class DockerConnector implements Connector {
       throw new Error(`Container '${this.containerName}' is not running`);
     }
 
-    const exec = await container.exec({
-      Cmd: command,
-      AttachStdout: true,
-      AttachStderr: true,
-      WorkingDir: options.cwd || "/home/remnux",
-    });
+    const exec = await container.exec(this.buildExecCreateOptions(command, options));
 
     return new Promise((resolve, reject) => {
       const timeout = options.timeout || 300000;
@@ -197,7 +221,12 @@ export class DockerConnector implements Connector {
         { stdio: "pipe" }
       );
 
-      // Files are owned by whatever user the container runs as (typically root)
+      // docker cp preserves the host file's numeric UID/GID and mode (NOT the exec
+      // user). Provisioned samples are commonly world-readable (644), so tools run as
+      // a non-root execUser (default "remnux") can READ them; remnux also owns the
+      // samples/output dirs (mkdir runs through the exec path) so it can WRITE there.
+      // remnux cannot modify/delete a docker-cp'd file it doesn't own — chown the
+      // copied path to execUser here if in-place mutation is ever needed.
     } finally {
       // Clean up temp file
       try {

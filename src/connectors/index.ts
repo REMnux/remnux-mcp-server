@@ -21,6 +21,7 @@ export interface Connector {
 export interface ConnectorConfig {
   mode: "docker" | "ssh" | "local";
   container?: string;
+  containerUser?: string;
   host?: string;
   user?: string;
   port?: number;
@@ -31,7 +32,10 @@ export async function createConnector(config: ConnectorConfig): Promise<Connecto
   switch (config.mode) {
     case "docker":
       const { DockerConnector } = await import("./docker.js");
-      return new DockerConnector(config.container || "remnux");
+      return new DockerConnector(
+        config.container || "remnux",
+        config.containerUser || "remnux",
+      );
 
     case "ssh":
       const { SSHConnector } = await import("./ssh.js");

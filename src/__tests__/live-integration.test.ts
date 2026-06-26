@@ -97,6 +97,56 @@ describe.skipIf(!runLive)("live integration", () => {
     await closeTransports?.();
   });
 
+  // ─── exec-as-remnux: discoverability fix acceptance ─────────────────
+  // These prove the DockerConnector now execs as the remnux user with the
+  // right HOME, so per-user radare2 tooling (r2ai/decai, r2pm) is discoverable.
+
+  it("runs container commands as the remnux user", async () => {
+    const { envelope } = await callTool("run_tool", { command: "whoami" });
+    expect(envelope.success).toBe(true);
+    expect((envelope.data.stdout as string).trim()).toBe("remnux");
+  }, 15_000);
+
+  it("exec env has HOME=/home/remnux and a populated PATH (Env augments, not replaces)", async () => {
+    const { envelope } = await callTool("run_tool", { command: "env" });
+    expect(envelope.success).toBe(true);
+    const out = envelope.data.stdout as string;
+    expect(out).toMatch(/^HOME=\/home\/remnux$/m);
+    expect(out).toMatch(/^PATH=\/\S+/m);
+  }, 15_000);
+
+  it("a PATH-resolved tool still runs as remnux (capa --version)", async () => {
+    const { envelope } = await callTool("run_tool", { command: "capa --version" });
+    expect(envelope.success).toBe(true);
+    expect(envelope.data.exit_code).toBe(0);
+  }, 30_000);
+
+  it("radare2 loads the decai plugin (the original bug)", async () => {
+    const { envelope } = await callTool("run_tool", {
+      command: "r2 -qc 'decai -h' --",
+    });
+    expect(envelope.success).toBe(true);
+    expect(envelope.data.stdout as string).toMatch(/decai/i);
+  }, 30_000);
+
+  it("radare2 loads r2ai with no duplicate-load error", async () => {
+    const { envelope } = await callTool("run_tool", {
+      command: "r2 -qc 'r2ai -h' --",
+    });
+    expect(envelope.success).toBe(true);
+    const combined = `${envelope.data.stdout}\n${envelope.data.stderr ?? ""}`;
+    expect(combined).toMatch(/r2ai/i);
+    expect(combined).not.toMatch(/already been loaded/i);
+  }, 30_000);
+
+  it("r2pm lists r2ai and decai for the exec user", async () => {
+    const { envelope } = await callTool("run_tool", { command: "r2pm -l" });
+    expect(envelope.success).toBe(true);
+    const out = envelope.data.stdout as string;
+    expect(out).toMatch(/r2ai/);
+    expect(out).toMatch(/decai/);
+  }, 30_000);
+
   // ─── get_file_info ──────────────────────────────────────────────────
 
   it("get_file_info returns hashes and file type", async () => {

@@ -52,6 +52,10 @@ function parseArgs(): ServerConfig {
         config.container = value;
         consumeValue();
         break;
+      case "--container-user":
+        config.containerUser = value;
+        consumeValue();
+        break;
       case "--host":
         config.host = value;
         consumeValue();
@@ -142,6 +146,7 @@ USAGE:
 OPTIONS:
   --mode <mode>           Connection mode: local, docker, or ssh (default: local)
   --container <name>      Docker container name/ID (for docker mode)
+  --container-user <user> User to run container commands as (docker mode, default: remnux)
   --host <host>           SSH host (for ssh mode)
   --user <user>           SSH user (default: remnux)
   --port <port>           SSH port (default: 22)
