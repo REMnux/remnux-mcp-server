@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-06-23",
+  "updated": "2026-06-26",
   "tools": [
     {
       "command": "1768",
@@ -162,13 +162,6 @@
       "category": "Statically Analyze Code: PE Files",
       "description": "Detect suspicious capabilities in PE files.",
       "website": "https://github.com/mandiant/capa"
-    },
-    {
-      "command": "cast",
-      "name": "Cast",
-      "category": "General Utilities",
-      "description": "Install and manage SaltStack-based Linux distributions, including REMnux.",
-      "website": "https://github.com/ekristen/cast"
     },
     {
       "command": "cfr",
