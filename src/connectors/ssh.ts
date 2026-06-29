@@ -71,6 +71,16 @@ export class SSHConnector implements Connector {
     });
   }
 
+  // Prefix a command so a missing remote working directory is created (mkdir -p)
+  // before cd, rather than failing the tool call when the samples/output dir is
+  // absent. Mirrors the local connector. Returns the command unchanged when no cwd
+  // is set. The cwd path is single-quote escaped, same as the command arguments.
+  buildCwdCommand(command: string, cwd?: string): string {
+    if (!cwd) return command;
+    const q = `'${cwd.replace(/'/g, "'\\''")}'`;
+    return `mkdir -p ${q} && cd ${q} && ${command}`;
+  }
+
   async execute(command: string[], options: ExecOptions = {}): Promise<ExecResult> {
     const client = await this.connect();
     const timeout = options.timeout || 300000;
@@ -87,9 +97,8 @@ export class SSHConnector implements Connector {
       .map((arg) => `'${arg.replace(/'/g, "'\\''")}'`)
       .join(" ");
 
-    // Also escape cwd path if provided
-    const escapedCwd = options.cwd ? `'${options.cwd.replace(/'/g, "'\\''")}'` : null;
-    const fullCmd = escapedCwd ? `cd ${escapedCwd} && ${cmdString}` : cmdString;
+    // Create the remote working directory if missing, then cd into it.
+    const fullCmd = this.buildCwdCommand(cmdString, options.cwd);
 
     return new Promise((resolve, reject) => {
       let timedOut = false;
@@ -165,9 +174,8 @@ export class SSHConnector implements Connector {
     // Wrap with GNU timeout: SIGTERM first, SIGKILL after 10s grace period
     const wrappedCmd = `timeout -s TERM -k 10s ${shellTimeoutSecs}s bash -c '${escapedCmd}'`;
 
-    // Build the full command with optional cwd
-    const escapedCwd = options.cwd ? `'${options.cwd.replace(/'/g, "'\\''")}'` : null;
-    const fullCmd = escapedCwd ? `cd ${escapedCwd} && ${wrappedCmd}` : wrappedCmd;
+    // Create the remote working directory if missing, then cd into it.
+    const fullCmd = this.buildCwdCommand(wrappedCmd, options.cwd);
 
     return new Promise((resolve, reject) => {
       let timedOut = false;
