@@ -34,7 +34,7 @@ The MCP server runs on the analyst's workstation and connects to a separate REMn
 |  |  AI Assistant  |---->|  remnux-mcp-server (npm package)     |   |
 |  | (Claude Code,  | MCP |                                      |   |
 |  |  Cursor, etc)  |     |  - Blocked command patterns          |   |
-|  +----------------+     |  - Dangerous pipe blocking           |   |
+|  +----------------+     |  - Catastrophic-cmd guards           |   |
 |                         |  - Path sandboxing (opt-in)          |   |
 |                         +------|-------------------------------+   |
 |                                |                                   |
@@ -219,7 +219,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 
 #### Security Notes (HTTP transport)
 
-- **Always use a token in production.** Without `--http-token` or `MCP_TOKEN`, any network client can execute commands.
+- **A token is required for network binds.** The server refuses to start when bound to a non-loopback address (for example `--http-host=0.0.0.0`) without `--http-token` or `MCP_TOKEN`, because that exposes unauthenticated command execution. Pass `--insecure-no-auth` to override on a trusted, isolated network (NOT recommended). A loopback bind with no token still works for local development.
 - **Default bind is `127.0.0.1`** — set `--http-host=0.0.0.0` to allow network access.
 - **Generate strong tokens:** `openssl rand -hex 32`
 - **Use `MCP_TOKEN` env var** to avoid exposing the token in process listings.
@@ -245,6 +245,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `--http-port` | HTTP server port (for http transport) | `3000` |
 | `--http-host` | HTTP bind address (for http transport) | `127.0.0.1` |
 | `--http-token` | Bearer token for HTTP auth (also reads `MCP_TOKEN` env var) | - |
+| `--insecure-no-auth` | Allow a non-loopback HTTP bind without a token (the server otherwise refuses). NOT recommended | off |
 
 ## MCP Tools
 
@@ -322,7 +323,7 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 
 | Threat | Target | Defense |
 |--------|--------|---------|
-| Command injection (prompt injection tricks AI into shell execution) | Analyst's workflow | Anti-injection patterns (`$()`, backticks, `${}`, etc.) |
+| Command injection (prompt injection tricks AI into shell execution) | Analyst's workflow | Container/VM isolation (the boundary), MCP "treat output as untrusted" instruction, null-byte and catastrophic-command guards |
 | Dangerous pipes (attacker code piped to interpreters) | Analyst's workflow | Container/VM isolation; AI system prompt guidance |
 | Catastrophic commands (`rm -rf /`, `mkfs`) | Analysis session | Narrow pattern guards for root wipes and filesystem formatting |
 | Resource exhaustion (tools hang or consume excessive resources) | AI assistant / analysis session | Timeout enforcement (default 5 min), output budgets (40KB/tool default, 120KB total) |
@@ -339,13 +340,13 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 ### Defense in Depth
 
 1. **Container/VM isolation**: REMnux runs isolated — the primary security boundary (user responsibility)
-2. **Anti-injection**: Shell escape patterns block prompt injection from executing arbitrary code via `$()`, backticks, and `${}`
+2. **Command guards**: Block null-byte injection and catastrophic session-wipe commands (`mkfs`, `rm -rf /`). Shell metacharacters (`$()`, backticks, `${}`, pipes) are intentionally allowed because container/VM isolation, not in-band filtering, is the boundary
 3. **Shell escaping**: Proper single-quote escaping for SSH commands
 4. **Timeouts**: Long-running processes terminated (default 5 min)
 5. **Output budgets**: Per-tool (40KB default) and total (120KB) limits prevent AI context exhaustion
 6. **Path sandboxing** (opt-in via `--sandbox`): Restricts file operations to samples/output dirs
 
-The server deliberately allows commands like `rm`, `sudo`, `pip install`, `curl`, `dd`, pipes to interpreters, process substitution, `eval`/`exec`/`source`, and access to `/etc/`, `/proc/`, `/sys/`, `/dev/` — because REMnux is disposable and container-isolated. Beyond the injection vectors and catastrophic patterns listed above, nothing is blocked. See `src/security/blocklist.ts` for the exact patterns.
+The server deliberately allows commands like `rm`, `sudo`, `pip install`, `curl`, `dd`, pipes to interpreters, process substitution, `eval`/`exec`/`source`, and access to `/etc/`, `/proc/`, `/sys/`, `/dev/` — because REMnux is disposable and container-isolated. Beyond the null-byte and catastrophic-command guards listed above, nothing is blocked. See `src/security/blocklist.ts` for the exact patterns.
 
 ### Prompt Injection from Malware
 
@@ -353,7 +354,7 @@ Malware may contain strings designed to manipulate AI assistants (e.g., "Ignore 
 
 **Built-in mitigation:** The server's MCP `instructions` field tells AI clients to treat all tool output as untrusted data. This is delivered automatically during the MCP handshake — no analyst configuration needed.
 
-**Limitations:** This is defense-in-depth, not a reliable boundary. A determined attacker can craft prompts to bypass system-level guidance. The real protection is container/VM isolation and the anti-injection blocklist, which limit what damage a manipulated AI can do.
+**Limitations:** This is defense-in-depth, not a reliable boundary. A determined attacker can craft prompts to bypass system-level guidance. The real protection is container/VM isolation, which limits what damage a manipulated AI can do.
 
 **We do not filter output.** Malware analysis requires seeing exactly what attackers embedded; filtering would corrupt the forensic record.
 
@@ -395,7 +396,7 @@ Then reference mounted files using the subdirectory path:
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | "Container 'remnux' is not running" | Docker container stopped | Run `docker start remnux` |
-| "Command blocked: \<category\>" | Anti-injection security pattern triggered | Review command for shell injection patterns (`$()`, backticks, `${}`) |
+| "Command blocked: \<category\>" | Null-byte or catastrophic-command guard triggered (`mkfs`, root-wide `rm -rf /`) | Adjust the command, or target a specific path instead of a root-wide destructive operation |
 | "Invalid file path" | Path traversal or special chars | Use simple relative paths without `..` |
 | "Invalid file path" (with `--sandbox`) | Path outside samples/output dirs | Use a relative path or remove `--sandbox` |
 | "Command timed out" | Tool took too long | Increase `--timeout` value |
@@ -488,7 +489,7 @@ This server is self-sufficient for most workflows: `suggest_tools` recommends th
 ### Why blocklist-only (no allowlist)?
 
 - **Container isolation** is the real security boundary, not this server's guardrails
-- **Anti-injection patterns** prevent prompt injection from triggering arbitrary code execution via `$(cmd)`, backticks, and `${}`
+- **Narrow guards, not filtering**: The blocklist blocks only null-byte injection and session-wipe commands like `mkfs` and `rm -rf /`. Shell metacharacters stay allowed because container isolation is the boundary
 - **Simpler maintenance**: No need to parse salt-states or fetch remote tool lists
 - **Works offline**: No dependency on docs.remnux.org for tool validation
 - **Flexible**: Any installed tool can be used without updating an allowlist

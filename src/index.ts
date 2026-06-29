@@ -41,6 +41,7 @@ import { handleGetToolHelp } from "./handlers/get-tool-help.js";
 import { handleGetReportTemplate, handleGetReportGuidance } from "./handlers/report.js";
 import { toolRegistry } from "./tools/registry.js";
 import { REPORT_TEMPLATE, GUIDELINES_DIGEST, ATTRIBUTION, SOURCE_META } from "./report/content.generated.js";
+import { httpBindRequiresToken } from "./utils/loopback.js";
 
 export interface ServerConfig extends ConnectorConfig {
   samplesDir: string;
@@ -52,6 +53,7 @@ export interface ServerConfig extends ConnectorConfig {
   httpPort?: number;
   httpHost?: string;
   httpToken?: string;
+  allowInsecureNoAuth?: boolean;
 }
 
 export async function createServer(config: ServerConfig) {
@@ -437,6 +439,19 @@ async function startHttpServer(config: ServerConfig) {
   const host = config.httpHost ?? "127.0.0.1";
   const port = config.httpPort ?? 3000;
   const token = config.httpToken;
+
+  // Fail closed: an HTTP transport bound to a non-loopback address with no auth
+  // token is unauthenticated, network-reachable command execution, the one path
+  // that escapes the container/VM isolation boundary. Refuse to start rather than
+  // warn-and-serve. --insecure-no-auth is the explicit override for a deliberately
+  // open, network-isolated lab deployment.
+  if (httpBindRequiresToken(host, token, config.allowInsecureNoAuth)) {
+    console.error(
+      `Error: refusing to bind HTTP transport to non-loopback host "${host}" without an auth token. ` +
+      "Set --http-token or the MCP_TOKEN env var, bind to 127.0.0.1, or pass --insecure-no-auth to override (NOT recommended).",
+    );
+    process.exit(1);
+  }
 
   const app = createMcpExpressApp({ host });
 

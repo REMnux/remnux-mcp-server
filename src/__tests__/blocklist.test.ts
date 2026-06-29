@@ -1,9 +1,10 @@
 /**
  * Security tests for blocklist.ts
  *
- * Threat model: REMnux is disposable. These tests verify that anti-injection
- * patterns block prompt injection attacks while allowing all legitimate
- * malware analysis commands — including destructive ones.
+ * Threat model: REMnux is disposable and container/VM isolation is the security
+ * boundary. These tests verify that shell metacharacters ($(), backticks, ${},
+ * pipes) are intentionally allowed, and that only null-byte injection and
+ * catastrophic session-wipe commands (mkfs, rm -rf /) are blocked.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";

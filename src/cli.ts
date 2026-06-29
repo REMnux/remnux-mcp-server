@@ -112,6 +112,9 @@ function parseArgs(): ServerConfig {
         config.httpToken = value;
         consumeValue();
         break;
+      case "--insecure-no-auth":
+        config.allowInsecureNoAuth = true;
+        break;
       case "--help":
       case "-h":
         printHelp();
@@ -162,6 +165,8 @@ OPTIONS:
   --http-port <port>      HTTP port (default: 3000)
   --http-host <host>      HTTP bind address (default: 127.0.0.1)
   --http-token <token>    Bearer token for HTTP auth (also reads MCP_TOKEN env var)
+  --insecure-no-auth      Allow a non-loopback HTTP bind with no token (NOT recommended).
+                          The server otherwise refuses to start in that configuration
   -h, --help              Show this help message
   -v, --version           Show version
 
