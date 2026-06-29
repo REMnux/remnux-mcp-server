@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import { copyFileSync, writeFileSync } from "fs";
+import { copyFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import type { Connector, ExecOptions, ExecResult } from "./index.js";
 
 // Output size limit (10MB)
@@ -36,6 +36,19 @@ export class LocalConnector implements Connector {
     for (const key of ALLOWED_ENV_VARS) {
       if (process.env[key]) {
         filteredEnv[key] = process.env[key];
+      }
+    }
+
+    // Ensure the working directory exists before spawning. child_process.spawn
+    // chdir's before exec, and a missing cwd surfaces as "spawn <cmd> ENOENT" —
+    // Node reports it as if the executable were missing, not the directory. The
+    // samples/output dir can be absent (fresh VM) or wiped mid-session (snapshot
+    // restore, cleanup), so create it on demand rather than failing every tool call.
+    if (options.cwd && !existsSync(options.cwd)) {
+      try {
+        mkdirSync(options.cwd, { recursive: true });
+      } catch {
+        /* best-effort: if this fails, spawn surfaces the underlying error */
       }
     }
 

@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 import { LocalConnector } from "../connectors/local.js";
-import { readFileSync, unlinkSync } from "node:fs";
+import { readFileSync, unlinkSync, existsSync, rmdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -29,6 +29,25 @@ describe("LocalConnector", () => {
     await expect(connector.execute([])).rejects.toThrow(
       "Command array cannot be empty",
     );
+  });
+
+  it("execute() creates a missing cwd instead of failing with spawn ENOENT", async () => {
+    // Regression: a missing cwd made child_process.spawn report "spawn bash ENOENT"
+    // as if bash were missing. The connector now creates the cwd on demand.
+    const missingCwd = join(tmpdir(), `local-connector-missing-cwd-${Date.now()}`);
+    expect(existsSync(missingCwd)).toBe(false);
+    try {
+      const result = await connector.executeShell("echo ran", { cwd: missingCwd });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe("ran");
+      expect(existsSync(missingCwd)).toBe(true);
+    } finally {
+      try {
+        rmdirSync(missingCwd);
+      } catch {
+        // cleanup best-effort
+      }
+    }
   });
 
   // ─── executeShell() ─────────────────────────────────────────────────
