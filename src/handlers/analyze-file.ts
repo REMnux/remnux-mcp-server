@@ -645,7 +645,13 @@ export async function handleAnalyzeFile(
     "alone cannot confirm the sample actually performs keylogging at runtime. " +
     "When multiple tools converge on a classification, this strengthens the hypothesis " +
     "but does not confirm it. Use 'consistent with' or 'matches patterns associated with' rather than " +
-    "'confirms' or 'identified as'. State attribution confidence separately from detection confidence.";
+    "'confirms' or 'identified as'. State attribution confidence separately from detection confidence. " +
+    "FILENAME IS NOT EVIDENCE: the sample's filename is analyst- or attacker-supplied metadata, not an " +
+    "analysis result. A family name, label, or verdict in the filename is at most a lead, never a basis " +
+    "for attribution. You may use it to prioritize which hypotheses to test, but confirm or refute it from " +
+    "your own findings. If those findings do not independently establish the family through cross-referenced " +
+    "signatures, behavior, or code, do not report that family as identified, even when the filename names " +
+    "it. Report any filename hint separately and mark it unconfirmed.";
 
   // Check if output exceeds budget - return summary instead of full output
   if (shouldSummarize(toolsRun)) {

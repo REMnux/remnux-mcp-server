@@ -500,6 +500,8 @@ Analysis tools flag capabilities that appear in both malware and legitimate soft
 
 To counteract this confirmation bias, the server uses neutral language ("notable" instead of "suspicious") in parser findings and tool descriptions, and includes `analysis_guidance` in `analyze_file` responses that prompts the AI to consider benign explanations and state its confidence level. The underlying detection logic is unchanged — only the framing.
 
+The same anti-anchoring stance covers the sample's filename. A filename that carries a malware family name or a verdict is analyst- or attacker-supplied metadata, not an analysis result, and it is easy for an AI to absorb that name as a finding, especially when the analysis does not otherwise identify the family. The handshake `instructions` and the `analyze_file` `analysis_guidance` both tell the AI to treat a family name in the filename as an unverified lead worth checking, never a basis for attribution, and not to report a family as identified unless the analysis findings establish it independently.
+
 ### Why bundle a report template?
 
 Analysis produces findings; a report turns them into something a reader can act on. Bundling Lenny Zeltser's malware analysis report template and writing guidelines locally (via `get_report_template` and `get_report_guidance`) lets the AI draft that report in the same offline, container-isolated workflow it uses for analysis — no network call, no dependency on an external service, consistent with this server's "works offline" stance.

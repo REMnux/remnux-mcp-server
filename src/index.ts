@@ -78,7 +78,10 @@ export async function createServer(config: ServerConfig) {
         "Consider benign explanations before concluding malicious intent. " +
         "State your confidence level and the evidence for your assessment. " +
         "YARA family signatures indicate resemblance to known families, not confirmed attribution — " +
-        "cross-reference with behavioral analysis or threat intelligence before attributing to a specific family.",
+        "cross-reference with behavioral analysis or threat intelligence before attributing to a specific family. " +
+        "The sample's filename is attacker- or analyst-supplied metadata, not evidence: do not attribute a " +
+        "malware family based on the filename. Treat any family name in the filename as an unverified lead to " +
+        "check, not a finding, and confirm attribution only from analysis findings.",
     },
   );
 
