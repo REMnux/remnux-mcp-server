@@ -112,10 +112,23 @@ export const getReportGuidanceSchema = z.object({
     "writing",
     "frameworks",
     "profiles",
+    "triage_checklist",
   ]).optional().default("all").describe(
-    "Which slice of the writing guidelines to return. 'all' (default) returns the full digest; " +
+    "Which slice of guidance to return. 'all' (default) returns the full writing-guidelines digest; " +
     "narrow to 'sections', 'confidence', 'capabilities', 'pyramid_of_pain', 'anti_patterns', " +
-    "'review', 'writing', 'frameworks', or 'profiles' to reduce size."
+    "'review', 'writing', 'frameworks', or 'profiles' to reduce size. " +
+    "'triage_checklist' returns the pre-claim triage discipline checklist (artifact-vs-behavior gates to pass " +
+    "before drawing a behavioral conclusion) — useful at the START of an analysis, not just when writing up."
   ),
 });
 export type GetReportGuidanceArgs = z.input<typeof getReportGuidanceSchema>;
+
+export const checkBehaviorPrerequisitesSchema = z.object({
+  file: z.string().describe("Filename relative to the samples directory, or an absolute path in local mode."),
+  behavior: z.string().optional().describe(
+    "Behavior to check (omit to scan ALL known behaviors). One of: clipboard_hijacking, http_c2_wininet, " +
+    "winhttp_c2, socket_c2, process_injection_remote, process_injection_self, registry_persistence_run, " +
+    "lnk_persistence, browser_credential_theft, screen_capture, keylog_polling, keylog_hook, network_share_enum."
+  ),
+});
+export type CheckBehaviorPrerequisitesArgs = z.infer<typeof checkBehaviorPrerequisitesSchema>;

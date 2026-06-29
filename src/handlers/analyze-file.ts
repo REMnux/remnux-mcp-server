@@ -16,7 +16,7 @@ import { filterMetadataLines } from "../utils/metadata-filter.js";
 import { resolveSamplePath } from "../utils/resolve-sample-path.js";
 import { checkFileExists } from "../utils/check-file-exists.js";
 import { getPreprocessors } from "../tools/preprocessors.js";
-import { shouldSummarize, generateSummary } from "../analysis/index.js";
+import { shouldSummarize, generateSummary, summarizeCapabilityEvidence } from "../analysis/index.js";
 import {
   evaluateAdvisories,
   type AdvisoryContext,
@@ -628,7 +628,17 @@ export async function handleAnalyzeFile(
   };
   const advisories = evaluateAdvisories(advisoryContext);
 
+  // Separate capability matches by evidence kind (artifact vs behavior) so the
+  // distinction is structural in the output, not just prose. Pure reorganization
+  // of capa evidence_types tags — omitted when no tagged capability findings exist.
+  const capabilityEvidence = summarizeCapabilityEvidence(toolsRun);
+
   const analysisGuidance =
+    "ARTIFACT vs BEHAVIOR (see the capability_evidence field and each capa finding's evidence_types): a " +
+    "capability that matched only on strings/data/imports/structure means that DATA is PRESENT — it is NOT " +
+    "evidence the binary executes that behavior. Treat artifact-only matches as leads to verify (are the " +
+    "required APIs imported or dynamically resolved? is the data referenced by reachable code? does dynamic " +
+    "analysis exercise it?), never as behavioral conclusions. " +
     "IMPORTANT: Many capabilities flagged by analysis tools (API imports like GetProcAddress/VirtualProtect, " +
     "memory operations, TLS sections, anti-debug patterns) are common in BOTH malware and legitimate software. " +
     "Do not assume malicious intent from flagged items alone. For each finding, consider: " +
@@ -678,6 +688,7 @@ export async function handleAnalyzeFile(
           }))
         : undefined,
     );
+    if (capabilityEvidence) summary.capability_evidence = capabilityEvidence;
     return formatResponse("analyze_file", summary, startTime);
   }
 
@@ -694,6 +705,7 @@ export async function handleAnalyzeFile(
     matched_category: category.name,
     depth,
     triage_summary: triageSummary,
+    ...(capabilityEvidence && { capability_evidence: capabilityEvidence }),
     ...(preprocessResults.length > 0 && { preprocessing: preprocessResults }),
     analysis_guidance: analysisGuidance,
     ...(workflowHint && { workflow_hint: workflowHint }),

@@ -264,7 +264,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `get_tool_help` | Get usage help (`--help` output) for any installed REMnux tool |
 | `check_tools` | Check which REMnux analysis tools are installed and available |
 | `get_report_template` | Return a bundled malware analysis report template (CC BY 4.0, by Lenny Zeltser) for drafting a report offline |
-| `get_report_guidance` | Return bundled report writing guidelines (sections, confidence, capabilities, IOC tiering, anti-patterns); `topic` narrows the digest |
+| `get_report_guidance` | Return bundled report writing guidelines (sections, confidence, capabilities, IOC tiering, anti-patterns); `topic` narrows the digest, or `topic='triage_checklist'` returns the pre-claim artifact-vs-behavior triage discipline checklist |
 
 ### Key Behaviors
 
@@ -273,6 +273,8 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 **Depth tiers:** `analyze_file` supports three depth levels — `quick` (fast triage, ~15 tools), `standard` (default, ~60 tools), and `deep` (maximum coverage, ~78 tools). Higher tiers include all tools from lower tiers. The tools selected depend on detected file type; examine the tool definitions in the source for specifics.
 
 **Tool advisories:** `analyze_file` includes per-tool `advisory` messages that frame findings in neutral language, prompting the AI to consider benign explanations before concluding malicious intent. When cross-tool conditions indicate follow-up is needed, an `action_required` array appears with prioritized remediation steps.
+
+**Artifact vs behavior:** capa findings are tagged with `evidence_types` (`artifact`/`behavior`/`structural`/`linking`), derived from the feature nodes that *actually matched* — so a rule that fired only on strings is not mistaken for one backed by code. `analyze_file` rolls this up into a `capability_evidence` field that separates `behavior_capable` (matched on API calls or instructions — the code is present, though static analysis alone doesn't confirm it runs) from `artifact_only` (matched only on data/strings/imports/structure — present, but not evidence the behavior executes). This keeps the distinction between "the data is in the file" and "the binary does this" structural rather than left to prose. See `get_report_guidance` `topic='triage_checklist'` for the corresponding pre-claim discipline.
 
 **Auto-summarization:** When total tool output exceeds ~32KB, `analyze_file` automatically switches to summary mode to prevent LLM context overflow — key findings per tool, full IOC extraction, and paths to saved full outputs for drill-down via `download_file`.
 

@@ -64,6 +64,50 @@ describe("analyze_file — %OUTPUT% resolution", () => {
   });
 });
 
+describe("analyze_file — capability_evidence (artifact vs behavior)", () => {
+  function capaFeatureMatch(featureType: string, success = true) {
+    return [
+      { type: "absolute", value: 0x401000 },
+      { success, node: { type: "feature", feature: { type: featureType } }, children: [], locations: [] },
+    ];
+  }
+
+  it("emits capability_evidence separating artifact_only from behavior_capable", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/test.exe: PE32 executable (GUI) Intel 80386, for MS Windows"),
+    );
+
+    const capaJson = JSON.stringify({
+      rules: {
+        "create HTTP request": {
+          meta: { namespace: "communication/http/client" },
+          matches: [capaFeatureMatch("api")],
+        },
+        "linked against CPP regex library": {
+          meta: { namespace: "linking/static/cppregex" },
+          matches: [capaFeatureMatch("string")],
+        },
+      },
+    });
+
+    // Return capa's JSON for the capa command; generic output for every other tool.
+    vi.mocked(deps.connector.executeShell).mockImplementation(async (cmd: string) =>
+      cmd.startsWith("capa") ? ok(capaJson) : ok("output"),
+    );
+
+    const result = await handleAnalyzeFile(deps, { file: "test.exe", depth: "standard" });
+    const env = parseEnvelope(result);
+
+    expect(env.success).toBe(true);
+    const ce = env.data.capability_evidence;
+    expect(ce).toBeDefined();
+    expect(ce.behavior_capable).toContain("create HTTP request");
+    expect(ce.artifact_only).toContain("linked against CPP regex library");
+    expect(ce.behavior_capable).not.toContain("linked against CPP regex library");
+  });
+});
+
 describe("generateNextSteps — no /tmp leak in model-facing step hints", () => {
   it("PCAP steps use the %OUTPUT% sentinel, never /tmp", () => {
     const steps = generateNextSteps("PCAP", "standard", [], [], 0);

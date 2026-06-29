@@ -8,6 +8,7 @@ import {
   ATTRIBUTION,
   SOURCE_META,
 } from "../report/content.generated.js";
+import { TRIAGE_DISCIPLINE } from "../report/triage-discipline.js";
 
 const NOTES =
   "This report template and writing guidance are bundled with the server and work offline — no network required. " +
@@ -62,6 +63,23 @@ export async function handleGetReportGuidance(_deps: HandlerDeps, args: GetRepor
   const startTime = Date.now();
   try {
     const topic = args.topic ?? "all";
+
+    // The triage-discipline checklist is server-authored operational guidance,
+    // not part of the synced report-writing digest — return it on its own.
+    if (topic === "triage_checklist") {
+      return formatResponse(
+        "get_report_guidance",
+        {
+          topic,
+          triage_discipline: TRIAGE_DISCIPLINE,
+          notes:
+            "Server-authored, bundled, offline operational guidance — distinct from the report-writing " +
+            "guidelines (use any other topic, or 'all', for those).",
+        },
+        startTime,
+      );
+    }
+
     return formatResponse(
       "get_report_guidance",
       {

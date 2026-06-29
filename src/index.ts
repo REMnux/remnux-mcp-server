@@ -23,6 +23,7 @@ import {
   getToolHelpSchema,
   getReportTemplateSchema,
   getReportGuidanceSchema,
+  checkBehaviorPrerequisitesSchema,
 } from "./schemas/tools.js";
 import { SessionState, DEFAULT_ARCHIVE_PASSWORD } from "./state/session.js";
 import type { HandlerDeps } from "./handlers/types.js";
@@ -39,6 +40,7 @@ import { handleCheckTools } from "./handlers/check-tools.js";
 import { handleSuggestTools } from "./handlers/suggest-tools.js";
 import { handleGetToolHelp } from "./handlers/get-tool-help.js";
 import { handleGetReportTemplate, handleGetReportGuidance } from "./handlers/report.js";
+import { handleCheckBehaviorPrerequisites } from "./handlers/check-behavior-prerequisites.js";
 import { toolRegistry } from "./tools/registry.js";
 import { REPORT_TEMPLATE, GUIDELINES_DIGEST, ATTRIBUTION, SOURCE_META } from "./report/content.generated.js";
 import { httpBindRequiresToken } from "./utils/loopback.js";
@@ -81,7 +83,11 @@ export async function createServer(config: ServerConfig) {
         "cross-reference with behavioral analysis or threat intelligence before attributing to a specific family. " +
         "The sample's filename is attacker- or analyst-supplied metadata, not evidence: do not attribute a " +
         "malware family based on the filename. Treat any family name in the filename as an unverified lead to " +
-        "check, not a finding, and confirm attribution only from analysis findings.",
+        "check, not a finding, and confirm attribution only from analysis findings. " +
+        "Distinguish static artifacts from executed behavior: a string, regex, constant, or capa pattern that " +
+        "is merely PRESENT in a file is an artifact, not proof the corresponding behavior runs. Do not restate " +
+        "an artifact-level finding as a behavior — confirm behavior via imported or dynamically resolved APIs, " +
+        "code cross-references, or dynamic analysis.",
     },
   );
 
@@ -107,7 +113,10 @@ export async function createServer(config: ServerConfig) {
   server.tool(
     "run_tool",
     "Execute a command in REMnux. Supports piped commands (e.g., 'oledump.py sample.doc | grep VBA'). " +
-    "String extraction: For PE files use 'pestr'; for non-PE use 'strings' (ASCII) and 'strings -el' (Unicode).",
+    "String extraction: For PE files use 'pestr'; for non-PE use 'strings' (ASCII) and 'strings -el' (Unicode). " +
+    "Note: capa matches under namespaces like collection/* or data-manipulation/* can be artifact-level (matched " +
+    "on strings/data) rather than behavioral; a behavioral capability requires the corresponding APIs to be " +
+    "imported or dynamically resolved. analyze_file tags capa findings with evidence_types to make this explicit.",
     runToolSchema.shape,
     (args) => handleRunTool(deps, args)
   );
@@ -202,7 +211,7 @@ export async function createServer(config: ServerConfig) {
   // Tool: analyze_file - Auto-analyze a file using appropriate REMnux tools
   server.tool(
     "analyze_file",
-    "Auto-analyze a file using REMnux tools appropriate for the detected file type. Runs `file` to detect type, then executes matching tools (e.g., PE → peframe/capa, PDF → pdfid/pdf-parser, Office → olevba/oleid). Use `depth` to control analysis intensity: 'quick' (triage only), 'standard' (default), 'deep' (includes expensive tools). Note: 'standard' is sufficient for most files; use 'deep' only when standard doesn't reveal enough.",
+    "Auto-analyze a file using REMnux tools appropriate for the detected file type. Runs `file` to detect type, then executes matching tools (e.g., PE → peframe/capa, PDF → pdfid/pdf-parser, Office → olevba/oleid). Use `depth` to control analysis intensity: 'quick' (triage only), 'standard' (default), 'deep' (includes expensive tools). Note: 'standard' is sufficient for most files; use 'deep' only when standard doesn't reveal enough. Output includes a capability_evidence field (behavior_capable vs artifact_only) and per-capa evidence_types tags so you can tell code-backed capabilities from data-only artifacts — an artifact_only match means the data is present, not that the behavior executes.",
     analyzeFileSchema.shape,
     (args) => handleAnalyzeFile(deps, args)
   );
@@ -212,7 +221,9 @@ export async function createServer(config: ServerConfig) {
     "suggest_tools",
     "Detect file type and return recommended REMnux analysis tools without executing them. " +
     "Use this to plan an analysis strategy, then run individual tools with run_tool. " +
-    "Returns tool names, descriptions, depth tiers, and expert analysis hints.",
+    "Returns tool names, descriptions, depth tiers, and expert analysis hints. " +
+    "For binaries, confirming a behavior (versus merely finding its artifacts) generally requires more than " +
+    "static analysis — plan for emulation (speakeasy) or sandbox detonation when a behavioral claim is needed.",
     suggestToolsSchema.shape,
     (args) => handleSuggestTools(deps, args)
   );
@@ -223,9 +234,26 @@ export async function createServer(config: ServerConfig) {
     "Extract IOCs (IPs, domains, URLs, hashes, registry keys, etc.) from text. " +
     "Pass output from run_tool or analyze_file to identify indicators. " +
     "Works well with Volatility 3 plugin output (netscan, cmdline, filescan). " +
-    "Returns deduplicated IOCs with confidence scores.",
+    "Returns deduplicated IOCs with confidence scores. " +
+    "Note: an IOC extracted from a binary's strings is an artifact (present in the file) — not evidence the " +
+    "binary uses it at runtime. Cross-reference it against reachable code or dynamic analysis before treating " +
+    "it as an operational indicator.",
     extractIOCsSchema.shape,
     (args) => handleExtractIOCs(deps, args)
+  );
+
+  // Tool: check_behavior_prerequisites - Static gate before claiming a behavior
+  server.tool(
+    "check_behavior_prerequisites",
+    "Before claiming a Windows PE performs a behavior (clipboard hijacking, HTTP/WinHTTP C2, process injection, " +
+    "registry/LNK persistence, browser-credential theft, screen capture, keylogging, network-share enumeration), " +
+    "check whether the prerequisite APIs are even accessible. Reads the static import table (readpe) and detects " +
+    "packing (diec), then reports a `static_capability` per behavior: capable_statically / incapable_statically / " +
+    "possibly_via_dynamic_resolution (GetProcAddress + loader present) / analysis_incomplete (packed — unpack " +
+    "first) / not_applicable. This is a STATIC gate — it tells you whether the binary CAN call the required APIs, " +
+    "not whether it does. Omit `behavior` to scan all. Confirm any behavior with dynamic analysis.",
+    checkBehaviorPrerequisitesSchema.shape,
+    (args) => handleCheckBehaviorPrerequisites(deps, args)
   );
 
   // Tool: get_tool_help - Get usage help for a REMnux tool
@@ -260,8 +288,10 @@ export async function createServer(config: ServerConfig) {
     "get_report_guidance",
     "Get malware analysis report writing guidelines bundled locally for offline use — report sections, " +
     "required fields, the MBC capability model, ICD-203 confidence, Pyramid-of-Pain IOC tiering, anti-patterns, " +
-    "and review criteria. Use `topic` to narrow the full digest. For interactive review or numeric scoring, " +
-    "the zeltser-website MCP server's malware_review_report / rating_score_writing offer more when connected.",
+    "and review criteria. Use `topic` to narrow the full digest, or topic='triage_checklist' for the pre-claim " +
+    "triage discipline checklist (artifact-vs-behavior gates) to consult at the START of an analysis. For " +
+    "interactive review or numeric scoring, the zeltser-website MCP server's malware_review_report / " +
+    "rating_score_writing offer more when connected.",
     getReportGuidanceSchema.shape,
     (args) => handleGetReportGuidance(deps, args)
   );

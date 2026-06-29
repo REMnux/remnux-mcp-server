@@ -124,6 +124,24 @@ describe("get_report_guidance", () => {
     expect(guidelines).toHaveProperty("antiPatterns");
     expect(guidelines).not.toHaveProperty("longReportSections");
   });
+
+  it("returns the server-authored triage checklist for topic='triage_checklist'", async () => {
+    const { envelope, isError } = await callTool("get_report_guidance", { topic: "triage_checklist" });
+
+    expect(isError).toBeFalsy();
+    expect(envelope.data.topic).toBe("triage_checklist");
+
+    const td = envelope.data.triage_discipline as Record<string, unknown>;
+    expect(td).toBeTruthy();
+    expect(td.version).toBe("1.0.0");
+    expect(Array.isArray(td.before_claiming_a_behavior)).toBe(true);
+    expect((td.core_principle as string).toLowerCase()).toContain("artifact");
+
+    // It is NOT the synced report-writing digest, and carries its own provenance note.
+    expect(envelope.data.guidelines).toBeUndefined();
+    expect(envelope.data.attribution).toBeUndefined();
+    expect(envelope.data.notes as string).toMatch(/offline|server-authored/i);
+  });
 });
 
 describe("report tools + resources are registered", () => {

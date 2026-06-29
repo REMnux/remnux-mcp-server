@@ -88,6 +88,58 @@ export interface AnalysisSummary {
   full_output_hint: string;
   analysis_guidance: string;
   workflow_hint?: string;
+  capability_evidence?: CapabilityEvidence;
+}
+
+/**
+ * Capability findings split by the KIND of evidence each match relied on.
+ * A pure reorganization of per-finding evidence_types tags — an observation
+ * about HOW each rule matched, never a verdict on what the sample does.
+ */
+export interface CapabilityEvidence {
+  note: string;
+  /** Capabilities whose match included code-level evidence (API calls, instructions). */
+  behavior_capable: string[];
+  /** Capabilities that matched ONLY on data/strings/imports/structure (presence, not execution). */
+  artifact_only: string[];
+}
+
+/**
+ * Separate capability findings (e.g. capa) by the kind of evidence they matched
+ * on, using each finding's evidence_types tag. This is a pure reorganization of
+ * those tags — it gives the reader (and an LLM agent) a structural separation
+ * between "the code to do this is present" and "this data/string is present",
+ * which is the distinction the artifact-vs-behavior discipline turns on.
+ * Returns undefined when no capability finding carries an evidence_types tag.
+ */
+export function summarizeCapabilityEvidence(toolsRun: ToolRun[]): CapabilityEvidence | undefined {
+  const behavior = new Set<string>();
+  const artifactOnly = new Set<string>();
+  for (const tool of toolsRun) {
+    if (!tool.findings) continue;
+    for (const f of tool.findings) {
+      const et = f.evidence_types;
+      if (!et || et.length === 0) continue;
+      if (et.includes("behavior")) behavior.add(f.description);
+      else artifactOnly.add(f.description);
+    }
+  }
+  if (behavior.size === 0 && artifactOnly.size === 0) return undefined;
+  const CAP = 60;
+  const toList = (s: Set<string>): string[] => {
+    const arr = [...s];
+    return arr.length > CAP ? [...arr.slice(0, CAP), `… and ${arr.length - CAP} more`] : arr;
+  };
+  return {
+    note:
+      "Capabilities grouped by the kind of evidence the match relied on (from each finding's evidence_types). " +
+      "behavior_capable: matched on code (API calls, instructions) — the code to perform this is present, but " +
+      "static analysis alone does NOT confirm it executes. " +
+      "artifact_only: matched only on data, strings, imports, or structure — the data is present, which is NOT " +
+      "evidence the binary performs the corresponding behavior. Confirm any behavior with dynamic analysis.",
+    behavior_capable: toList(behavior),
+    artifact_only: toList(artifactOnly),
+  };
 }
 
 /** Threshold in bytes above which we switch to summary mode */
