@@ -26,6 +26,8 @@ export interface ConnectorConfig {
   user?: string;
   port?: number;
   password?: string;
+  samplesDir?: string;
+  outputDir?: string;
 }
 
 export async function createConnector(config: ConnectorConfig): Promise<Connector> {
@@ -35,6 +37,8 @@ export async function createConnector(config: ConnectorConfig): Promise<Connecto
       return new DockerConnector(
         config.container || "remnux",
         config.containerUser || "remnux",
+        config.samplesDir,
+        config.outputDir,
       );
 
     case "ssh":

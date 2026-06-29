@@ -12,13 +12,20 @@ export class DockerConnector implements Connector {
   private containerName: string;
   private execUser: string;
   private execHome: string;
+  private baseDirs: string[];
+  private baseDirsEnsured = false;
 
   // execUser defaults to "remnux": the REMnux distro image is built --user=remnux,
   // so per-user tooling (the radare2 plugins r2ai/decai, the r2pm package DB, dotfile
   // config) lives under /home/remnux and is invisible to root. Running container
   // commands as remnux with HOME set makes that tooling discoverable and keeps
   // malware analysis off root.
-  constructor(containerName: string, execUser = "remnux") {
+  constructor(
+    containerName: string,
+    execUser = "remnux",
+    samplesDir?: string,
+    outputDir?: string,
+  ) {
     // Docker container names can only contain [a-zA-Z0-9][a-zA-Z0-9_.-]*
     const sanitized = containerName.replace(/[^a-zA-Z0-9_.-]/g, "");
     if (sanitized !== containerName) {
@@ -30,6 +37,9 @@ export class DockerConnector implements Connector {
     // root) with HOME=/home/. root keeps /root; everyone else gets /home/<user>.
     this.execUser = execUser || "remnux";
     this.execHome = this.execUser === "root" ? "/root" : `/home/${this.execUser}`;
+    // Samples/output dirs the exec user must be able to write to. Used to repair
+    // ownership for containers first used by an older version that exec'd as root.
+    this.baseDirs = [samplesDir, outputDir].filter((d): d is string => !!d);
   }
 
   // Build the dockerode exec-create options. Pure and side-effect-free so the
@@ -50,6 +60,60 @@ export class DockerConnector implements Connector {
     };
   }
 
+  // Build the root `docker exec` argv that chowns a path to the exec user, or null
+  // when the exec user is root (docker cp already lands files as root). Returns the
+  // arguments to `docker` (run with no shell), so it is injection-safe and testable.
+  buildRootChownArgv(remotePath: string): string[] | null {
+    if (this.execUser === "root") return null;
+    return ["exec", "-u", "0", this.containerName, "chown", this.execUser, remotePath];
+  }
+
+  // Build the root argvs that create the configured samples/output dirs and give them
+  // to the exec user, so tools running as that user can write there even when an
+  // earlier (run-as-root) version created the dirs root-owned. Pure/testable.
+  buildEnsureDirsArgvs(): string[][] {
+    if (this.execUser === "root" || this.baseDirs.length === 0) return [];
+    return [
+      ["exec", "-u", "0", this.containerName, "mkdir", "-p", ...this.baseDirs],
+      ["exec", "-u", "0", this.containerName, "chown", this.execUser, ...this.baseDirs],
+    ];
+  }
+
+  // Run `docker <argv>` via execFileSync — no shell, so values cannot inject commands.
+  // Best-effort: callers swallow failures so ownership repair never blocks analysis.
+  private async runDocker(argv: string[]): Promise<void> {
+    const { execFileSync } = await import("child_process");
+    execFileSync("docker", argv, { stdio: "pipe" });
+  }
+
+  // Idempotently make the samples/output dirs owned by the exec user. Runs once per
+  // connector. Best-effort: the dirs may already be correct, or docker may be
+  // unavailable to this process.
+  private async ensureBaseDirsOwned(): Promise<void> {
+    if (this.baseDirsEnsured) return;
+    this.baseDirsEnsured = true;
+    for (const argv of this.buildEnsureDirsArgvs()) {
+      try {
+        await this.runDocker(argv);
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+
+  // Chown a docker-cp'd path to the exec user so tools running as that user can read
+  // it (docker cp preserves the host uid/mode, which may not grant access). No-op
+  // when the exec user is root. Best-effort.
+  private async chownToExecUser(remotePath: string): Promise<void> {
+    const argv = this.buildRootChownArgv(remotePath);
+    if (!argv) return;
+    try {
+      await this.runDocker(argv);
+    } catch {
+      /* best-effort */
+    }
+  }
+
   async execute(command: string[], options: ExecOptions = {}): Promise<ExecResult> {
     // Validate command array is not empty
     if (command.length === 0) {
@@ -63,6 +127,10 @@ export class DockerConnector implements Connector {
     if (!info.State.Running) {
       throw new Error(`Container '${this.containerName}' is not running`);
     }
+
+    // Repair samples/output ownership once before the first command, so tools running
+    // as a non-root exec user can write there even on containers created root-owned.
+    await this.ensureBaseDirsOwned();
 
     const exec = await container.exec(this.buildExecCreateOptions(command, options));
 
@@ -201,6 +269,8 @@ export class DockerConnector implements Connector {
       throw new Error(`Container '${this.containerName}' is not running`);
     }
 
+    await this.ensureBaseDirsOwned();
+
     // Create a temp file on the host
     const tempDir = mkdtempSync(join(tmpdir(), "remnux-upload-"));
     const filename = basename(remotePath);
@@ -222,11 +292,10 @@ export class DockerConnector implements Connector {
       );
 
       // docker cp preserves the host file's numeric UID/GID and mode (NOT the exec
-      // user). Provisioned samples are commonly world-readable (644), so tools run as
-      // a non-root execUser (default "remnux") can READ them; remnux also owns the
-      // samples/output dirs (mkdir runs through the exec path) so it can WRITE there.
-      // remnux cannot modify/delete a docker-cp'd file it doesn't own — chown the
-      // copied path to execUser here if in-place mutation is ever needed.
+      // user), so a file that is not world/group readable on the host would be
+      // unreadable by a non-root exec user. Chown the copied path to the exec user so
+      // tools running as that user can read (and manage) it.
+      await this.chownToExecUser(remotePath);
     } finally {
       // Clean up temp file
       try {
@@ -240,6 +309,7 @@ export class DockerConnector implements Connector {
   }
 
   async writeFileFromPath(remotePath: string, hostPath: string): Promise<void> {
+    await this.ensureBaseDirsOwned();
     const escapedRemotePath = remotePath.replace(/'/g, "'\\''");
     const escapedHostPath = hostPath.replace(/'/g, "'\\''");
     const { execSync } = await import("child_process");
@@ -247,6 +317,9 @@ export class DockerConnector implements Connector {
       `docker cp '${escapedHostPath}' '${this.containerName}:${escapedRemotePath}'`,
       { stdio: "pipe" }
     );
+    // docker cp preserves the host uid/mode, which may not grant the non-root exec
+    // user access. Chown the copied path to the exec user so tools can read it.
+    await this.chownToExecUser(remotePath);
   }
 
   async readFileToPath(remotePath: string, hostPath: string): Promise<void> {

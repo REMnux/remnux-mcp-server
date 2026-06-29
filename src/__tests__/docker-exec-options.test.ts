@@ -50,3 +50,43 @@ describe("DockerConnector.buildExecCreateOptions", () => {
     expect(opts.WorkingDir).toBe("/home/analyst");
   });
 });
+
+describe("DockerConnector ownership normalization (docker-cp uid/mode fix)", () => {
+  it("builds a root chown argv for a copied path under a non-root exec user", () => {
+    const c = new DockerConnector(
+      "remnux-distro",
+      "remnux",
+      "/home/remnux/files/samples",
+      "/home/remnux/files/output",
+    );
+    expect(c.buildRootChownArgv("/home/remnux/files/samples/x.bin")).toEqual([
+      "exec", "-u", "0", "remnux-distro", "chown", "remnux",
+      "/home/remnux/files/samples/x.bin",
+    ]);
+  });
+
+  it("returns null chown argv when the exec user is root (cp already lands as root)", () => {
+    const c = new DockerConnector("remnux-distro", "root", "/s", "/o");
+    expect(c.buildRootChownArgv("/s/x")).toBeNull();
+  });
+
+  it("builds mkdir+chown argvs for the configured base dirs", () => {
+    const c = new DockerConnector(
+      "remnux-distro",
+      "remnux",
+      "/home/remnux/files/samples",
+      "/home/remnux/files/output",
+    );
+    expect(c.buildEnsureDirsArgvs()).toEqual([
+      ["exec", "-u", "0", "remnux-distro", "mkdir", "-p",
+        "/home/remnux/files/samples", "/home/remnux/files/output"],
+      ["exec", "-u", "0", "remnux-distro", "chown", "remnux",
+        "/home/remnux/files/samples", "/home/remnux/files/output"],
+    ]);
+  });
+
+  it("skips dir normalization when exec user is root or no dirs are configured", () => {
+    expect(new DockerConnector("c", "root", "/s", "/o").buildEnsureDirsArgvs()).toEqual([]);
+    expect(new DockerConnector("c", "remnux").buildEnsureDirsArgvs()).toEqual([]);
+  });
+});
