@@ -15,6 +15,7 @@ Beyond raw command execution, the server encodes malware analysis domain experti
 - Recommends the right tools for each file type (`suggest_tools`) and retrieves usage flags for any installed tool (`get_tool_help`)
 - Runs appropriate tool chains automatically (`analyze_file`) with structured output and IOC extraction
 - Uses neutral language to counteract confirmation bias in AI-generated verdicts
+- Separates static artifacts from executed behavior — tags capa matches by evidence type, gates behavioral claims on the actual import surface (`check_behavior_prerequisites`), and checks whether an embedded string is referenced by code or vestigial (`verify_string_usage`)
 
 For additional tool documentation, you can optionally enable the [REMnux docs MCP server](https://docs.remnux.org/~gitbook/mcp).
 

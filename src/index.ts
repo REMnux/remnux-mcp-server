@@ -253,9 +253,10 @@ export async function createServer(config: ServerConfig) {
     "registry/LNK persistence, browser-credential theft, screen capture, keylogging, network-share enumeration), " +
     "check whether the prerequisite APIs are even accessible. Reads the static import table (readpe) and detects " +
     "packing (diec), then reports a `static_capability` per behavior: capable_statically / incapable_statically / " +
-    "possibly_via_dynamic_resolution (GetProcAddress + loader present) / analysis_incomplete (packed — unpack " +
-    "first) / not_applicable. This is a STATIC gate — it tells you whether the binary CAN call the required APIs, " +
-    "not whether it does. Omit `behavior` to scan all. Confirm any behavior with dynamic analysis.",
+    "possibly_via_dynamic_resolution (GetProcAddress + loader present) / analysis_incomplete (packed, or a " +
+    "managed/.NET assembly whose native imports don't reflect its capability — don't read it as a clean negative) " +
+    "/ not_applicable (not a PE). This is a STATIC gate — it tells you whether the binary CAN call the required " +
+    "APIs, not whether it does. Omit `behavior` to scan all. Confirm any behavior with dynamic analysis.",
     checkBehaviorPrerequisitesSchema.shape,
     (args) => handleCheckBehaviorPrerequisites(deps, args)
   );
