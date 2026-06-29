@@ -116,7 +116,7 @@ export async function handleVerifyStringUsage(deps: HandlerDeps, args: VerifyStr
 
     // Non-code file: nothing can reference the string in code.
     if (!isCodeFile) {
-      const ctx: ClassifyContext = { isCodeFile: false, fileType, schemaKnown: false, analysisComplete: false, obscured: false, initializerFunctionAddrs: new Set() };
+      const ctx: ClassifyContext = { isCodeFile: false, fileType, schemaKnown: false, analysisComplete: false, obscured: false };
       const matches = groups.map((g) => classifyMatch(g, [], [], ctx));
       return formatResponse(
         "verify_string_usage",
@@ -167,7 +167,7 @@ export async function handleVerifyStringUsage(deps: HandlerDeps, args: VerifyStr
     }
 
     if (!split) {
-      const ctx: ClassifyContext = { isCodeFile: true, fileType, schemaKnown: false, analysisComplete: false, obscured, initializerFunctionAddrs: new Set() };
+      const ctx: ClassifyContext = { isCodeFile: true, fileType, schemaKnown: false, analysisComplete: false, obscured };
       const matches = groupsToClassify.map((g) => classifyMatch(g, [], [], ctx));
       return formatResponse(
         "verify_string_usage",
@@ -184,7 +184,6 @@ export async function handleVerifyStringUsage(deps: HandlerDeps, args: VerifyStr
       schemaKnown: !!split.version,
       analysisComplete: !split.truncated && functions.length > 0,
       obscured,
-      initializerFunctionAddrs: new Set(),
     };
 
     const matches = groupsToClassify.map((g) => {

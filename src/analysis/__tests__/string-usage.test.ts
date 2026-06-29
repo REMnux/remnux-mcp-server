@@ -11,7 +11,7 @@ const dataXref: R2Xref = { from: 0x2100, type: "DATA" };
 
 const group: MatchGroup = { value: "secret", exact: true, vaddrs: [{ vaddr: 0x2048, section: ".rdata" }] };
 function ctx(over: Partial<ClassifyContext> = {}): ClassifyContext {
-  return { isCodeFile: true, fileType: "PE32", schemaKnown: true, analysisComplete: true, obscured: false, initializerFunctionAddrs: new Set(), ...over };
+  return { isCodeFile: true, fileType: "PE32", schemaKnown: true, analysisComplete: true, obscured: false, ...over };
 }
 
 describe("selectMatches", () => {
@@ -101,12 +101,5 @@ describe("classifyMatch", () => {
     expect(r.xref_status).toBe("no_code_xrefs_detected");
     expect(r.data_pointer_found).toBe(true);
     expect(r.note).toMatch(/non-executable \(data\) section/i);
-  });
-
-  it("referenced_from_initializer_only when all code refs are CRT static initializers", () => {
-    const r = classifyMatch(group, [codeXref], SECTIONS, ctx({ initializerFunctionAddrs: new Set([0x10a0]) }));
-    expect(r.xref_status).toBe("referenced_from_code");
-    expect(r.referenced_from_initializer_only).toBe(true);
-    expect(r.note).toMatch(/static initializer/i);
   });
 });

@@ -34,7 +34,6 @@ export interface MatchResult {
   found_at: Array<{ vaddr: string; section: string }>;
   xref_status: XrefStatus;
   xref_count: number;
-  referenced_from_initializer_only?: boolean;
   data_pointer_found?: boolean;
   xref_sources?: Array<{ from: string; fcn?: string; opcode?: string }>;
   note: string;
@@ -50,8 +49,6 @@ export interface ClassifyContext {
   analysisComplete: boolean;
   /** The binary looks packed/obscured (import table / r2 coverage unreliable). */
   obscured: boolean;
-  /** Addresses of functions registered as static initializers (.CRT$XCU/.init_array). */
-  initializerFunctionAddrs: Set<number>;
 }
 
 const hex = (n: number): string => "0x" + (n >>> 0 === n ? n.toString(16) : n.toString(16));
@@ -108,11 +105,6 @@ const NOTE_DATA_POINTER =
   " A reference from a non-executable (data) section was found (the address is stored in a pointer/data table); " +
   "this is still not a code reference and does not by itself establish operational use.";
 
-const NOTE_INITIALIZER =
-  " The referencing function(s) are registered in the static-initializer table (.CRT$XCU/.init_array) — they run " +
-  "before main as C++ static initializers. This is a structural fact about where the reference lives, with no " +
-  "claim about whether the path executes in a given run.";
-
 const NOTE_DATA_ONLY = (ft: string): string =>
   `This file is not an executable (detected type: ${ft}). It contains no code that could cross-reference the ` +
   "string, so code-xref analysis does not apply. Evaluate the string as file content on its own merits.";
@@ -161,9 +153,6 @@ export function classifyMatch(
   const codeXrefs = xrefs.filter((x) => isFromCode(x, sections));
 
   if (codeXrefs.length > 0) {
-    const initOnly =
-      ctx.initializerFunctionAddrs.size > 0 &&
-      codeXrefs.every((x) => x.fcnAddr !== undefined && ctx.initializerFunctionAddrs.has(x.fcnAddr));
     const xref_sources = codeXrefs.slice(0, 10).map((x) => ({
       from: hex(x.from),
       ...(x.fcnName ? { fcn: x.fcnName } : {}),
@@ -173,9 +162,8 @@ export function classifyMatch(
       ...base,
       xref_status: "referenced_from_code",
       xref_count: codeXrefs.length,
-      ...(initOnly ? { referenced_from_initializer_only: true } : {}),
       xref_sources,
-      note: NOTE_REFERENCED + (initOnly ? NOTE_INITIALIZER : ""),
+      note: NOTE_REFERENCED,
       recommended_followup: FOLLOWUP.referenced_from_code,
     };
   }
