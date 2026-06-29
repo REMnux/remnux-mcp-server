@@ -260,6 +260,9 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `download_file` | Download a file from the output directory to the host (password-protected archive by default; password: `infected`) |
 | `analyze_file` | Auto-select and run REMnux tools based on detected file type |
 | `extract_iocs` | Extract IOCs (IPs, domains, URLs, hashes, registry keys, etc.) from text with confidence scoring |
+| `check_behavior_prerequisites` | For a Windows PE, report per-behavior `static_capability` (clipboard, HTTP/WinHTTP C2, injection, persistence, etc.) from the import table; packed/.NET binaries return `analysis_incomplete`, not a false negative |
+| `verify_string_usage` | Check whether an embedded string is referenced by code (`referenced_from_code`) or vestigial (`no_code_xrefs_detected`) using radare2 — never claims a string is "unused"; degraded analysis returns `unknown` |
+| `compare_files` | Structured diff of two related samples (loader vs payload): size/entropy, architecture, compiler, packer, imports, capabilities, and sections added/removed |
 | `suggest_tools` | Detect file type and return recommended tools with analysis hints (no execution) |
 | `get_tool_help` | Get usage help (`--help` output) for any installed REMnux tool |
 | `check_tools` | Check which REMnux analysis tools are installed and available |

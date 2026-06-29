@@ -22,7 +22,7 @@ const PACKER_KEYWORDS =
  * JSON (`detects[].values[].type` of Packer/Protector), then falls back to a
  * keyword scan of the raw output. Conservative: any signal → obscured.
  */
-function looksObscured(diecOutput: string): boolean {
+export function looksObscured(diecOutput: string): boolean {
   const raw = diecOutput.trim();
   if (!raw) return false;
   try {

@@ -24,6 +24,8 @@ import {
   getReportTemplateSchema,
   getReportGuidanceSchema,
   checkBehaviorPrerequisitesSchema,
+  verifyStringUsageSchema,
+  compareFilesSchema,
 } from "./schemas/tools.js";
 import { SessionState, DEFAULT_ARCHIVE_PASSWORD } from "./state/session.js";
 import type { HandlerDeps } from "./handlers/types.js";
@@ -41,6 +43,8 @@ import { handleSuggestTools } from "./handlers/suggest-tools.js";
 import { handleGetToolHelp } from "./handlers/get-tool-help.js";
 import { handleGetReportTemplate, handleGetReportGuidance } from "./handlers/report.js";
 import { handleCheckBehaviorPrerequisites } from "./handlers/check-behavior-prerequisites.js";
+import { handleVerifyStringUsage } from "./handlers/verify-string-usage.js";
+import { handleCompareFiles } from "./handlers/compare-files.js";
 import { toolRegistry } from "./tools/registry.js";
 import { REPORT_TEMPLATE, GUIDELINES_DIGEST, ATTRIBUTION, SOURCE_META } from "./report/content.generated.js";
 import { httpBindRequiresToken } from "./utils/loopback.js";
@@ -254,6 +258,31 @@ export async function createServer(config: ServerConfig) {
     "not whether it does. Omit `behavior` to scan all. Confirm any behavior with dynamic analysis.",
     checkBehaviorPrerequisitesSchema.shape,
     (args) => handleCheckBehaviorPrerequisites(deps, args)
+  );
+
+  // Tool: verify_string_usage - Is an embedded string referenced by code, or vestigial?
+  server.tool(
+    "verify_string_usage",
+    "Check whether a string embedded in a binary is actually referenced by code, or is a vestigial artifact " +
+    "(e.g. a wallet address or C2 host sitting in .rdata). Uses radare2 to locate the string and find code " +
+    "cross-references to it. Returns a per-match `xref_status`: `referenced_from_code` (an instruction references " +
+    "it) / `no_code_xrefs_detected` (a COMPLETE-analysis null — NOT proof it is unused; the reference may be " +
+    "computed, indirect, or in code the analyzer missed) / `data_only` (non-code file) / `unknown` (analysis " +
+    "incomplete: packed, timed out, or version drift — never a negative). A static check: never concludes a " +
+    "string is 'unused', and confirm runtime use dynamically.",
+    verifyStringUsageSchema.shape,
+    (args) => handleVerifyStringUsage(deps, args)
+  );
+
+  // Tool: compare_files - Structured diff of two related samples
+  server.tool(
+    "compare_files",
+    "Compare two related samples (e.g. a loader and its unpacked payload) and return a structured diff: size and " +
+    "entropy deltas, architecture, compiler, packer, imports added/removed, capabilities (capa) added/removed, and " +
+    "section changes. Reuses readpe/diec/capa/radare2. Use depth='quick' to skip the (slower) capa capability diff. " +
+    "Surfaces what each stage adds without re-running tools by hand.",
+    compareFilesSchema.shape,
+    (args) => handleCompareFiles(deps, args)
   );
 
   // Tool: get_tool_help - Get usage help for a REMnux tool

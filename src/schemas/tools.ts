@@ -132,3 +132,22 @@ export const checkBehaviorPrerequisitesSchema = z.object({
   ),
 });
 export type CheckBehaviorPrerequisitesArgs = z.infer<typeof checkBehaviorPrerequisitesSchema>;
+
+export const verifyStringUsageSchema = z.object({
+  file: z.string().describe("Filename relative to the samples directory, or an absolute path in local mode."),
+  query: z.string().describe("The string (or substring) to locate in the binary and cross-reference against code."),
+  depth: z.enum(["standard", "deep"]).optional().describe(
+    "Analysis depth: 'standard' (radare2 aa; aar — default) or 'deep' (aaa — slower, more thorough)."
+  ),
+  max_matches: z.number().optional().describe("Cap on the number of distinct matching strings to classify (default 50)."),
+});
+export type VerifyStringUsageArgs = z.infer<typeof verifyStringUsageSchema>;
+
+export const compareFilesSchema = z.object({
+  file_a: z.string().describe("First file (relative to the samples directory, or absolute in local mode)."),
+  file_b: z.string().describe("Second file to compare against file_a."),
+  depth: z.enum(["quick", "standard"]).optional().describe(
+    "'standard' (default) includes a capa capability diff (slower — runs capa on both files); 'quick' skips capa (imports/sections/compiler/entropy only)."
+  ),
+});
+export type CompareFilesArgs = z.infer<typeof compareFilesSchema>;
