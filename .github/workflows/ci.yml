@@ -1,0 +1,43 @@
+name: CI
+
+# Regression gate: runs the deterministic test suite, lint, and build on every
+# branch push and pull request. Tag pushes are intentionally excluded here —
+# they trigger publish.yml (Publish to NPM) instead.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - run: pnpm install --frozen-lockfile
+
+      # Build must precede test: the `pretest` hook (scripts/check-stale-build.ts)
+      # fails when dist/ is missing or older than src/.
+      - run: pnpm run build
+
+      - run: pnpm run lint
+
+      # The committed suite is deterministic and self-contained. The radare2
+      # golden test (src/__tests__/verify-string-usage.golden.test.ts) is gated
+      # behind R2_GOLDEN_TEST, which is intentionally NOT set here: it needs a
+      # running REMnux container with the exact radare2 version the distro ships
+      # (6.1.6), and ubuntu-latest's apt radare2 is a different version whose JSON
+      # shape would produce false "version drift" failures. That golden test — and
+      # the real-sample sweep in scripts/validate-release.mjs — stay maintainer
+      # gates, run locally against a real REMnux container before a release.
+      - run: pnpm test
