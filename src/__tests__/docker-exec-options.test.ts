@@ -50,6 +50,17 @@ describe("DockerConnector.buildExecCreateOptions", () => {
     expect(opts.WorkingDir).toBe("/home/analyst");
   });
 
+  it("wraps a command with GNU timeout so the container-side process is bounded and killed", () => {
+    const c = new DockerConnector("remnux");
+    expect(c.buildTimeoutWrappedCommand(["capa", "-j", "x.exe"], 300000)).toEqual([
+      "timeout", "-s", "TERM", "-k", "10s", "300s", "capa", "-j", "x.exe",
+    ]);
+    // sub-second / tiny timeouts floor to at least 1s rather than "0s" (which never fires)
+    expect(c.buildTimeoutWrappedCommand(["x"], 500)).toEqual([
+      "timeout", "-s", "TERM", "-k", "10s", "1s", "x",
+    ]);
+  });
+
   it("uses / (not a fabricated home) for numeric or compound Docker user specs", () => {
     // A valid Docker user value like `uid:gid` or `user:group` must NOT become
     // /home/<uid:gid> (a path that does not exist), which would make docker exec

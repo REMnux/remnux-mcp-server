@@ -70,6 +70,16 @@ export class DockerConnector implements Connector {
     };
   }
 
+  // Wrap a command with GNU `timeout` so the container-side process is bounded and
+  // actually killed on timeout (destroying the client stream does not terminate it).
+  // SIGTERM at the limit, SIGKILL after a 10s grace. Pure and side-effect-free so the
+  // wrapping can be unit-tested. `timeout` is coreutils (always present) and is the
+  // same mechanism executeShell already uses.
+  buildTimeoutWrappedCommand(command: string[], timeoutMs: number): string[] {
+    const secs = Math.max(1, Math.floor(timeoutMs / 1000));
+    return ["timeout", "-s", "TERM", "-k", "10s", `${secs}s`, ...command];
+  }
+
   // Build the root `docker exec` argv that chowns a path to the exec user, or null
   // when the exec user is root (docker cp already lands files as root). Returns the
   // arguments to `docker` (run with no shell), so it is injection-safe and testable.
@@ -142,14 +152,22 @@ export class DockerConnector implements Connector {
     // as a non-root exec user can write there even on containers created root-owned.
     await this.ensureBaseDirsOwned();
 
-    const exec = await container.exec(this.buildExecCreateOptions(command, options));
+    const timeout = options.timeout || 300000;
+    // Bound the container-side process with GNU `timeout` (coreutils, always present,
+    // already used by executeShell). Destroying the client stream on the JS timer
+    // below does NOT terminate the exec'd process — without this wrapper a hung
+    // command keeps running in the container, which leaks in long-lived REMnux
+    // service deployments. SIGTERM at the limit, SIGKILL after a 10s grace period.
+    const wrappedCommand = this.buildTimeoutWrappedCommand(command, timeout);
+    const exec = await container.exec(this.buildExecCreateOptions(wrappedCommand, options));
 
     return new Promise((resolve, reject) => {
-      const timeout = options.timeout || 300000;
       let timedOut = false;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let activeStream: any = null;
 
+      // Backstop only: GNU timeout (above) is the primary bound and fires first, so
+      // this fires (TERM + 10s grace + 5s buffer) later only if the stream never ends.
       const timer = setTimeout(async () => {
         timedOut = true;
         // Destroy the stream to stop reading output
@@ -157,7 +175,7 @@ export class DockerConnector implements Connector {
           activeStream.destroy();
         }
         reject(new Error(`Command timed out after ${timeout / 1000} seconds`));
-      }, timeout);
+      }, timeout + 15000);
 
       exec.start({ hijack: true, stdin: false }, (err, stream) => {
         if (err) {
@@ -243,6 +261,14 @@ export class DockerConnector implements Connector {
           try {
             const inspectResult = await exec.inspect();
 
+            const exitCode = inspectResult.ExitCode ?? 0;
+            // GNU `timeout` terminated the wrapped process: 124 = timed out (SIGTERM),
+            // 137 = SIGKILL after the grace period. Surface the same timeout error the
+            // backstop would, having actually killed the container-side process.
+            if (exitCode === 124 || exitCode === 137) {
+              return reject(new Error(`Command timed out after ${timeout / 1000} seconds`));
+            }
+
             let finalStdout = stdout.trim();
             if (outputTruncated) {
               finalStdout += "\n\n[OUTPUT TRUNCATED - exceeded 10MB limit]";
@@ -251,7 +277,7 @@ export class DockerConnector implements Connector {
             resolve({
               stdout: finalStdout,
               stderr: stderr.trim(),
-              exitCode: inspectResult.ExitCode ?? 0,
+              exitCode,
             });
           } catch (_inspectErr) {
             resolve({
