@@ -57,3 +57,27 @@ describe("handleGetToolHelp — name resolution", () => {
     expect(env.data.invocation).toBeUndefined();
   });
 });
+
+describe("handleGetToolHelp — missing-tool classification", () => {
+  it("returns NOT_FOUND when Docker throws an OCI 'executable file not found' error", async () => {
+    const deps = createMockDeps();
+    // Docker reports a missing binary as a thrown exec error, not exit code 127.
+    vi.mocked(deps.connector.execute).mockRejectedValue(
+      new Error(
+        'OCI runtime exec failed: exec failed: unable to start container process: ' +
+        'exec: "definitely_missing_zz": executable file not found in $PATH',
+      ),
+    );
+    const env = parseEnvelope(await handleGetToolHelp(deps, { tool: "definitely_missing_zz" }));
+    expect(env.success).toBe(false);
+    expect(env.error_code).toBe("NOT_FOUND");
+  });
+
+  it("still returns EMPTY_OUTPUT when a tool runs but yields no help text", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(ok(""));
+    const env = parseEnvelope(await handleGetToolHelp(deps, { tool: "somequiettool" }));
+    expect(env.success).toBe(false);
+    expect(env.error_code).toBe("EMPTY_OUTPUT");
+  });
+});

@@ -40,6 +40,9 @@ export async function handleGetToolHelp(
 
     let output = "";
     let exitCode = 0;
+    // Set when a thrown Docker/OCI exec error indicates the binary is missing
+    // (Docker surfaces this instead of the shell's exit code 127).
+    let notFound = false;
 
     for (const helpArgs of helpInvocations) {
       try {
@@ -71,11 +74,24 @@ export async function handleGetToolHelp(
             "The tool may require input or not support help flags",
           ), startTime);
         }
+        // Docker/OCI surface a missing executable as a thrown exec error rather
+        // than the shell's exit code 127. Mark it so we return NOT_FOUND below.
+        if (/executable file not found|not found in \$?PATH|OCI runtime exec failed/i.test(msg)) {
+          notFound = true;
+        }
         // Continue to next help invocation
       }
     }
 
     if (!output) {
+      if (notFound) {
+        return formatError("get_tool_help", new REMnuxError(
+          `Tool '${tool}' not found. It may not be installed on this REMnux system.`,
+          "NOT_FOUND",
+          "not_found",
+          "Use check_tools to see installed tools, or install with apt/pip",
+        ), startTime);
+      }
       return formatError("get_tool_help", new REMnuxError(
         `No help output from '${tool}'. The tool may not be installed or may not support --help/-h.`,
         "EMPTY_OUTPUT",
