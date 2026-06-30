@@ -149,6 +149,19 @@ describe("deriveEvidenceTypes", () => {
     expect(deriveEvidenceTypes(rule(node))).toEqual(["artifact"]);
   });
 
+  it("CRITICAL: does not credit a success feature nested under a FAILED statement", () => {
+    // or(success) [ and(FAILED)[ api(success), api(failed) ], string(success) ].
+    // The rule fired only on the string branch. The `api` that matched inside the
+    // failed `and` (capa keeps partially-satisfied subtrees) must NOT be promoted
+    // to behavior — pruning the failed subtree is what prevents the false
+    // behavior_capable label.
+    const node = stmt("or", true, [
+      stmt("and", false, [feat("api", true), feat("api", false)]),
+      feat("string", true),
+    ]);
+    expect(deriveEvidenceTypes(rule(node))).toEqual(["artifact"]);
+  });
+
   it("adds linking from a linking/ namespace even without import features", () => {
     expect(deriveEvidenceTypes(rule(feat("api"), { namespace: "linking/runtime-linking" }))).toEqual([
       "behavior",

@@ -85,6 +85,17 @@ describe("verify_string_usage", () => {
     expect(env.data.matches[0].xref_status).toBe("data_only");
   });
 
+  it("UNKNOWN file type is code-capable, not a confident non-code verdict (H2 regression)", async () => {
+    const deps = createMockDeps();
+    // The `file` probe returned nothing (timeout/empty stdout); r2 still works and
+    // finds a code xref. The handler must NOT short-circuit to data_only ("not an
+    // executable, no code references") on a file whose type was never determined.
+    mockConn(deps, { fileType: "", pass2Out: pass2(CODE_XREF) });
+    const env = parseEnvelope(await handleVerifyStringUsage(deps, { file: "x.exe", query: "secret-marker" }));
+    expect(env.data.matches[0].xref_status).not.toBe("data_only");
+    expect(env.data.matches[0].xref_status).toBe("referenced_from_code");
+  });
+
   it("match_count 0 when the query is not present", async () => {
     const deps = createMockDeps();
     mockConn(deps, { izjOut: "[]" });

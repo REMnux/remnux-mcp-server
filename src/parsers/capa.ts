@@ -78,8 +78,14 @@ const EVIDENCE_TYPE_ORDER: EvidenceType[] = ["artifact", "behavior", "structural
 function collectMatchedEvidenceTypes(node: unknown, out: Set<EvidenceType>): void {
   if (!node || typeof node !== "object") return;
   const n = node as Record<string, unknown>;
+  // A node that did not match contributes nothing, and NEITHER do its children.
+  // capa retains partially-satisfied subtrees, so a success===true feature can sit
+  // under a success===false statement (e.g. an `api` that matched before a sibling
+  // in a failed `and`). Pruning the whole failed subtree here prevents crediting a
+  // rule that fired on one branch with an unmatched sibling branch's features.
+  if (n.success !== true) return;
   const inner = n.node;
-  if (n.success === true && inner && typeof inner === "object") {
+  if (inner && typeof inner === "object") {
     const i = inner as Record<string, unknown>;
     if (i.type === "feature" && i.feature && typeof i.feature === "object") {
       const f = i.feature as Record<string, unknown>;

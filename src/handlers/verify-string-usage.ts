@@ -66,7 +66,15 @@ export async function handleVerifyStringUsage(deps: HandlerDeps, args: VerifyStr
       const mapped = toREMnuxError(error, config.mode);
       if (mapped.code === "CONNECTION_FAILED") return formatError("verify_string_usage", mapped, startTime);
     }
-    const isCodeFile = /\bPE32\+?\b|\bELF\b|Mach-O|MS Windows|executable/i.test(fileType);
+    // When the `file` probe failed or returned nothing, do NOT assert this is a
+    // non-code file: that would fall through to a confident "not an executable, no
+    // code references" — a false negative on what may be a real executable. Treat an
+    // unknown type as code-capable so the r2 xref pass runs and the
+    // schemaKnown/analysisComplete gating downgrades to UNKNOWN if analysis is degraded.
+    const fileTypeKnown = fileType.trim() !== "";
+    const isCodeFile = fileTypeKnown
+      ? /\bPE32\+?\b|\bELF\b|Mach-O|MS Windows|executable/i.test(fileType)
+      : true;
 
     // Pass 1 — enumerate strings (cheap, no analysis). Try izj (mapped sections),
     // fall back to izzj (whole file). r2 absence is detected here.
