@@ -166,9 +166,17 @@ describe.skipIf(!runLive)("SSH live integration", () => {
     const category = envelope.data.matched_category as string;
     expect(category).toMatch(/PE|DotNET|\.NET/i);
 
-    const toolsRun = envelope.data.tools_run as Array<{ name: string }>;
-    expect(toolsRun.length).toBeGreaterThan(0);
-    const toolNames = toolsRun.map((t) => t.name);
+    // analyze_file returns full mode (data.tools_run) for small output, or summary
+    // mode (data.tools + total_tools) when total output crosses the ~32KB threshold
+    // — which happens with more verbose tool versions (e.g. capa 9.3.1 on a real VM).
+    // Accept either shape; both list the tools that ran by name.
+    const toolList = (envelope.data.tools_run ?? envelope.data.tools) as
+      | Array<{ name: string }>
+      | undefined;
+    expect(toolList).toBeTruthy();
+    const toolCount = (envelope.data.total_tools as number) ?? toolList!.length;
+    expect(toolCount).toBeGreaterThan(0);
+    const toolNames = toolList!.map((t) => t.name);
     expect(toolNames).toContain("peframe");
   }, 300_000);
 

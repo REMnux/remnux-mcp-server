@@ -49,6 +49,18 @@ describe("DockerConnector.buildExecCreateOptions", () => {
     expect(opts.Env).toEqual(["HOME=/home/analyst"]);
     expect(opts.WorkingDir).toBe("/home/analyst");
   });
+
+  it("uses / (not a fabricated home) for numeric or compound Docker user specs", () => {
+    // A valid Docker user value like `uid:gid` or `user:group` must NOT become
+    // /home/<uid:gid> (a path that does not exist), which would make docker exec
+    // fail before the tool runs.
+    for (const u of ["1000:1000", "remnux:remnux", "1000", "0:0"]) {
+      const opts = new DockerConnector("c", u).buildExecCreateOptions(["id"]);
+      expect(opts.User).toBe(u);
+      expect(opts.WorkingDir).toBe("/");
+      expect(opts.Env).toEqual(["HOME=/"]);
+    }
+  });
 });
 
 describe("DockerConnector ownership normalization (docker-cp uid/mode fix)", () => {

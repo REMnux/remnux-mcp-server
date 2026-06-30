@@ -36,7 +36,17 @@ export class DockerConnector implements Connector {
     // Coerce empty/falsy to remnux so an explicit "" never yields User:"" (silently
     // root) with HOME=/home/. root keeps /root; everyone else gets /home/<user>.
     this.execUser = execUser || "remnux";
-    this.execHome = this.execUser === "root" ? "/root" : `/home/${this.execUser}`;
+    // Derive HOME/WorkingDir only for a simple username. A Docker user spec can be
+    // `uid`, `uid:gid`, or `user:group`; fabricating `/home/<uid:gid>` yields a path
+    // that does not exist and makes `docker exec` fail before the tool even runs.
+    // root/0 → /root; a simple username → /home/<user>; a numeric uid or a compound
+    // spec → "/" (which always exists) rather than a fabricated home.
+    this.execHome =
+      this.execUser === "root" || this.execUser === "0"
+        ? "/root"
+        : /^[a-z_][a-z0-9_-]*$/i.test(this.execUser)
+          ? `/home/${this.execUser}`
+          : "/";
     // Samples/output dirs the exec user must be able to write to. Used to repair
     // ownership for containers first used by an older version that exec'd as root.
     this.baseDirs = [samplesDir, outputDir].filter((d): d is string => !!d);
