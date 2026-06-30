@@ -24,6 +24,13 @@ export async function handleExtractIOCs(
       data.noise = result.noise;
     }
 
+    // Point the next hop at malware-specific OSINT enrichment for the IOCs just extracted.
+    if (result.iocs.length > 0) {
+      data.next_step =
+        "To enrich these IOCs with external OSINT, call get_osint_guidance for malware-specific triage " +
+        "tradecraft (hash-first, disclosure-aware) and a curated catalog of lookup services.";
+    }
+
     return formatResponse("extract_iocs", data, startTime);
   } catch (error) {
     return formatError("extract_iocs", toREMnuxError(error), startTime);

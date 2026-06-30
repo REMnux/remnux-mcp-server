@@ -617,6 +617,14 @@ export async function handleAnalyzeFile(
     iocResult.iocs.length
   );
 
+  // When IOCs were extracted, point at malware-specific OSINT enrichment for them.
+  if (iocResult.iocs.length > 0) {
+    suggestedNextSteps.push(
+      "Enrich the extracted IOCs with external OSINT: call get_osint_guidance for malware-specific triage " +
+      "tradecraft (hash-first, disclosure-aware) and a curated catalog of lookup services."
+    );
+  }
+
   // Evaluate cross-tool advisories
   const advisoryContext: AdvisoryContext = {
     toolsRun: toolsRun.map((t) => ({

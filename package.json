@@ -36,6 +36,7 @@
     "!dist/__tests__/",
     "!dist/**/__tests__/",
     "data/tools-index.json",
+    "data/osint-resources.json",
     "README.md",
     "LICENSE"
   ],

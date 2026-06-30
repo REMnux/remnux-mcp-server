@@ -123,6 +123,34 @@ export const getReportGuidanceSchema = z.object({
 });
 export type GetReportGuidanceArgs = z.input<typeof getReportGuidanceSchema>;
 
+export const getOsintGuidanceSchema = z.object({
+  topic: z.enum([
+    "all",
+    "tradecraft",
+    "workflow",
+    "access",
+    "resources",
+  ]).optional().default("all").describe(
+    "Which slice of guidance prose to return. 'all' (default) returns tradecraft + workflow + access guidance " +
+    "plus a CONDENSED resource catalog. 'tradecraft' returns the OPSEC principles, 'workflow' the per-IOC " +
+    "decision tree, 'access' the free-vs-paid handling, 'resources' the FULL catalog with per-entry detail. " +
+    "Lean flow for a real sample: call once with 'all' for prose plus a condensed index, then 'resources' with " +
+    "an ioc_type per indicator type for detail without re-emitting the prose."
+  ),
+  ioc_type: z.enum([
+    "hash",
+    "url",
+    "domain",
+    "ip",
+    "family",
+    "host_artifact",
+  ]).optional().describe(
+    "Optional. When set, narrows the resource catalog to full-detail entries relevant to that IOC type. " +
+    "Orthogonal to `topic` (which selects the prose): `topic` picks guidance, `ioc_type` picks catalog rows."
+  ),
+});
+export type GetOsintGuidanceArgs = z.input<typeof getOsintGuidanceSchema>;
+
 export const checkBehaviorPrerequisitesSchema = z.object({
   file: z.string().describe("Filename relative to the samples directory, or an absolute path in local mode."),
   behavior: z.string().optional().describe(

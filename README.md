@@ -269,6 +269,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `check_tools` | Check which REMnux analysis tools are installed and available |
 | `get_report_template` | Return a bundled malware analysis report template (CC BY 4.0, by Lenny Zeltser) for drafting a report offline |
 | `get_report_guidance` | Return bundled report writing guidelines (sections, confidence, capabilities, IOC tiering, anti-patterns); `topic` narrows the digest, or `topic='triage_checklist'` returns the pre-claim artifact-vs-behavior triage discipline checklist |
+| `get_osint_guidance` | Return bundled, offline OSINT triage guidance for malware indicators. Enrichment tradecraft (hash-first, disclosure-aware, do-not-tip-off-the-adversary, leads-not-verdicts) plus a curated, PR-maintained catalog of free and freemium lookup services. `topic` selects the guidance slice, `ioc_type` narrows the catalog. Makes no network calls and holds no API keys |
 
 ### Key Behaviors
 
@@ -513,6 +514,14 @@ The same anti-anchoring stance covers the sample's filename. A filename that car
 Analysis produces findings; a report turns them into something a reader can act on. Bundling Lenny Zeltser's malware analysis report template and writing guidelines locally (via `get_report_template` and `get_report_guidance`) lets the AI draft that report in the same offline, container-isolated workflow it uses for analysis — no network call, no dependency on an external service, consistent with this server's "works offline" stance.
 
 The bundled copy is a point-in-time snapshot, refreshed from the canonical public source via `pnpm run sync:report-guidance`. The continuously updated source is the [zeltser-website MCP server](https://zeltser.com/malware-analysis-report) and the article [Writing a Malware Analysis Report](https://zeltser.com/malware-analysis-report), which also offer interactive review and scoring; `analyze_file` points there as optional enrichment when online. Both report tools return only static bundled text — they never read sample content or tool output, so they add no new prompt-injection surface.
+
+### Why bundle an OSINT triage catalog?
+
+Analysis produces IOCs, and triage decides what to do with them. After `extract_iocs`, an AI agent left to improvise might upload a confidential sample to a public multiscanner, or actively probe live C2 and tip off the adversary. `get_osint_guidance` encodes the OPSEC tradecraft for that enrichment step (hash-first, disclosure-aware, do-not-tip-off-the-adversary, leads-not-verdicts) alongside a curated catalog of free and freemium lookup services.
+
+Like the report tools, it returns only static bundled text. It makes no network calls, holds no API keys, reads no sample content, and adds no prompt-injection surface. The server returns guidance, and the AI runs the lookups with its own tools. This keeps the offline, no-secrets stance intact while giving malware-specific OSINT a consistent, in-context home, distinct from a general-purpose OSINT tool.
+
+The service catalog lives in `data/osint-resources.json`, a contributor-editable data file. Every listed service offers a usable free tier (no account, free account, or freemium), so the guidance can default to free-first. Each entry is also tagged for AI-friendliness (`ai_access`: keyless JSON API, key-gated API, or web-only), and the guidance lists keyless APIs first, so an agent with no keys is steered to the services it can use right now (Shodan InternetDB, GreyNoise, ipinfo, DShield, urlscan, crt.sh, RDAP, Team Cymru MHR). Propose additions or access-tier corrections by pull request. A CI test (`src/__tests__/osint-resources.test.ts`) validates structure (required fields, enums, https URLs, `last_verified`, and no duplicates) on every PR, but it cannot judge whether a service is legitimate or still reliable, so reviewers vet new entries for that. Curation favors stable, freely available services, with the backbone drawn from Lenny Zeltser's lists of [automated analysis services](https://zeltser.com/automated-malware-analysis), [malicious-website lookups](https://zeltser.com/lookup-malicious-websites), and [IP/URL blocklists](https://zeltser.com/malicious-ip-blocklists).
 
 ## Related Projects
 

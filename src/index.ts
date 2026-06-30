@@ -23,6 +23,7 @@ import {
   getToolHelpSchema,
   getReportTemplateSchema,
   getReportGuidanceSchema,
+  getOsintGuidanceSchema,
   checkBehaviorPrerequisitesSchema,
   verifyStringUsageSchema,
   compareFilesSchema,
@@ -42,6 +43,7 @@ import { handleCheckTools } from "./handlers/check-tools.js";
 import { handleSuggestTools } from "./handlers/suggest-tools.js";
 import { handleGetToolHelp } from "./handlers/get-tool-help.js";
 import { handleGetReportTemplate, handleGetReportGuidance } from "./handlers/report.js";
+import { handleGetOsintGuidance } from "./handlers/osint.js";
 import { handleCheckBehaviorPrerequisites } from "./handlers/check-behavior-prerequisites.js";
 import { handleVerifyStringUsage } from "./handlers/verify-string-usage.js";
 import { handleCompareFiles } from "./handlers/compare-files.js";
@@ -324,6 +326,19 @@ export async function createServer(config: ServerConfig) {
     "rating_score_writing offer more when connected.",
     getReportGuidanceSchema.shape,
     (args) => handleGetReportGuidance(deps, args)
+  );
+
+  // Tool: get_osint_guidance - OSINT triage tradecraft + curated lookup catalog for malware indicators (offline)
+  server.tool(
+    "get_osint_guidance",
+    "OSINT triage for malware indicators. Given the hashes, C2 domains/IPs, and URLs from a sample (for " +
+    "example from analyze_file or extract_iocs), returns malware-specific enrichment tradecraft — hash-first " +
+    "and disclosure-aware, do not tip off the adversary, leads not verdicts — plus a curated catalog of free " +
+    "and freemium lookup services. Use `topic` to pick the guidance slice and `ioc_type` to narrow the catalog " +
+    "to a hash, url, domain, ip, family, or host_artifact. Guidance only: it runs no lookups and stores no API " +
+    "keys; the AI performs the lookups with its own tools.",
+    getOsintGuidanceSchema.shape,
+    (args) => handleGetOsintGuidance(deps, args)
   );
 
   // ── MCP Resources: Tool Registry ──────────────────────────────────────────
