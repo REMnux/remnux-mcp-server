@@ -1189,6 +1189,16 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 
   // ── PCAP / network analysis ─────────────────────────────────────────────
   {
+    name: "capinfos",
+    description: "Capture overview: packet count, duration, start/end timestamps, data rates, and link-layer encapsulation for a PCAP file.",
+    command: "capinfos",
+    inputStyle: "positional",
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pcap", "triage"],
+    tier: "quick",
+  },
+  {
     name: "tshark-conversations",
     description: "Summarize TCP/UDP conversations from a PCAP file.",
     command: "tshark",
@@ -1231,6 +1241,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     inputStyle: "flag",
     inputFlag: "-r",
     fixedArgs: ["-Y", "dns", "-T", "fields", "-e", "dns.qry.name", "-e", "dns.a", "-e", "dns.resp.type"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pcap"],
+    tier: "standard",
+  },
+  {
+    name: "tshark-tls",
+    description: "Extract TLS Client Hello server names (SNI) — surfaces destination/C2 domains even when payloads are encrypted.",
+    command: "tshark",
+    inputStyle: "flag",
+    inputFlag: "-r",
+    fixedArgs: ["-Y", "tls.handshake.type==1", "-T", "fields", "-e", "tls.handshake.extensions_server_name"],
     outputFormat: "text",
     timeout: 60,
     tags: ["pcap"],

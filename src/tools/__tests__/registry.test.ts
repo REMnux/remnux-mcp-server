@@ -102,4 +102,25 @@ describe("ToolRegistry", () => {
     expect(toolRegistry.get("cfr")!.tags).toContain("decompilation");
     expect(toolRegistry.get("jadx")!.tags).toContain("decompilation");
   });
+
+  it("registers PCAP triage presets (capinfos at quick, tshark-tls at standard)", () => {
+    const names = toolRegistry.byTag("pcap").map((t) => t.name);
+    expect(names).toContain("capinfos");
+    expect(names).toContain("tshark-tls");
+
+    const capinfos = toolRegistry.get("capinfos")!;
+    expect(capinfos.command).toBe("capinfos");
+    expect(capinfos.inputStyle).toBe("positional");
+    expect(capinfos.tier).toBe("quick");
+    expect(capinfos.tags).toEqual(expect.arrayContaining(["pcap", "triage"]));
+
+    const tls = toolRegistry.get("tshark-tls")!;
+    expect(tls.command).toBe("tshark");
+    expect(tls.tier).toBe("standard");
+
+    // capinfos orients the quick triage; tshark-tls only surfaces from standard up
+    expect(toolRegistry.byTagAndTier("pcap", "quick").map((t) => t.name)).toContain("capinfos");
+    expect(toolRegistry.byTagAndTier("pcap", "quick").map((t) => t.name)).not.toContain("tshark-tls");
+    expect(toolRegistry.byTagAndTier("pcap", "standard").map((t) => t.name)).toContain("tshark-tls");
+  });
 });

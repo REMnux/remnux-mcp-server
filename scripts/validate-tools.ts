@@ -45,6 +45,8 @@ const KNOWN_ALIASES: Record<string, string> = {
   rtfobj: "oletools",
   // Volatility 3
   vol3: "volatility-framework",
+  // capinfos ships with the Wireshark/tshark package
+  capinfos: "tshark",
   // Qiling framework
   qltool: "qiling",
   // ILSpy decompiler

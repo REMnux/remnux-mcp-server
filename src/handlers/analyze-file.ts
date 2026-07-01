@@ -89,7 +89,10 @@ export function generateNextSteps(
       break;
     case "PCAP":
       steps.push("Extract HTTP objects: run_tool command='tshark -r <file> --export-objects http,%OUTPUT%/http-objects'");
-      steps.push("Follow TCP stream: run_tool command='tshark -r <file> -z follow,tcp,ascii,0'");
+      steps.push("Reconstruct all TCP streams to files: run_tool command='tcpflow -r <file> -o %OUTPUT%/tcpflow'");
+      steps.push("Carve transferred files by signature (catches non-HTTP transfers): run_tool command='tcpxtract -f <file> -o %OUTPUT%/carved'");
+      steps.push("Search payloads for a host or string IOC: run_tool command='ngrep -I <file> -q -W byline \"<pattern>\"'");
+      steps.push("Follow a specific TCP stream: run_tool command='tshark -r <file> -z follow,tcp,ascii,0'");
       break;
     case "Memory":
       steps.push("Dump suspicious process: run_tool command='vol3 -f <file> windows.memmap --pid <pid> --dump'");
@@ -260,6 +263,7 @@ const TOOL_OUTPUT_BUDGETS: Record<string, number> = {
   manalyze: 15 * 1024,
   "tshark-verbose": 30 * 1024,
   "tshark-dns": 15 * 1024,
+  "tshark-tls": 15 * 1024,
 };
 
 /** Parsing hints for querying large output files with jq/grep */

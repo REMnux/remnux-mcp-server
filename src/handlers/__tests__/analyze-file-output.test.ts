@@ -115,6 +115,16 @@ describe("generateNextSteps — no /tmp leak in model-facing step hints", () => 
     expect(steps.some((s) => s.includes("%OUTPUT%/http-objects"))).toBe(true);
   });
 
+  it("PCAP steps point beyond tshark to stream/file carving tools", () => {
+    // deep tier has no depth-suggestion prefix, so all five PCAP pointers survive the 5-step cap
+    const steps = generateNextSteps("PCAP", "deep", [], [], 0).join("\n");
+    expect(steps).toContain("tcpflow -r <file> -o %OUTPUT%/tcpflow");
+    expect(steps).toContain("tcpxtract -f <file> -o %OUTPUT%/carved");
+    expect(steps).toContain("ngrep -I <file>");
+    // file-producing carvers must resolve output via the sentinel, never /tmp
+    expect(steps).not.toContain("/tmp");
+  });
+
   it("no category leaks a /tmp path in its steps", () => {
     const categories = [
       "PE",
