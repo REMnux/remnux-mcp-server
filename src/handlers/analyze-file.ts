@@ -123,7 +123,8 @@ export function generateNextSteps(
     iocCount > 0 || toolsRun.some(t => t.findings && t.findings.length > 0);
   if (hasSubstantiveResults) {
     const reportPointer =
-      "Draft a report: get_report_template and get_report_guidance provide a bundled report template and writing guidelines (offline).";
+      "Draft a report: get_report_template and get_report_guidance provide a bundled report template and writing " +
+      "guidelines (offline); treat (Optional) section markers as conditional, not literal headings.";
     return [...steps.slice(0, 5), reportPointer];
   }
 

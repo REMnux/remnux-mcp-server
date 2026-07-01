@@ -49,6 +49,7 @@ import { handleVerifyStringUsage } from "./handlers/verify-string-usage.js";
 import { handleCompareFiles } from "./handlers/compare-files.js";
 import { toolRegistry } from "./tools/registry.js";
 import { REPORT_TEMPLATE, GUIDELINES_DIGEST, ATTRIBUTION, SOURCE_META } from "./report/content.generated.js";
+import { OPTIONAL_SECTION_CONVENTION } from "./report/optional-sections.js";
 import { httpBindRequiresToken } from "./utils/loopback.js";
 
 export interface ServerConfig extends ConnectorConfig {
@@ -310,6 +311,8 @@ export async function createServer(config: ServerConfig) {
     "get_report_template",
     "Get a malware analysis report template (Markdown) bundled locally for offline use. " +
     "Created by Lenny Zeltser, licensed CC BY 4.0. Use it to structure a report after analyzing a sample. " +
+    "The response also carries optional_section_convention: headings marked (Optional) are conditional markers to " +
+    "resolve (include only if warranted, and drop the marker), not literal heading text. " +
     "For interactive review/scoring or the latest version, the zeltser-website MCP server's malware_get_template offers more when connected.",
     getReportTemplateSchema.shape,
     () => handleGetReportTemplate(deps)
@@ -321,7 +324,9 @@ export async function createServer(config: ServerConfig) {
     "Get malware analysis report writing guidelines bundled locally for offline use — report sections, " +
     "required fields, the MBC capability model, ICD-203 confidence, Pyramid-of-Pain IOC tiering, anti-patterns, " +
     "and review criteria. Use `topic` to narrow the full digest, or topic='triage_checklist' for the pre-claim " +
-    "triage discipline checklist (artifact-vs-behavior gates) to consult at the START of an analysis. For " +
+    "triage discipline checklist (artifact-vs-behavior gates) to consult at the START of an analysis. Every " +
+    "report-writing response (any topic except 'triage_checklist') also carries optional_section_convention " +
+    "(how to resolve (Optional) section markers when drafting). For " +
     "interactive review or numeric scoring, the zeltser-website MCP server's malware_review_report / " +
     "rating_score_writing offer more when connected.",
     getReportGuidanceSchema.shape,
@@ -463,10 +468,33 @@ export async function createServer(config: ServerConfig) {
         uri: "remnux://report/guidelines",
         mimeType: "application/json",
         text: JSON.stringify(
-          { guidelines: GUIDELINES_DIGEST, attribution: ATTRIBUTION, source: SOURCE_META },
+          {
+            guidelines: GUIDELINES_DIGEST,
+            attribution: ATTRIBUTION,
+            source: SOURCE_META,
+            optional_section_convention: OPTIONAL_SECTION_CONVENTION,
+          },
           null,
           2,
         ),
+      }],
+    }),
+  );
+
+  // The report template resource is served byte-verbatim (above), so the optional-section
+  // convention rides on this sibling resource instead of mutating the template markdown.
+  server.resource(
+    "report-optional-section-convention",
+    "remnux://report/optional-section-convention",
+    {
+      description:
+        "How to handle report template headings marked (Optional): conditional markers to resolve, not literal text",
+    },
+    () => ({
+      contents: [{
+        uri: "remnux://report/optional-section-convention",
+        mimeType: "application/json",
+        text: JSON.stringify(OPTIONAL_SECTION_CONVENTION, null, 2),
       }],
     }),
   );

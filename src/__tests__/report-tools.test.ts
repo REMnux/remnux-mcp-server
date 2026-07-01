@@ -14,7 +14,8 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { Connector } from "../connectors/index.js";
 import type { ServerConfig } from "../index.js";
 import type { ToolResponse } from "../response.js";
-import { GUIDELINES_DIGEST } from "../report/content.generated.js";
+import { GUIDELINES_DIGEST, REPORT_TEMPLATE } from "../report/content.generated.js";
+import { OPTIONAL_SECTION_CONVENTION } from "../report/optional-sections.js";
 
 const ARTICLE_URL = "https://zeltser.com/malware-analysis-report";
 
@@ -94,6 +95,21 @@ describe("get_report_template", () => {
     expect((envelope.data.source as { fallbackArticleUrl: string }).fallbackArticleUrl).toBe(ARTICLE_URL);
     expect(envelope.data.guidelines).toBeUndefined();
   });
+
+  it("carries the optional-section convention so (Optional) is not copied into headings", async () => {
+    const { envelope } = await callTool("get_report_template", {});
+
+    const convention = envelope.data.optional_section_convention as Record<string, unknown>;
+    expect(convention).toBeTruthy();
+    expect(convention.version).toBe("1.0.0");
+    expect(convention.title as string).toMatch(/optional/i);
+
+    // The instruction must name the marker and show the stripped heading form.
+    const serialized = JSON.stringify(convention);
+    expect(serialized).toContain("(Optional)");
+    expect(serialized).toContain("Detection Engineering");
+    expect(serialized).toContain("#detection-engineering");
+  });
 });
 
 describe("get_report_guidance", () => {
@@ -125,6 +141,15 @@ describe("get_report_guidance", () => {
     expect(guidelines).not.toHaveProperty("longReportSections");
   });
 
+  it("carries the optional-section convention for the full digest and a narrowed topic", async () => {
+    for (const topic of [undefined, "sections"]) {
+      const { envelope } = await callTool("get_report_guidance", topic ? { topic } : {});
+      const convention = envelope.data.optional_section_convention as Record<string, unknown>;
+      expect(convention, `topic=${topic ?? "all"}`).toBeTruthy();
+      expect(convention.version).toBe("1.0.0");
+    }
+  });
+
   it("returns the server-authored triage checklist for topic='triage_checklist'", async () => {
     const { envelope, isError } = await callTool("get_report_guidance", { topic: "triage_checklist" });
 
@@ -140,6 +165,7 @@ describe("get_report_guidance", () => {
     // It is NOT the synced report-writing digest, and carries its own provenance note.
     expect(envelope.data.guidelines).toBeUndefined();
     expect(envelope.data.attribution).toBeUndefined();
+    expect(envelope.data.optional_section_convention).toBeUndefined();
     expect(envelope.data.notes as string).toMatch(/offline|server-authored/i);
   });
 });
@@ -152,11 +178,69 @@ describe("report tools + resources are registered", () => {
     expect(names).toContain("get_report_guidance");
   });
 
-  it("lists both report resources", async () => {
+  it("lists the report resources, including the optional-section convention", async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
     expect(uris).toContain("remnux://report/template");
     expect(uris).toContain("remnux://report/guidelines");
+    expect(uris).toContain("remnux://report/optional-section-convention");
+  });
+});
+
+describe("report resource bodies carry the optional-section convention", () => {
+  async function readResourceJson(uri: string): Promise<Record<string, unknown>> {
+    const result = await client.readResource({ uri });
+    const first = (result.contents as Array<{ text: string }>)[0];
+    return JSON.parse(first.text) as Record<string, unknown>;
+  }
+
+  it("embeds the convention in the guidelines resource JSON", async () => {
+    const body = await readResourceJson("remnux://report/guidelines");
+    expect(body).toHaveProperty("guidelines");
+    const convention = body.optional_section_convention as Record<string, unknown>;
+    expect(convention).toBeTruthy();
+    expect(convention.version).toBe("1.0.0");
+  });
+
+  it("serves the convention as its own resource", async () => {
+    const convention = await readResourceJson("remnux://report/optional-section-convention");
+    expect(convention.version).toBe("1.0.0");
+    expect(convention.title as string).toMatch(/optional/i);
+    expect(Array.isArray(convention.applies_to)).toBe(true);
+  });
+});
+
+describe("optional-section convention stays in sync with the bundled template", () => {
+  it("names exactly the template's (Optional) headings (drift guard)", () => {
+    // The template is synced from zeltser.com; the convention is authored here. If an
+    // optional section is renamed/added/removed upstream, this fails instead of silently
+    // going stale (sync:report-guidance --check does not compare against this file).
+    const templateHeadings = [...REPORT_TEMPLATE.matchAll(/^## (.+ \(Optional\))$/gm)].map((m) => m[1]);
+    const conventionIds = OPTIONAL_SECTION_CONVENTION.applies_to.map((s) => s.identifier);
+
+    expect(templateHeadings.length).toBeGreaterThan(0);
+    expect([...templateHeadings].sort()).toEqual([...conventionIds].sort());
+  });
+
+  it("names exactly the digest's (Optional) section identifiers (digest drift guard)", () => {
+    // The digest (situationalSections, longReportSections, reviewCriteriaSectionMap) references these
+    // sections by their "(Optional)"-suffixed identifiers. The convention's cross-walk depends on that
+    // fidelity, so assert both sides agree — a template-only guard would miss a digest-side rename.
+    const found = new Set<string>();
+    const walk = (v: unknown): void => {
+      if (typeof v === "string") {
+        if (/ \(Optional\)$/.test(v)) found.add(v);
+      } else if (Array.isArray(v)) {
+        v.forEach(walk);
+      } else if (v && typeof v === "object") {
+        Object.values(v).forEach(walk);
+      }
+    };
+    walk(GUIDELINES_DIGEST);
+    const conventionIds = OPTIONAL_SECTION_CONVENTION.applies_to.map((s) => s.identifier);
+
+    expect(found.size).toBeGreaterThan(0);
+    expect([...found].sort()).toEqual([...conventionIds].sort());
   });
 });
 

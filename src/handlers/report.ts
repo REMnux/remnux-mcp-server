@@ -9,12 +9,15 @@ import {
   SOURCE_META,
 } from "../report/content.generated.js";
 import { TRIAGE_DISCIPLINE } from "../report/triage-discipline.js";
+import { OPTIONAL_SECTION_CONVENTION } from "../report/optional-sections.js";
 
 const NOTES =
   "This report template and writing guidance are bundled with the server and work offline — no network required. " +
   `The canonical, continuously updated source is ${SOURCE_META.fallbackArticleUrl}. ` +
   "When online, the zeltser-website MCP server offers richer tools — malware_get_template, malware_get_guidelines, " +
-  "malware_review_report, and rating_score_writing — for interactive review and scoring.";
+  "malware_review_report, and rating_score_writing — for interactive review and scoring. " +
+  "Headings marked (Optional) are conditional markers, not literal text — see optional_section_convention: " +
+  "include such a section only when your findings warrant it, and drop the (Optional) marker from the heading.";
 
 // Maps a `topic` to the digest keys it surfaces. Keys absent from the digest are skipped.
 const TOPIC_KEYS: Record<string, string[]> = {
@@ -50,6 +53,7 @@ export async function handleGetReportTemplate(_deps: HandlerDeps) {
         template: REPORT_TEMPLATE,
         attribution: ATTRIBUTION.template,
         source: SOURCE_META,
+        optional_section_convention: OPTIONAL_SECTION_CONVENTION,
         notes: NOTES,
       },
       startTime,
@@ -87,6 +91,7 @@ export async function handleGetReportGuidance(_deps: HandlerDeps, args: GetRepor
         guidelines: selectGuidelines(topic),
         attribution: ATTRIBUTION.guidelines,
         source: SOURCE_META,
+        optional_section_convention: OPTIONAL_SECTION_CONVENTION,
         notes: NOTES,
       },
       startTime,

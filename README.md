@@ -267,7 +267,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `suggest_tools` | Detect file type and return recommended tools with analysis hints (no execution) |
 | `get_tool_help` | Get usage help (`--help` output) for any installed REMnux tool |
 | `check_tools` | Check which REMnux analysis tools are installed and available |
-| `get_report_template` | Return a bundled malware analysis report template (CC BY 4.0, by Lenny Zeltser) for drafting a report offline |
+| `get_report_template` | Return a bundled malware analysis report template (CC BY 4.0, by Lenny Zeltser) for drafting a report offline. The response also carries an `optional_section_convention` explaining that headings marked `(Optional)` are conditional markers to resolve, not literal heading text |
 | `get_report_guidance` | Return bundled report writing guidelines (sections, confidence, capabilities, IOC tiering, anti-patterns); `topic` narrows the digest, or `topic='triage_checklist'` returns the pre-claim artifact-vs-behavior triage discipline checklist |
 | `get_osint_guidance` | Return bundled, offline OSINT triage guidance for malware indicators. Enrichment tradecraft (hash-first, disclosure-aware, do-not-tip-off-the-adversary, leads-not-verdicts) plus a curated, PR-maintained catalog of free and freemium lookup services. `topic` selects the guidance slice, `ioc_type` narrows the catalog. Makes no network calls and holds no API keys |
 
