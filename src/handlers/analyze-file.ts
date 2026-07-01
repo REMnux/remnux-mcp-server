@@ -264,6 +264,7 @@ const TOOL_OUTPUT_BUDGETS: Record<string, number> = {
   "tshark-verbose": 30 * 1024,
   "tshark-dns": 15 * 1024,
   "tshark-tls": 15 * 1024,
+  "tshark-fingerprint": 15 * 1024,
 };
 
 /** Parsing hints for querying large output files with jq/grep */

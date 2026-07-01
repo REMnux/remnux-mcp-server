@@ -1259,6 +1259,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tier: "standard",
   },
   {
+    name: "tshark-fingerprint",
+    description: "Fingerprint TLS clients (JA4 and JA3) per Client Hello, with SNI and destination IP/port, to cluster traffic by client stack and pivot to threat intel. Uses tshark's native fields, no plugin.",
+    command: "tshark",
+    inputStyle: "flag",
+    inputFlag: "-r",
+    fixedArgs: ["-Y", "tls.handshake.type==1", "-T", "fields", "-E", "header=y", "-E", "occurrence=f", "-e", "tls.handshake.ja4", "-e", "tls.handshake.ja3", "-e", "tls.handshake.extensions_server_name", "-e", "ip.dst", "-e", "tcp.dstport"],
+    outputFormat: "text",
+    timeout: 60,
+    tags: ["pcap"],
+    tier: "standard",
+  },
+  {
     name: "tshark-verbose",
     description: "Full packet decode of first 50 packets from a PCAP file.",
     command: "tshark",

@@ -118,9 +118,16 @@ describe("ToolRegistry", () => {
     expect(tls.command).toBe("tshark");
     expect(tls.tier).toBe("standard");
 
-    // capinfos orients the quick triage; tshark-tls only surfaces from standard up
+    const fp = toolRegistry.get("tshark-fingerprint")!;
+    expect(fp.command).toBe("tshark");
+    expect(fp.tier).toBe("standard");
+    expect(fp.tags).toContain("pcap");
+
+    // capinfos orients the quick triage; the TLS presets only surface from standard up
     expect(toolRegistry.byTagAndTier("pcap", "quick").map((t) => t.name)).toContain("capinfos");
     expect(toolRegistry.byTagAndTier("pcap", "quick").map((t) => t.name)).not.toContain("tshark-tls");
+    expect(toolRegistry.byTagAndTier("pcap", "quick").map((t) => t.name)).not.toContain("tshark-fingerprint");
     expect(toolRegistry.byTagAndTier("pcap", "standard").map((t) => t.name)).toContain("tshark-tls");
+    expect(toolRegistry.byTagAndTier("pcap", "standard").map((t) => t.name)).toContain("tshark-fingerprint");
   });
 });
