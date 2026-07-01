@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-06-26",
+  "updated": "2026-06-30",
   "tools": [
     {
       "command": "1768",
@@ -743,6 +743,13 @@
       "category": "Explore Network Interactions: Monitoring",
       "description": "Investigate website interactions using this web proxy.",
       "website": "https://mitmproxy.org/"
+    },
+    {
+      "command": "monitor-network",
+      "name": "monitor-network",
+      "category": "Explore Network Interactions: Monitoring",
+      "description": "Monitor traffic on the first active network interface using tshark, printing a live summary to the screen or saving it to a pcapng file.",
+      "website": "https://github.com/REMnux/distro/blob/master/files/monitor-network"
     },
     {
       "command": "monodis",
