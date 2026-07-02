@@ -91,9 +91,23 @@ const BASE_HINTS: Record<string, string> = {
     "For deep analysis, capa -vv shows matched rule details with addresses. " +
     "r2ghidra decompiles ELF functions to pseudo-C (Ghidra plugin under radare2): list functions with run_tool command=\"r2 -A -q -c afl <file>\", then run_tool command=\"r2 -A -q -c 'pdg @ main' <file>\" for a target ('pdg @ sym.<name>' or 'pdg @ 0x<addr>'). 'pdc' is the native fallback if the plugin is absent.",
   JavaScript:
-    "js-beautify reformats and deobfuscates JavaScript — look for eval(), " +
+    "Check encoding first: run_tool command='file <file>' — modern JavaScript malware is frequently UTF-16, " +
+    "and the JS analysis tools expect UTF-8/ASCII, failing or emitting garbage otherwise. On UTF-16, convert with " +
+    "run_tool command='iconv -f UTF-16 -t UTF-8 > converted.js' plus input_file='<file>' (the sample path is " +
+    "appended automatically and the redirect lands in the samples directory), then re-run analysis on converted.js. " +
+    "js-beautify reformats the script so you can read the structure and identify the obfuscator — look for eval(), " +
     "document.write(), String.fromCharCode(), and unescape() patterns. " +
-    "box-js analyzes and deobfuscates JavaScript malware in a sandbox environment. " +
+    "webcrack is the primary static deobfuscator: it unminifies, unpacks bundles, and strips obfuscator.io " +
+    "protection, printing deobfuscated code to stdout. With -o <dir> it writes <dir>/deobfuscated.js instead, " +
+    "but refuses to run if the directory already exists — point -o at a fresh path or clear it first, never pre-create it. " +
+    "js-deobfuscator is the static fallback when webcrack leaves obfuscation behind. " +
+    "webcrack is static, so values assembled at runtime stay unresolved — follow with box-js, which emulates the " +
+    "script in a sandbox to recover runtime-built URLs and config. box-js needs an absolute path to the sample, " +
+    "an existing parent directory for --output-dir (mkdir -p it first — the opposite of webcrack), and a --timeout " +
+    "above its short 10-second default. If box-js stalls, treat the stall as a finding — anti-emulation such as a " +
+    "wscript self-relaunch — and pivot back to static results rather than retrying indefinitely. " +
+    "Cross-check recovered URLs and config across webcrack and box-js (and AMSI tracing on a Windows sandbox, when " +
+    "one is available): agreement raises confidence, and disagreement or a stall is itself a lead. " +
     "base64dump finds and decodes Base64 and other encoded strings. " +
     "For deep analysis, JStillery uses AST partial evaluation for deobfuscation, and " +
     "SpiderMonkey with -f /usr/share/remnux/objects.js emulates browser/PDF viewer objects. " +

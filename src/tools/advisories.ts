@@ -15,6 +15,7 @@ export interface PostAnalysisAdvisory {
 
 export interface AdvisoryContext {
   toolsRun: Array<{ name: string; exit_code?: number; output?: string }>;
+  toolsFailed?: Array<{ name: string; error?: string }>;
   category: string;
 }
 
@@ -46,6 +47,34 @@ export const POST_ANALYSIS_ADVISORIES: PostAnalysisAdvisory[] = [
     issue: "File is packed. Capa analysis is limited.",
     remediation:
       "Unpack with upx -d (if UPX) or specialized unpacker, then re-analyze for better coverage.",
+  },
+  {
+    name: "box-js-stall",
+    priority: 8,
+    shouldApply: (ctx) => {
+      if (ctx.category !== "JavaScript") return false;
+      // t.error is server-generated ("Timed out" from analyze-file's GNU-timeout
+      // detection), never sample-derived text — keep it that way if this changes.
+      const timedOut = ctx.toolsFailed?.some(
+        (t) => t.name === "box-js" && /\btimed\s?out\b/i.test(t.error ?? "")
+      );
+      // box-js's own --timeout ends the run gracefully (exit 0) and prints
+      // "Analysis for <file> timed out." on stdout, so a stall can also surface
+      // as a normal run. The word boundary keeps setTimeout (ubiquitous in JS
+      // malware output) from false-positiving.
+      const reportedTimeout = ctx.toolsRun.some(
+        (t) => t.name === "box-js" && t.output && /\btimed\s?out\b/i.test(t.output)
+      );
+      return Boolean(timedOut || reportedTimeout);
+    },
+    issue:
+      "box-js stalled or timed out. On malicious JavaScript this is often anti-emulation " +
+      "(e.g., a wscript self-relaunch or an environment check the sandbox cannot satisfy) — " +
+      "treat the stall as a finding about the sample, not a tool failure.",
+    remediation:
+      "Pivot to static recovery: webcrack deobfuscates code structure and literal strings " +
+      "(run_tool command='webcrack <file>'), with js-deobfuscator as a fallback. Retry box-js " +
+      "with a longer --timeout only if slow unpacking, rather than anti-emulation, is suspected.",
   },
   {
     name: "yara-family-attribution",

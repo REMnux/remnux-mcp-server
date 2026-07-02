@@ -662,16 +662,32 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tier: "quick",
   },
   {
-    name: "box-js",
-    description: "Analyze and deobfuscate JavaScript in a sandbox.",
-    command: "box-js",
+    name: "webcrack",
+    description:
+      "Deobfuscate, unminify, and unpack bundled JavaScript, including scripts protected with obfuscator.io. " +
+      "Prints deobfuscated code to stdout; with -o <dir> it writes <dir>/deobfuscated.js instead, but refuses to run if the directory already exists — point -o at a fresh path and never pre-create it.",
+    command: "webcrack",
     inputStyle: "positional",
-    fixedArgs: ["--output-dir", "%OUTPUT%/box-js-out"],
     outputFormat: "text",
     timeout: 120,
     tags: ["javascript"],
     tier: "standard",
-    exitCodeHints: { 1: "Script execution failed — may require specific JS runtime features or have syntax box-js cannot handle." },
+    exitCodeHints: {
+      1: "webcrack could not process the file — verify it is UTF-8/ASCII JavaScript (convert UTF-16 with 'iconv -f UTF-16 -t UTF-8' first) and, if using -o, that the output directory does not already exist.",
+    },
+  },
+  {
+    name: "box-js",
+    description:
+      "Emulate JavaScript in a sandbox to observe runtime behavior — recovers URLs and config assembled at runtime that static deobfuscation (webcrack) leaves unresolved.",
+    command: "box-js",
+    inputStyle: "positional",
+    fixedArgs: ["--timeout", "60", "--output-dir", "%OUTPUT%/box-js-out"],
+    outputFormat: "text",
+    timeout: 120,
+    tags: ["javascript"],
+    tier: "standard",
+    exitCodeHints: { 1: "Script execution failed — may require specific JS runtime features or have syntax box-js cannot handle. A stall or timeout often indicates anti-emulation (e.g., a wscript self-relaunch) — treat that as a finding and pivot to webcrack's static output." },
   },
   {
     name: "jstillery",

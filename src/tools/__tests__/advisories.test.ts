@@ -143,6 +143,68 @@ describe("advisories", () => {
       expect(advisories).toEqual([]);
     });
 
+    it("detects box-js-stall when box-js timed out on a JavaScript sample", () => {
+      const context: AdvisoryContext = {
+        toolsRun: [{ name: "webcrack", exit_code: 0, output: "deobfuscated code" }],
+        toolsFailed: [{ name: "box-js", error: "Timed out" }],
+        category: "JavaScript",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      expect(advisories).toHaveLength(1);
+      expect(advisories[0].name).toBe("box-js-stall");
+      expect(advisories[0].issue).toContain("anti-emulation");
+      expect(advisories[0].remediation).toContain("webcrack");
+    });
+
+    it("detects box-js-stall when box-js reports its own timeout in output", () => {
+      // Real message from box-js --timeout N (exits 0, reports on stdout)
+      const context: AdvisoryContext = {
+        toolsRun: [
+          { name: "box-js", exit_code: 0, output: "Analysis for sample.js timed out.\nHint: if the script is heavily obfuscated, --preprocess can speed up the emulation." },
+        ],
+        category: "JavaScript",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      expect(advisories).toHaveLength(1);
+      expect(advisories[0].name).toBe("box-js-stall");
+    });
+
+    it("does not trigger box-js-stall on setTimeout in box-js output", () => {
+      const context: AdvisoryContext = {
+        toolsRun: [
+          { name: "box-js", exit_code: 0, output: "IOC: setTimeout(function(){eval(payload)}, 5000) scheduled" },
+        ],
+        category: "JavaScript",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      expect(advisories).toEqual([]);
+    });
+
+    it("does not trigger box-js-stall outside the JavaScript category", () => {
+      const context: AdvisoryContext = {
+        toolsFailed: [{ name: "box-js", error: "Timed out" }],
+        toolsRun: [],
+        category: "PDF",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      expect(advisories).toEqual([]);
+    });
+
+    it("does not trigger box-js-stall when box-js completed without timing out", () => {
+      const context: AdvisoryContext = {
+        toolsRun: [{ name: "box-js", exit_code: 0, output: "urls: hxxp://example[.]com" }],
+        toolsFailed: [],
+        category: "JavaScript",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      expect(advisories).toEqual([]);
+    });
+
     it("does not trigger yara-family-attribution when yara-forge was not run", () => {
       const context: AdvisoryContext = {
         toolsRun: [

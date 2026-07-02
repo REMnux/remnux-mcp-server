@@ -258,6 +258,7 @@ const TOOL_OUTPUT_BUDGETS: Record<string, number> = {
   zipdump: 15 * 1024,
   base64dump: 15 * 1024,
   "js-beautify": 15 * 1024,
+  webcrack: 20 * 1024,
   "box-js": 20 * 1024,
   cfr: 15 * 1024,
   jadx: 15 * 1024,
@@ -637,6 +638,10 @@ export async function handleAnalyzeFile(
       name: t.name,
       exit_code: t.exit_code,
       output: t.output,
+    })),
+    toolsFailed: toolsFailed.map((t) => ({
+      name: t.name,
+      error: t.error,
     })),
     category: category.name,
   };

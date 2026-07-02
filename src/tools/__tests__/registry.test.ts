@@ -52,6 +52,33 @@ describe("ToolRegistry", () => {
     }
   });
 
+  it("runs webcrack in the JavaScript standard chain before box-js", () => {
+    const names = toolRegistry.byTagAndTier("javascript", "standard").map((t) => t.name);
+    expect(names).toContain("webcrack");
+    expect(names).toContain("box-js");
+    // webcrack (primary, static) must run before box-js (secondary, dynamic)
+    expect(names.indexOf("webcrack")).toBeLessThan(names.indexOf("box-js"));
+  });
+
+  it("webcrack auto-run uses stdout mode (no -o / %OUTPUT% args)", () => {
+    const webcrack = toolRegistry
+      .byTagAndTier("javascript", "standard")
+      .find((t) => t.name === "webcrack");
+    expect(webcrack).toBeDefined();
+    // webcrack refuses a pre-existing -o dir, and analyze_file pre-creates
+    // %OUTPUT% dirs — so the auto-run must stay sentinel-free.
+    const args = [...(webcrack?.fixedArgs ?? []), ...(webcrack?.suffixArgs ?? [])];
+    expect(args.join(" ")).not.toContain("-o");
+    expect(args.join(" ")).not.toContain("%OUTPUT%");
+  });
+
+  it("raises box-js above its 10-second default timeout via fixedArgs", () => {
+    const boxjs = toolRegistry
+      .byTagAndTier("javascript", "standard")
+      .find((t) => t.name === "box-js");
+    expect(boxjs?.fixedArgs).toEqual(expect.arrayContaining(["--timeout", "60"]));
+  });
+
   it("all tools have required fields", () => {
     for (const tool of toolRegistry.all()) {
       expect(tool.name).toBeTruthy();
