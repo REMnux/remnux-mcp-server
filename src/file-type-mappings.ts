@@ -162,8 +162,11 @@ const OOXML_EXTENSIONS = /\.(docx|docm|xlsx|xlsm|pptx|pptm)$/i;
 /** OLE2 macro-enabled extensions that `file` may misidentify. */
 const OLE2_EXTENSIONS = /\.(doc|xls|ppt)$/i;
 
-/** Archive extensions handled by extract_archive (after OOXML/JAR take precedence). */
-const ARCHIVE_EXTENSIONS = /\.(zip|7z|rar)$/i;
+/** Archive extensions handled by extract_archive (after OOXML/JAR take precedence).
+ * Includes the .7z.001/.zip.001 multi-volume first part, which detectArchiveType
+ * routes to 7z — so suggest_tools/analyze_file surface the extract_archive guidance
+ * for it too, rather than classifying it as Unknown. */
+const ARCHIVE_EXTENSIONS = /\.(zip|7z|rar)$|\.(?:7z|zip)\.001$/i;
 
 /**
  * Match `file` command output to a category. Returns the first match or fallback.

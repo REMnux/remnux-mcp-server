@@ -52,12 +52,20 @@ describe("ToolRegistry", () => {
     }
   });
 
-  it("runs webcrack in the JavaScript standard chain before box-js", () => {
-    const names = toolRegistry.byTagAndTier("javascript", "standard").map((t) => t.name);
-    expect(names).toContain("webcrack");
-    expect(names).toContain("box-js");
-    // webcrack (primary, static) must run before box-js (secondary, dynamic)
-    expect(names.indexOf("webcrack")).toBeLessThan(names.indexOf("box-js"));
+  it("keeps the JavaScript standard chain static — webcrack in, box-js out", () => {
+    const std = toolRegistry.byTagAndTier("javascript", "standard").map((t) => t.name);
+    expect(std).toContain("webcrack");
+    // box-js is old and stalls on anti-emulation, so it is deep-tier, not part of
+    // the fast standard chain.
+    expect(std).not.toContain("box-js");
+  });
+
+  it("includes box-js in the deep chain, after webcrack", () => {
+    const deep = toolRegistry.byTagAndTier("javascript", "deep").map((t) => t.name);
+    expect(deep).toContain("webcrack");
+    expect(deep).toContain("box-js");
+    // webcrack (primary, static) still comes before box-js (dynamic) in deep.
+    expect(deep.indexOf("webcrack")).toBeLessThan(deep.indexOf("box-js"));
   });
 
   it("webcrack auto-run uses stdout mode (no -o / %OUTPUT% args)", () => {
@@ -74,7 +82,7 @@ describe("ToolRegistry", () => {
 
   it("raises box-js above its 10-second default timeout via fixedArgs", () => {
     const boxjs = toolRegistry
-      .byTagAndTier("javascript", "standard")
+      .byTagAndTier("javascript", "deep")
       .find((t) => t.name === "box-js");
     expect(boxjs?.fixedArgs).toEqual(expect.arrayContaining(["--timeout", "60"]));
   });

@@ -120,6 +120,34 @@ describe("handleAnalyzeFile", () => {
     ).toBe(true);
   });
 
+  it("fires the box-js-stall advisory when the timeout message is past the display budget", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/dropper.js: JavaScript source, ASCII text")
+    );
+    // box-js emits a verbose log just over its ~20KB display budget and prints
+    // "Analysis for X timed out." at the very END. The display copy truncates the
+    // message away; the advisory must still fire because it reads full output.
+    // Keep the total under the 32KB summary threshold so `advisories` surfaces.
+    const boxjsOut = "[info] emulating xyz\n".repeat(1100) + "Analysis for dropper.js timed out.\n";
+    vi.mocked(deps.connector.executeShell).mockImplementation(async (cmd: string) =>
+      cmd.startsWith("box-js") ? ok(boxjsOut) : ok("clean")
+    );
+
+    // box-js runs in the deep chain (it is deep-tier now, not standard).
+    const result = await handleAnalyzeFile(deps, { file: "dropper.js", depth: "deep" });
+    const env = parseEnvelope(result);
+    expect(env.success).toBe(true);
+    // Advisories surface as action_required in normal mode. The box-js-stall
+    // advisory only fires if it saw the "timed out" line, which sits past the
+    // display budget — so this passing proves the advisory reads full output.
+    expect(
+      (env.data.action_required || []).some((a: { issue: string }) =>
+        /box-js stalled or timed out/i.test(a.issue)
+      )
+    ).toBe(true);
+  });
+
   it("records non-zero exit with valid stdout in tools_run", async () => {
     const deps = createMockDeps();
     vi.mocked(deps.connector.execute).mockResolvedValue(

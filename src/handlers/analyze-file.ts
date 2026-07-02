@@ -247,6 +247,10 @@ function generateTriageSummary(
 const DEFAULT_OUTPUT_BUDGET = 40 * 1024; // 40KB default
 const TOTAL_RESPONSE_BUDGET = 120 * 1024; // 120KB total across all tools
 const MAX_SAVED_OUTPUT_SIZE = 500 * 1024; // 500KB max saved file
+// Per-tool cap on the full output retained for IOC extraction / advisories.
+// Bounds memory when a tool streams a very large output, while staying well
+// above where real IOCs sit (e.g. a C2 URL ~25KB into webcrack output).
+const IOC_SCAN_CAP = 512 * 1024; // 512KB per tool
 
 /** Per-tool output budgets — tools known to produce large output get tighter limits. */
 const TOOL_OUTPUT_BUDGETS: Record<string, number> = {
@@ -590,7 +594,7 @@ export async function handleAnalyzeFile(
         }
       }
 
-      fullOutputs.push(fullOutput);
+      fullOutputs.push(fullOutput.length > IOC_SCAN_CAP ? fullOutput.slice(0, IOC_SCAN_CAP) : fullOutput);
       toolsRun.push({
         name: tool.name,
         command: cmd,
@@ -643,12 +647,15 @@ export async function handleAnalyzeFile(
     );
   }
 
-  // Evaluate cross-tool advisories
+  // Evaluate cross-tool advisories. Use the FULL (pre-display-truncation) output,
+  // index-aligned with toolsRun: an advisory signal can sit at the very end of a
+  // large output (e.g. box-js prints "Analysis for X timed out." last), which the
+  // display-truncated t.output would drop.
   const advisoryContext: AdvisoryContext = {
-    toolsRun: toolsRun.map((t) => ({
+    toolsRun: toolsRun.map((t, i) => ({
       name: t.name,
       exit_code: t.exit_code,
-      output: t.output,
+      output: fullOutputs[i] ?? t.output,
     })),
     toolsFailed: toolsFailed.map((t) => ({
       name: t.name,

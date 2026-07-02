@@ -171,6 +171,21 @@ describe("advisories", () => {
       expect(advisories[0].name).toBe("box-js-stall");
     });
 
+    it("does not trigger box-js-stall on a recovered 'connection timed out' string", () => {
+      // box-js completed cleanly; the phrase is sample-recovered content, not
+      // box-js's own "Analysis for <file> timed out." banner.
+      const context: AdvisoryContext = {
+        toolsRun: [
+          { name: "box-js", exit_code: 0, output: "IOC: server replied 'connection timed out' to the beacon" },
+        ],
+        toolsFailed: [],
+        category: "JavaScript",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      expect(advisories).toEqual([]);
+    });
+
     it("does not trigger box-js-stall on setTimeout in box-js output", () => {
       const context: AdvisoryContext = {
         toolsRun: [

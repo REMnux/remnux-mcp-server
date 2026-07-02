@@ -114,6 +114,12 @@ describe("describeMultiVolumePart — trailing volumes", () => {
     expect(describeMultiVolumePart("sample.part2.rar")).toContain("sample.part1.rar");
   });
 
+  it("preserves zero-padding width when naming the first RAR volume", () => {
+    // part03 → part01 (the real first volume), not part1 which would not exist.
+    expect(describeMultiVolumePart("sample.part03.rar")).toContain("sample.part01.rar");
+    expect(describeMultiVolumePart("sample.part017.rar")).toContain("sample.part001.rar");
+  });
+
   it("does NOT flag a first volume (.001, .part1.rar) or a plain archive", () => {
     expect(describeMultiVolumePart("sample.7z.001")).toBe(null);
     expect(describeMultiVolumePart("sample.part1.rar")).toBe(null);
@@ -176,6 +182,40 @@ describe("extractArchive — WinZip AES .zip fallback to 7z", () => {
     // The traversal entry, not the dropped volume self-reference, is what tripped it.
     expect(result.error).toContain("../../../etc/cron.d/evil");
     // Extraction never ran because the pre-check blocked it.
+    expect(calls.some((c) => c[0] === "7z" && c[1] === "x")).toBe(false);
+  });
+
+  it("blocks a traversal entry whose basename matches the archive name (no filter bypass)", async () => {
+    const calls: string[][] = [];
+    const connector: Connector = {
+      async execute(command: string[]): Promise<ExecResult> {
+        calls.push(command);
+        if (command[0] === "7z" && command[1] === "l") {
+          // The malicious entry's basename ("mvset.7z") equals the logical volume
+          // name — a naive basename filter would drop it and miss the "..".
+          return ok(
+            "Path = /samples/mvset.7z.001\nPath = mvset.7z\nPath = ../../../etc/cron.d/mvset.7z\n"
+          );
+        }
+        return ok();
+      },
+      async executeShell() { return ok(); },
+      async writeFile() {},
+      async writeFileFromPath() {},
+      async readFileToPath() {},
+      async disconnect() {},
+    };
+
+    const result = await extractArchive(
+      connector,
+      "/samples/mvset.7z.001",
+      "/samples",
+      "infected"
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/traversal|zip-slip/i);
+    expect(result.error).toContain("../../../etc/cron.d/mvset.7z");
     expect(calls.some((c) => c[0] === "7z" && c[1] === "x")).toBe(false);
   });
 

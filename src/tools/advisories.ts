@@ -60,10 +60,11 @@ export const POST_ANALYSIS_ADVISORIES: PostAnalysisAdvisory[] = [
       );
       // box-js's own --timeout ends the run gracefully (exit 0) and prints
       // "Analysis for <file> timed out." on stdout, so a stall can also surface
-      // as a normal run. The word boundary keeps setTimeout (ubiquitous in JS
-      // malware output) from false-positiving.
+      // as a normal run. Anchor to box-js's actual banner rather than a bare
+      // "timed out": a recovered string in the sample (e.g. "connection timed
+      // out") must not trip the stall advisory when box-js completed cleanly.
       const reportedTimeout = ctx.toolsRun.some(
-        (t) => t.name === "box-js" && t.output && /\btimed\s?out\b/i.test(t.output)
+        (t) => t.name === "box-js" && t.output && /analysis for .*timed\s?out/i.test(t.output)
       );
       return Boolean(timedOut || reportedTimeout);
     },

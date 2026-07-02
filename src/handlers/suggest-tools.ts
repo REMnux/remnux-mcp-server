@@ -101,11 +101,13 @@ const BASE_HINTS: Record<string, string> = {
     "protection, printing deobfuscated code to stdout. With -o <dir> it writes <dir>/deobfuscated.js instead, " +
     "but refuses to run if the directory already exists — point -o at a fresh path or clear it first, never pre-create it. " +
     "js-deobfuscator is the static fallback when webcrack leaves obfuscation behind. " +
-    "webcrack is static, so values assembled at runtime stay unresolved — follow with box-js, which emulates the " +
-    "script in a sandbox to recover runtime-built URLs and config. box-js needs an absolute path to the sample, " +
-    "an existing parent directory for --output-dir (mkdir -p it first — the opposite of webcrack), and a --timeout " +
-    "above its short 10-second default. If box-js stalls, treat the stall as a finding — anti-emulation such as a " +
-    "wscript self-relaunch — and pivot back to static results rather than retrying indefinitely. " +
+    "webcrack is static, so values assembled at runtime stay unresolved. For those, box-js emulates the script in a " +
+    "sandbox to recover runtime-built URLs and config — but it is an older tool that stalls on anti-emulation, so " +
+    "reach for it deliberately (it is not in the fast standard chain), not as a first move. When you do run it, box-js " +
+    "needs an absolute path to the sample, an existing parent directory for --output-dir (mkdir -p it first — the " +
+    "opposite of webcrack), and a --timeout above its short 10-second default. If box-js stalls, treat the stall as a " +
+    "finding — anti-emulation such as a wscript self-relaunch — and pivot back to static results (webcrack/" +
+    "js-deobfuscator) or AMSI rather than retrying indefinitely. " +
     "Cross-check recovered URLs and config across webcrack and box-js (and AMSI tracing on a Windows sandbox, when " +
     "one is available): agreement raises confidence, and disagreement or a stall is itself a lead. " +
     "base64dump finds and decodes Base64 and other encoded strings. " +

@@ -32,7 +32,8 @@ export function detectArchiveType(filename: string): ArchiveType {
   const lower = filename.toLowerCase();
   // Multi-volume FIRST part: 7z extracts the whole set when pointed at the .001
   // volume (verified for both split .7z and split .zip). A first-part .part1.rar
-  // is caught by the .rar case below and handled by unrar/7z.
+  // is caught by the .rar case below and handled by unrar/7z. Only the 3-digit
+  // .001 (7z's default) is recognized; wider padding (.0001) is not.
   if (/\.(7z|zip)\.001$/.test(lower)) {
     return "7z";
   }
@@ -73,11 +74,14 @@ export function describeMultiVolumePart(filename: string): string | null {
   else if (/\.r\d{2}$/i.test(lower)) {
     firstVolume = filename.replace(/\.r\d{2}$/i, ".rar");
   }
-  // New-style split RAR: name.part2.rar, name.part03.rar (first is .part1/.part01)
+  // New-style split RAR: name.part2.rar, name.part03.rar (first is .part1/.part01).
+  // Preserve the original zero-padding width so the named first volume exists
+  // (part03 → part01, not part1).
   else {
-    const partN = lower.match(/\.part0*(\d+)\.rar$/);
-    if (partN && partN[1] !== "1") {
-      firstVolume = filename.replace(/\.part0*\d+\.rar$/i, ".part1.rar");
+    const partN = lower.match(/\.part(\d+)\.rar$/);
+    if (partN && parseInt(partN[1], 10) !== 1) {
+      const firstPart = "1".padStart(partN[1].length, "0");
+      firstVolume = filename.replace(/\.part\d+\.rar$/i, `.part${firstPart}.rar`);
     }
   }
 
@@ -185,11 +189,16 @@ export function getExtractionCommand(
  */
 export function isUnsupportedZipEncryption(result: ExecResult): boolean {
   const output = (result.stderr + result.stdout).toLowerCase();
-  return (
-    output.includes("need pk compat") ||             // "need PK compat. v5.1 (can do v4.6)"
-    output.includes("unsupported compression method") ||
-    (output.includes("skipping:") && output.includes("encrypted"))
-  );
+  // unzip's WinZip-AES failure is a "skipping: <name> need PK compat …" line (it
+  // skips the entry and still exits 0). Tie the markers to the "skipping:" prefix,
+  // so a filename or benign text that merely contains one of these words on a
+  // SUCCESSFUL extraction cannot trigger a needless 7z fallback.
+  if (/skipping:[^\n]*(need pk compat|unsupported compression method|encrypted)/i.test(output)) {
+    return true;
+  }
+  // A hard "unsupported compression method" error (non-zero exit) also warrants
+  // the 7z fallback; the non-zero exit rules out benign successful output.
+  return result.exitCode !== 0 && output.includes("unsupported compression method");
 }
 
 /**
@@ -417,7 +426,12 @@ async function listArchiveEntries(
       // logical "name.7z") as Path entries. Invoked with an absolute archivePath
       // those come back absolute and would trip the "starts with /" zip-slip
       // pre-check — a false positive, since they are the container, not content.
-      // Drop the self-references; real traversal entries are unaffected.
+      // Drop the self-references, but ONLY genuine ones: the exact archive path,
+      // or a bare volume/logical name with no directory component. Never drop an
+      // entry that carries a path or "..", even if its basename matches the
+      // archive name — that would let a crafted traversal entry
+      // (e.g. "../../etc/cron.d/name.7z") slip past the pre-check. Pathed entries
+      // always fall through to checkEntriesForTraversal.
       const archiveBase = basename(archivePath);              // name.7z.001
       const logicalBase = archiveBase.replace(/\.\d{3}$/, ""); // name.7z
       return result.stdout
@@ -425,8 +439,12 @@ async function listArchiveEntries(
         .filter((l) => l.startsWith("Path = "))
         .map((l) => l.slice(7).trim())
         .filter((entry) => {
-          const b = basename(entry);
-          return b !== archiveBase && b !== logicalBase;
+          if (entry.includes("..")) return true;      // never drop a traversal candidate
+          if (entry === archivePath) return false;    // exact absolute self-reference
+          if (!entry.includes("/") && (entry === archiveBase || entry === logicalBase)) {
+            return false;                             // bare volume/logical name
+          }
+          return true;
         });
     }
 

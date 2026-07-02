@@ -10,7 +10,7 @@ describe("analyze_file — %OUTPUT% resolution", () => {
     );
     vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("box-js output"));
 
-    await handleAnalyzeFile(deps, { file: "a.js", depth: "standard" });
+    await handleAnalyzeFile(deps, { file: "a.js", depth: "deep" });
 
     // mkdir target
     const mkdirCall = vi
@@ -36,7 +36,7 @@ describe("analyze_file — %OUTPUT% resolution", () => {
     );
     vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("output"));
 
-    const result = await handleAnalyzeFile(deps, { file: "a.js", depth: "standard" });
+    const result = await handleAnalyzeFile(deps, { file: "a.js", depth: "deep" });
     const env = parseEnvelope(result);
     // The overall analysis still succeeds; box-js (which needs %OUTPUT%) is recorded
     // as failed rather than aborting every other tool.

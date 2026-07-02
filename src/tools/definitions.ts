@@ -679,14 +679,17 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "box-js",
     description:
-      "Emulate JavaScript in a sandbox to observe runtime behavior — recovers URLs and config assembled at runtime that static deobfuscation (webcrack) leaves unresolved.",
+      "Emulate JavaScript in a sandbox to observe runtime behavior — recovers URLs and config assembled at runtime that static deobfuscation (webcrack) leaves unresolved. An older, emulation-based tool: it stalls on anti-emulation (e.g. a wscript self-relaunch), so it is a deliberate deep-tier step, not part of the fast standard chain.",
     command: "box-js",
     inputStyle: "positional",
     fixedArgs: ["--timeout", "60", "--output-dir", "%OUTPUT%/box-js-out"],
     outputFormat: "text",
     timeout: 120,
     tags: ["javascript"],
-    tier: "standard",
+    // deep, not standard: box-js is old and stalls on anti-emulation, so the fast
+    // standard chain stays static (js-beautify → webcrack). It still auto-runs at
+    // depth=deep, where the box-js-stall advisory can flag an anti-emulation stall.
+    tier: "deep",
     exitCodeHints: { 1: "Script execution failed — may require specific JS runtime features or have syntax box-js cannot handle. A stall or timeout often indicates anti-emulation (e.g., a wscript self-relaunch) — treat that as a finding and pivot to webcrack's static output." },
   },
   {

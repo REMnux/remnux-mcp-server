@@ -193,6 +193,13 @@ describe("matchFileType", () => {
     expect(result.name).toBe("Archive");
   });
 
+  it("classifies a .7z.001 multi-volume first part as Archive (matches extract_archive support)", () => {
+    // file reports "data" for a split volume; the extension fallback must still
+    // route it to Archive so the extract_archive guidance surfaces.
+    const result = matchFileType("sample.7z.001: data", "sample.7z.001");
+    expect(result.name).toBe("Archive");
+  });
+
   it("still classifies a zip-based .docx as OOXML, not Archive", () => {
     const result = matchFileType("report.docx: Zip archive data", "report.docx");
     expect(result.name).toBe("OOXML");

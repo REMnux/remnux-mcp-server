@@ -134,7 +134,9 @@ export async function handleExtractArchive(
     } else {
       // Give a password-specific, actionable suggestion when the failure was a
       // wrong/absent password, rather than the generic "corrupted archive" hint.
-      const isPasswordFailure = /password/i.test(result.error || "");
+      // Match the specific "Incorrect password" reason, not any mention of
+      // "password" — the composed error always ends with "Tried N password(s)".
+      const isPasswordFailure = /incorrect password/i.test(result.error || "");
       const suggestion = isPasswordFailure
         ? "Most likely the archive is password-protected with a password not in the auto-detect list (infected, malware, virus). " +
           "If you know the password — it is often in the email or context that delivered the sample — pass it as the 'password' argument. " +
