@@ -97,6 +97,29 @@ describe("handleAnalyzeFile", () => {
     expect(env.data.iocs.some((i: { type: string; value: string }) => i.type === "ipv4" && i.value === "45.33.32.156")).toBe(true);
   });
 
+  it("extracts IOCs past a tool's display budget (full output feeds extraction)", async () => {
+    const deps = createMockDeps();
+    // JavaScript file → chain runs js-beautify/webcrack/box-js, all with <=20KB
+    // display budgets. Put a C2 URL well past those budgets, mirroring webcrack
+    // recovering a downloadUrl deep in its deobfuscated output.
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/dropper.js: JavaScript source, ASCII text")
+    );
+    const deepUrl = "A".repeat(30000) +
+      ' downloadUrl: "http://evilc2downloader.com/stage2.ps1" ' +
+      "B".repeat(3000);
+    vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(deepUrl));
+
+    const result = await handleAnalyzeFile(deps, { file: "dropper.js", depth: "standard" });
+    const env = parseEnvelope(result);
+    expect(env.success).toBe(true);
+    // The URL sits past every JS tool's display budget; it must still be
+    // extracted because IOC extraction runs on full, not truncated, output.
+    expect(
+      env.data.iocs.some((i: { value: string }) => i.value.includes("evilc2downloader.com"))
+    ).toBe(true);
+  });
+
   it("records non-zero exit with valid stdout in tools_run", async () => {
     const deps = createMockDeps();
     vi.mocked(deps.connector.execute).mockResolvedValue(

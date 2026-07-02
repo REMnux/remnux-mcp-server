@@ -411,6 +411,10 @@ export async function handleAnalyzeFile(
   const toolsRun: ToolRun[] = [];
   const toolsFailed: ToolFailed[] = [];
   const toolsSkipped: ToolSkipped[] = [];
+  // Full (pre-display-truncation) tool outputs, used for IOC extraction so an
+  // indicator that sits past a tool's display budget (e.g. a C2 URL deep in
+  // webcrack's deobfuscated output) is still extracted, not just saved to file.
+  const fullOutputs: string[] = [];
   let totalOutputSize = 0;
 
   // Step 3: Run each tool
@@ -509,6 +513,7 @@ export async function handleAnalyzeFile(
       }
 
       let output = result.stdout || stderr || "(no output)";
+      const fullOutput = output;
       const fullLen = output.length;
       // Per-tool budget, further reduced if approaching total response budget
       const remainingBudget = Math.max(5 * 1024, TOTAL_RESPONSE_BUDGET - totalOutputSize);
@@ -580,6 +585,7 @@ export async function handleAnalyzeFile(
         }
       }
 
+      fullOutputs.push(fullOutput);
       toolsRun.push({
         name: tool.name,
         command: cmd,
@@ -602,7 +608,7 @@ export async function handleAnalyzeFile(
     }
   }
 
-  const combinedOutput = toolsRun.map(t => t.output).join("\n\n")
+  const combinedOutput = fullOutputs.join("\n\n")
     .replace(/^\s*"command":\s*".*"$/gm, "");
   // Filter metadata lines (author, reference, namespace, etc.) to prevent false IOC extraction
   // from tool/rule metadata (e.g., capa authors, YARA rule references)
