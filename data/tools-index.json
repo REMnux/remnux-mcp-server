@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-06-30",
+  "updated": "2026-07-02",
   "tools": [
     {
       "command": "1768",
@@ -1471,6 +1471,13 @@
       "category": "Perform Memory Forensics",
       "description": "Memory forensics tool and framework.",
       "website": "https://github.com/volatilityfoundation/volatility3"
+    },
+    {
+      "command": "webcrack",
+      "name": "Webcrack",
+      "category": "Dynamically Reverse-Engineer Code: Scripts",
+      "description": "Deobfuscate, unminify, and unpack bundled JavaScript, including scripts protected with obfuscator.io.",
+      "website": "https://github.com/j4k0xb/webcrack"
     },
     {
       "command": "wine",
