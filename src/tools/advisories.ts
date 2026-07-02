@@ -78,6 +78,37 @@ export const POST_ANALYSIS_ADVISORIES: PostAnalysisAdvisory[] = [
       "with a longer --timeout only if slow unpacking, rather than anti-emulation, is suspected.",
   },
   {
+    name: "box-js-self-relaunch",
+    priority: 8,
+    shouldApply: (ctx) => {
+      if (ctx.category !== "JavaScript") return false;
+      // box-js reports the sample re-invoking itself via WScript/CScript, using
+      // its placeholder constant CURRENT_SCRIPT_IN_FAKED_DIR for the sample path.
+      // A self-relaunch is anti-emulation: box-js runs the OUTER script (which
+      // only relaunches itself) and never reaches the payload, so it exits cleanly
+      // WITHOUT timing out — the box-js-stall advisory does not catch this form.
+      return ctx.toolsRun.some(
+        (t) =>
+          t.name === "box-js" &&
+          t.output &&
+          /(?:wscript|cscript)(?:\.exe)?[^\n]*CURRENT_SCRIPT_IN_FAKED_DIR/i.test(t.output)
+      );
+    },
+    issue:
+      "box-js observed the script relaunching itself via WScript/CScript (a " +
+      "self-referential re-invocation of the sample). This is anti-emulation: the outer " +
+      "script only re-launches itself, so box-js deflects and never reaches the payload. " +
+      "Values built at runtime (C2 URLs, config, decoded strings) are very likely NOT " +
+      "recovered by this run or by static deobfuscation (webcrack) — even though box-js " +
+      "emulated without erroring and reported no network IOCs.",
+    remediation:
+      "Do not read the absence of network IOCs as 'no C2'. Pivot to a method that runs the " +
+      "real relaunched instance: AMSI script-block logging on a Windows host/VM (the decoded " +
+      "payload surfaces in Event Viewer / Sysmon Event ID 4104), or manually resolve the " +
+      "runtime string-building routine (String.fromCharCode / XOR loops) in the webcrack " +
+      "output to reconstruct the assembled URL.",
+  },
+  {
     name: "yara-family-attribution",
     priority: 7,
     shouldApply: (ctx) => {

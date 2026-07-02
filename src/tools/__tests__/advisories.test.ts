@@ -186,6 +186,43 @@ describe("advisories", () => {
       expect(advisories).toEqual([]);
     });
 
+    it("detects box-js-self-relaunch anti-emulation from the WScript re-invocation", () => {
+      // The exact signature box-js emits for a self-relaunch (observed on SiriusRAT).
+      const context: AdvisoryContext = {
+        toolsRun: [
+          {
+            name: "box-js",
+            exit_code: 0,
+            output:
+              "[info] IOC: The script ran the command " +
+              "'C:\\WINDOWS\\Sysnative\\wscript.exe \"C:Users\\Sysop12\\AppData\\Roaming\\" +
+              "Microsoft\\Templates\\CURRENT_SCRIPT_IN_FAKED_DIR.js\"'.",
+          },
+        ],
+        toolsFailed: [],
+        category: "JavaScript",
+      };
+
+      const advisories = evaluateAdvisories(context);
+      const names = advisories.map((a) => a.name);
+      expect(names).toContain("box-js-self-relaunch");
+      const a = advisories.find((x) => x.name === "box-js-self-relaunch")!;
+      expect(a.remediation).toMatch(/AMSI/);
+    });
+
+    it("does not trigger box-js-self-relaunch on a clean box-js run", () => {
+      const context: AdvisoryContext = {
+        toolsRun: [
+          { name: "box-js", exit_code: 0, output: "[info] IOC: urls: hxxp://evil[.]com/x" },
+        ],
+        toolsFailed: [],
+        category: "JavaScript",
+      };
+      expect(
+        evaluateAdvisories(context).some((a) => a.name === "box-js-self-relaunch")
+      ).toBe(false);
+    });
+
     it("does not trigger box-js-stall on setTimeout in box-js output", () => {
       const context: AdvisoryContext = {
         toolsRun: [
