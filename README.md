@@ -255,7 +255,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `run_tool` | Execute a command in REMnux (supports piped commands) |
 | `get_file_info` | Get file type, hashes (SHA256, MD5), basic metadata |
 | `list_files` | List files in samples or output directory |
-| `extract_archive` | Extract .zip, .7z, .rar archives with automatic password detection |
+| `extract_archive` | Extract .zip, .7z, .rar archives with automatic password detection (`infected`, `malware`, `virus`). Handles WinZip AES-256 .zip and header-encrypted .7z (`-mhe=on`) by routing to 7z automatically |
 | `upload_from_host` | Upload a file from the host to the samples directory (200MB limit) |
 | `download_from_url` | Download a file from a URL into the samples directory |
 | `download_file` | Download a file from the output directory to the host (password-protected archive by default; password: `infected`) |

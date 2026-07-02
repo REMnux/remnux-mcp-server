@@ -96,6 +96,18 @@ export const FILE_TYPE_CATEGORIES: FileTypeCategory[] = [
     name: "PCAP",
     patterns: [/pcap capture/i, /tcpdump/i, /pcapng/i, /pcap-ng/i],
   },
+  // Archive must come AFTER OOXML and JAR: those are zip-based too, and their
+  // more specific patterns (and the OOXML zip-archive extension fallback below)
+  // win first. Only unambiguous archive signatures match here — a bare "Zip
+  // archive data" is left to the extension fallback so a .docx is not misrouted.
+  {
+    name: "Archive",
+    patterns: [
+      /7-zip archive data/i,
+      /RAR archive data/i,
+      /Zip archive.*(AES|encrypt)/i, // WinZip AES .zip — never an OOXML doc
+    ],
+  },
 ];
 
 /** Maps category names to their primary registry tag. */
@@ -116,6 +128,7 @@ export const CATEGORY_TAG_MAP: Record<string, string> = {
   Email: "email",
   APK: "apk",
   PCAP: "pcap",
+  Archive: "fallback",
   Memory: "memory",
   Shellcode: "shellcode",
   DataWithPEExtension: "data-exe",
@@ -148,6 +161,9 @@ const OOXML_EXTENSIONS = /\.(docx|docm|xlsx|xlsm|pptx|pptm)$/i;
 
 /** OLE2 macro-enabled extensions that `file` may misidentify. */
 const OLE2_EXTENSIONS = /\.(doc|xls|ppt)$/i;
+
+/** Archive extensions handled by extract_archive (after OOXML/JAR take precedence). */
+const ARCHIVE_EXTENSIONS = /\.(zip|7z|rar)$/i;
 
 /**
  * Match `file` command output to a category. Returns the first match or fallback.
@@ -184,6 +200,12 @@ export function matchFileType(fileOutput: string, filename?: string): FileTypeCa
     if (OOXML_EXTENSIONS.test(filename)) {
       return FILE_TYPE_CATEGORIES.find((c) => c.name === "OOXML")!;
     }
+  }
+
+  // Fallback: plain .zip/.7z/.rar that didn't match a more specific format above
+  // (OOXML, JAR). Reached after the OOXML check so office docs still win.
+  if (filename && ARCHIVE_EXTENSIONS.test(filename)) {
+    return FILE_TYPE_CATEGORIES.find((c) => c.name === "Archive")!;
   }
 
   // Fallback: if filename has OLE2 extension and `file` output is ambiguous (e.g., "data", "CDF")

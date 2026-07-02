@@ -120,11 +120,19 @@ export async function handleExtractArchive(
         password_used: result.password || "(none - archive was not encrypted)",
       }, startTime);
     } else {
+      // Give a password-specific, actionable suggestion when the failure was a
+      // wrong/absent password, rather than the generic "corrupted archive" hint.
+      const isPasswordFailure = /password/i.test(result.error || "");
+      const suggestion = isPasswordFailure
+        ? "The archive is password-protected with a password not in the auto-detect list (infected, malware, virus). " +
+          "If you know the password — it is often in the email or context that delivered the sample — pass it as the 'password' argument. " +
+          "WinZip AES-256 .zip and header-encrypted .7z are supported, so a supported format is not the issue here."
+        : "Check that the archive is valid and not corrupted";
       return formatError("extract_archive", new REMnuxError(
         result.error || "Extraction failed",
         "EXTRACTION_FAILED",
         "tool_failure",
-        "Check that the archive is valid and not corrupted",
+        suggestion,
       ), startTime);
     }
   } catch (error) {

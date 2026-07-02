@@ -98,6 +98,10 @@ export function generateNextSteps(
       steps.push("Dump suspicious process: run_tool command='vol3 -f <file> windows.memmap --pid <pid> --dump'");
       steps.push("Extract injected code: run_tool command='vol3 -f <file> windows.malfind --dump'");
       break;
+    case "Archive":
+      steps.push("Unpack with the extract_archive tool (not raw unzip) — it auto-tries malware passwords (infected, malware, virus) and handles WinZip AES-256 .zip and header-encrypted .7z (-mhe=on) via 7z");
+      steps.push("After extraction, run analyze_file or suggest_tools on each extracted file to continue analysis");
+      break;
   }
 
   // NOTE: Cross-tool conditions like "autoit-ripper failed + diec detected AutoIt"

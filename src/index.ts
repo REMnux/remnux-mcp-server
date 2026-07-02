@@ -147,7 +147,7 @@ export async function createServer(config: ServerConfig) {
   // Tool: extract_archive - Extract files from compressed archives
   server.tool(
     "extract_archive",
-    "Extract files from a compressed archive (.zip, .7z, .rar). Automatically tries common malware passwords if the archive is password-protected. Returns list of extracted files.",
+    "Extract files from a compressed archive (.zip, .7z, .rar), including WinZip AES-256 .zip and header-encrypted .7z (-mhe=on) — these route through 7z automatically. Tries a supplied password first, then common malware passwords (infected, malware, virus) if the archive is password-protected. Returns list of extracted files.",
     extractArchiveSchema.shape,
     (args) => handleExtractArchive(deps, args)
   );

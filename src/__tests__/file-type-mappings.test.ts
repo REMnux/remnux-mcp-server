@@ -170,9 +170,37 @@ describe("matchFileType", () => {
     expect(result.name).toBe("OOXML");
   });
 
-  it("does not classify Zip archive as OOXML without matching filename", () => {
-    const result = matchFileType("sample.zip: Zip archive data", "sample.zip");
-    expect(result.name).toBe("Unknown");
+  it("classifies a plain .zip as Archive (not OOXML, not Unknown)", () => {
+    const result = matchFileType("sample.zip: Zip archive data, at least v2.0 to extract", "sample.zip");
+    expect(result.name).toBe("Archive");
+  });
+
+  it("classifies a WinZip AES-256 .zip as Archive via the encryption signature", () => {
+    // Unambiguous archive: matched by primary pattern even without a filename.
+    const result = matchFileType(
+      "x: Zip archive data, at least v5.1 to extract, compression method=AES Encrypted"
+    );
+    expect(result.name).toBe("Archive");
+  });
+
+  it("classifies a .7z as Archive", () => {
+    const result = matchFileType("sample.7z: 7-zip archive data, version 0.4", "sample.7z");
+    expect(result.name).toBe("Archive");
+  });
+
+  it("classifies a .rar as Archive", () => {
+    const result = matchFileType("sample.rar: RAR archive data, v5", "sample.rar");
+    expect(result.name).toBe("Archive");
+  });
+
+  it("still classifies a zip-based .docx as OOXML, not Archive", () => {
+    const result = matchFileType("report.docx: Zip archive data", "report.docx");
+    expect(result.name).toBe("OOXML");
+  });
+
+  it("still classifies a Java archive as JAR, not Archive", () => {
+    const result = matchFileType("app.jar: Java archive data (JAR)", "app.jar");
+    expect(result.name).toBe("JAR");
   });
 
   it("matches .NET assemblies as DOTNET (Mono/.Net)", () => {

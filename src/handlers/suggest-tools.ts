@@ -132,6 +132,14 @@ const BASE_HINTS: Record<string, string> = {
     "msgconvert converts Outlook MSG files to EML format for analysis with emldump. " +
     "Look for notable attachments, embedded URLs, and header anomalies. " +
     "Extract attachments for further analysis with appropriate tools.",
+  Archive:
+    "Compressed or password-protected archive detected. Use the extract_archive tool to unpack it — do NOT reach for raw unzip via run_tool. " +
+    "extract_archive auto-tries the common malware passwords (infected, malware, virus), enforces zip-slip/path-traversal protection, and " +
+    "handles WinZip AES-256 .zip and header-encrypted .7z (-mhe=on) by routing to 7z automatically. Info-ZIP unzip alone silently fails on " +
+    "AES-256 zips (it skips the entries and still exits 0), which is why raw unzip is the wrong choice here. " +
+    "If you already know the password, pass it as the password argument; otherwise let the auto-detection run. " +
+    "After extraction, call suggest_tools or analyze_file on each extracted file to continue analysis. " +
+    "For triage of the archive container itself, ssdeep gives a fuzzy hash and exiftool shows metadata.",
   APK:
     "apkid identifies compilers, packers, and obfuscators — use it for triage alongside droidlysis to understand what protections are applied. " +
     "apktool decompiles the APK to smali and extracts resources. " +

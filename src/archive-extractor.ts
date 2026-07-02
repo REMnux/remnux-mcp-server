@@ -3,6 +3,8 @@
  *
  * Supports .zip, .7z, and .rar archives with automatic password detection.
  * Passwords are tried from a configurable list for malware sample archives.
+ * Info-ZIP unzip cannot decrypt WinZip AES .zip (it skips the entry and exits
+ * 0), so those fall back to 7z, which also opens header-encrypted .7z (-mhe=on).
  */
 
 import { readFileSync } from "fs";
@@ -124,6 +126,23 @@ export function getExtractionCommand(
     default:
       throw new Error(`Unsupported archive type: ${archiveType}`);
   }
+}
+
+/**
+ * Detect the one case where Info-ZIP `unzip` silently fails: a WinZip AES
+ * encrypted .zip. `unzip` (6.00) cannot decrypt AES entries — it *skips* them
+ * and still exits 0, so the extraction looks successful but yields no files.
+ * 7-Zip handles both WinZip AES and traditional ZipCrypto, so when we see these
+ * markers we retry the same password with 7z. Matching is on the skip markers
+ * (not merely "0 files") so a legitimately empty archive is not misrouted.
+ */
+export function isUnsupportedZipEncryption(result: ExecResult): boolean {
+  const output = (result.stderr + result.stdout).toLowerCase();
+  return (
+    output.includes("need pk compat") ||             // "need PK compat. v5.1 (can do v4.6)"
+    output.includes("unsupported compression method") ||
+    (output.includes("skipping:") && output.includes("encrypted"))
+  );
 }
 
 /**
@@ -455,7 +474,17 @@ export async function extractArchive(
   for (const password of passwordsToTry) {
     try {
       const cmd = getExtractionCommand(archiveType, archivePath, outputDir, password);
-      const result = await connector.execute(cmd, { timeout: 120000 });
+      let result = await connector.execute(cmd, { timeout: 120000 });
+
+      // WinZip AES .zip fallback: unzip cannot decrypt AES entries — it skips
+      // them and exits 0. When we detect that, retry this same password with 7z,
+      // which handles both WinZip AES and traditional ZipCrypto. 7z also opens
+      // header-encrypted .7z (-mhe=on) via the normal 7z path, so this fallback
+      // is only needed for .zip.
+      if (archiveType === "zip" && isUnsupportedZipEncryption(result)) {
+        const cmd7z = getExtractionCommand("7z", archivePath, outputDir, password);
+        result = await connector.execute(cmd7z, { timeout: 120000 });
+      }
 
       if (result.exitCode === 0) {
         // Success! List extracted files
