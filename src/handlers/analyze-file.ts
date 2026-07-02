@@ -68,6 +68,7 @@ export function generateNextSteps(
       }
       steps.push("For dynamic analysis: use run_tool with 'speakeasy -t <file>' to emulate execution");
       steps.push("Extract strings: run_tool command='pestr <file>' (extracts both ASCII and Unicode with section info)");
+      steps.push("If this is a self-extracting archive (SFX/dropper): run_tool command='7z l <file>' to list embedded contents, then 'run_tool command=7z x <file> -o%OUTPUT%/sfx -y' to unpack them");
       break;
     case "PDF":
       steps.push("Extract suspicious objects: run_tool command='pdf-parser.py -o <obj_num> -d <file>'");

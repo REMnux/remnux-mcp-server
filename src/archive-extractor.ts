@@ -29,6 +29,13 @@ export interface ExtractionResult {
  * Detect archive type from filename extension
  */
 export function detectArchiveType(filename: string): ArchiveType {
+  const lower = filename.toLowerCase();
+  // Multi-volume FIRST part: 7z extracts the whole set when pointed at the .001
+  // volume (verified for both split .7z and split .zip). A first-part .part1.rar
+  // is caught by the .rar case below and handled by unrar/7z.
+  if (/\.(7z|zip)\.001$/.test(lower)) {
+    return "7z";
+  }
   const ext = extname(filename).toLowerCase();
   switch (ext) {
     case ".zip":
@@ -40,6 +47,46 @@ export function detectArchiveType(filename: string): ArchiveType {
     default:
       return null;
   }
+}
+
+/**
+ * Detect a NON-first volume of a multi-volume (split) archive and return
+ * guidance, or null if the filename is not a trailing part. Extraction must
+ * start from the first volume with every part present in the same directory, so
+ * pointing a tool at a trailing part fails in a way that looks like a wrong
+ * password or a corrupt file. Recognizing it lets us give the right advice.
+ */
+export function describeMultiVolumePart(filename: string): string | null {
+  const lower = filename.toLowerCase();
+  let firstVolume: string | null = null;
+
+  // Split .7z / .zip: name.7z.002, name.zip.017 (first is .001)
+  const numbered = lower.match(/\.((?:7z|zip))\.(\d{3})$/);
+  if (numbered && numbered[2] !== "001") {
+    firstVolume = filename.replace(/\.\d{3}$/, ".001");
+  }
+  // Split-zip data parts: name.z01 .. name.zNN (the .zip file is the last part)
+  else if (/\.z\d{2}$/i.test(lower)) {
+    firstVolume = filename.replace(/\.z\d{2}$/i, ".zip") + " (the .zip is the final part; keep every .zNN alongside it)";
+  }
+  // Old-style split RAR: name.r00 .. name.rNN (first is the .rar)
+  else if (/\.r\d{2}$/i.test(lower)) {
+    firstVolume = filename.replace(/\.r\d{2}$/i, ".rar");
+  }
+  // New-style split RAR: name.part2.rar, name.part03.rar (first is .part1/.part01)
+  else {
+    const partN = lower.match(/\.part0*(\d+)\.rar$/);
+    if (partN && partN[1] !== "1") {
+      firstVolume = filename.replace(/\.part0*\d+\.rar$/i, ".part1.rar");
+    }
+  }
+
+  if (!firstVolume) return null;
+  return (
+    `This looks like a trailing volume of a multi-volume (split) archive. ` +
+    `Make sure every part is present in the same directory, then point extract_archive at the first volume (${firstVolume}). ` +
+    `7z and unrar reassemble the set automatically from the first part.`
+  );
 }
 
 /**
@@ -365,11 +412,22 @@ async function listArchiveEntries(
     if (result.exitCode !== 0) return [];
 
     if (archiveType === "7z") {
-      // 7z -slt outputs "Path = filename" lines
+      // 7z -slt outputs "Path = filename" lines. For a multi-volume set, 7z also
+      // lists the archive's own volume containers (e.g. "…/name.7z.001" and the
+      // logical "name.7z") as Path entries. Invoked with an absolute archivePath
+      // those come back absolute and would trip the "starts with /" zip-slip
+      // pre-check — a false positive, since they are the container, not content.
+      // Drop the self-references; real traversal entries are unaffected.
+      const archiveBase = basename(archivePath);              // name.7z.001
+      const logicalBase = archiveBase.replace(/\.\d{3}$/, ""); // name.7z
       return result.stdout
         .split("\n")
         .filter((l) => l.startsWith("Path = "))
-        .map((l) => l.slice(7).trim());
+        .map((l) => l.slice(7).trim())
+        .filter((entry) => {
+          const b = basename(entry);
+          return b !== archiveBase && b !== logicalBase;
+        });
     }
 
     return result.stdout

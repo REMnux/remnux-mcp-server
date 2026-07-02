@@ -1,7 +1,7 @@
 import type { HandlerDeps } from "./types.js";
 import type { ExtractArchiveArgs } from "../schemas/tools.js";
 import { validateFilePath } from "../security/blocklist.js";
-import { extractArchive, detectArchiveType } from "../archive-extractor.js";
+import { extractArchive, detectArchiveType, describeMultiVolumePart } from "../archive-extractor.js";
 import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
@@ -79,6 +79,18 @@ export async function handleExtractArchive(
     }
   }
 
+  // Multi-volume trailing part: point the agent at the first volume instead of
+  // failing later with a misleading wrong-password/corrupt error.
+  const multiVolume = describeMultiVolumePart(args.archive_file);
+  if (multiVolume) {
+    return formatError("extract_archive", new REMnuxError(
+      "Archive is a trailing volume of a multi-volume set",
+      "MULTI_VOLUME_PART",
+      "validation",
+      multiVolume,
+    ), startTime);
+  }
+
   // Verify archive type is supported
   const archiveType = detectArchiveType(args.archive_file);
   if (!archiveType) {
@@ -124,9 +136,10 @@ export async function handleExtractArchive(
       // wrong/absent password, rather than the generic "corrupted archive" hint.
       const isPasswordFailure = /password/i.test(result.error || "");
       const suggestion = isPasswordFailure
-        ? "The archive is password-protected with a password not in the auto-detect list (infected, malware, virus). " +
+        ? "Most likely the archive is password-protected with a password not in the auto-detect list (infected, malware, virus). " +
           "If you know the password — it is often in the email or context that delivered the sample — pass it as the 'password' argument. " +
-          "WinZip AES-256 .zip and header-encrypted .7z are supported, so a supported format is not the issue here."
+          "WinZip AES-256 .zip and header-encrypted .7z are supported, so a supported format is not the issue. " +
+          "If you are confident the password is correct, the archive may instead be corrupt, truncated (an incomplete download), or a multi-volume set with parts missing — check the file size and that any sibling volumes are present."
         : "Check that the archive is valid and not corrupted";
       return formatError("extract_archive", new REMnuxError(
         result.error || "Extraction failed",
