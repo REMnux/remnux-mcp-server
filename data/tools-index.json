@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-07-02",
+  "updated": "2026-07-14",
   "tools": [
     {
       "command": "1768",
@@ -652,6 +652,13 @@
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Deobfuscate JavaScript by removing common obfuscation techniques such as string arrays and proxy functions.",
       "website": "https://github.com/ben-sb/javascript-deobfuscator"
+    },
+    {
+      "command": "js_unshroud",
+      "name": "js_unshroud",
+      "category": "Dynamically Reverse-Engineer Code: Scripts",
+      "description": "Monitor and deobfuscate JavaScript behavior in a headless browser to analyze malicious web pages.",
+      "website": "https://github.com/edygert/js_unshroud"
     },
     {
       "command": "jstillery",
