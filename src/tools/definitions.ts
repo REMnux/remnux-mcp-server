@@ -741,6 +741,39 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     // rather than auto-running on every JavaScript sample.
     requiresUserArgs: true,
   },
+  {
+    name: "js_unshroud",
+    description:
+      "Observe JavaScript behavior on a LIVE web page: loads the URL in an instrumented Playwright Chromium browser " +
+      "and records runtime events (executed scripts, deobfuscated code, network activity) to a JSONL file. " +
+      "Unlike the file-based JavaScript tools, it analyzes a URL, not a local file — use it when the sample is a " +
+      "malicious page or when deobfuscation reveals a next-stage URL. In the invocation template, replace <file> " +
+      "with the URL, and prefix the command with 'xvfb-run -a' — the tool needs a display, and systems reached " +
+      "through this server are typically headless. It can exit 0 even when the browser fails to launch " +
+      "('Error during monitoring ... browser has been closed' indicates the missing display — re-run under " +
+      "xvfb-run), so confirm the events file has content before drawing conclusions. Summarize captured events " +
+      "with 'js_unshroud analyze --input <events.jsonl> --format stats'; the query and correlate subcommands " +
+      "drill down further (all three read the local JSONL and need no display). OPSEC: the run subcommand visits " +
+      "live adversary infrastructure from your analysis network; see get_osint_guidance topic='tradecraft' " +
+      "before touching attacker-controlled URLs.",
+    command: "js_unshroud",
+    inputStyle: "flag",
+    inputFlag: "--url",
+    fixedArgs: ["run"],
+    suffixArgs: ["--out", "%OUTPUT%/js_unshroud-events.jsonl"],
+    outputFormat: "text",
+    timeout: 300,
+    tags: ["javascript"],
+    // URL-input tool: analyze_file must never point it at a local file path,
+    // so requiresUserArgs keeps it out of every automated chain regardless of tier.
+    tier: "deep",
+    requiresUserArgs: true,
+    // Bare invocation prints usage; the default --help/-h probes are not needed.
+    // No exitCodeHints: the tool exits 0 even on browser-launch failure, so the
+    // failure signal (documented in the description) is stderr text plus an
+    // empty events file, never the exit code.
+    helpArgs: [],
+  },
 
   // ── Script / text analysis ──────────────────────────────────────────────
   {
