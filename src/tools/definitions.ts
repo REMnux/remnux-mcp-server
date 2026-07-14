@@ -748,10 +748,10 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       "and records runtime events (executed scripts, deobfuscated code, network activity) to a JSONL file. " +
       "Unlike the file-based JavaScript tools, it analyzes a URL, not a local file — use it when the sample is a " +
       "malicious page or when deobfuscation reveals a next-stage URL. In the invocation template, replace <file> " +
-      "with the URL, and prefix the command with 'xvfb-run -a' — the tool needs a display, and systems reached " +
-      "through this server are typically headless. It can exit 0 even when the browser fails to launch " +
-      "('Error during monitoring ... browser has been closed' indicates the missing display — re-run under " +
-      "xvfb-run), so confirm the events file has content before drawing conclusions. Summarize captured events " +
+      "with the URL. The run subcommand needs a display: current REMnux versions start a virtual one " +
+      "automatically via the tool's wrapper; on older installs prefix the command with 'xvfb-run -a'. It can " +
+      "exit 0 even when the browser fails to launch or dies mid-capture, so confirm the events file has " +
+      "content before drawing conclusions. Summarize captured events " +
       "with 'js_unshroud analyze --input <events.jsonl> --format stats'; the query and correlate subcommands " +
       "drill down further (all three read the local JSONL and need no display). OPSEC: the run subcommand visits " +
       "live adversary infrastructure from your analysis network; see get_osint_guidance topic='tradecraft' " +

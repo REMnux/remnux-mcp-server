@@ -62,6 +62,69 @@ function getCommandAdvisory(command: string): string | undefined {
 }
 
 /**
+ * Output-conditioned advisories: fire on failure evidence in the tool's
+ * output rather than on command shape. Non-blocking — attached to the
+ * response as `output_advisory` after execution. Use for tools whose exit
+ * code cannot be trusted to reflect failure.
+ */
+interface OutputAdvisoryContext {
+  command: string;
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
+
+interface OutputAdvisoryPattern {
+  matches: (ctx: OutputAdvisoryContext) => boolean;
+  advisory: string;
+}
+
+// An actual js_unshroud capture invocation: the executable (wrapper, full or
+// quoted path, or raw js_unshroud-linux-x64 binary) followed by the `run`
+// subcommand. Requiring `run` keeps textual mentions (grep js_unshroud ...)
+// and the display-free subcommands (analyze/query/correlate) from matching.
+const JS_UNSHROUD_RUN_CMD = /(^|[/\s'"])js_unshroud(-linux-x64)?['"]?\s+run(\s|$)/;
+
+// js_unshroud's own monitoring-error banner (line-anchored, so a negated
+// mention like "No error during monitoring" cannot match) plus Playwright's
+// standard launch-failure phrasings. The command gate keeps these patterns
+// from firing on other tools' output.
+const JS_UNSHROUD_FAILURE_OUTPUT =
+  /(^|\n)\s*Error during monitoring|browser has been closed|browserType\.launch|Failed to launch (chromium|browser)|Missing X server|missing dependencies to run browsers/i;
+
+const OUTPUT_ADVISORY_PATTERNS: OutputAdvisoryPattern[] = [
+  {
+    // js_unshroud can exit 0 even when its Playwright browser fails to launch
+    // or dies mid-capture, so a successful-looking run may have recorded
+    // little or nothing.
+    matches: ({ command, stdout, stderr }) =>
+      JS_UNSHROUD_RUN_CMD.test(command.trim()) &&
+      (JS_UNSHROUD_FAILURE_OUTPUT.test(stdout) ||
+        JS_UNSHROUD_FAILURE_OUTPUT.test(stderr)),
+    advisory:
+      "POSSIBLE CAPTURE FAILURE despite the exit code: js_unshroud reported a browser " +
+      "or monitoring error, so the events file may be empty or incomplete — verify it " +
+      "has events (e.g. 'wc -l <out.jsonl>') before relying on the capture. If the " +
+      "browser failed to launch on a headless system, the usual cause is a missing " +
+      "display: current REMnux versions start a virtual display automatically via the " +
+      "js_unshroud wrapper; on older installs re-run as 'xvfb-run -a js_unshroud run " +
+      "...' (install xvfb if absent) or refresh the system with 'remnux install'.",
+  },
+];
+
+/**
+ * Scan the pre-truncation, pre-filter output so the failure signal cannot be
+ * cut off by response budgets or stderr noise filtering. Collects every
+ * matching advisory rather than stopping at the first.
+ */
+function getOutputAdvisory(ctx: OutputAdvisoryContext): string | undefined {
+  const matched = OUTPUT_ADVISORY_PATTERNS.filter((p) => p.matches(ctx));
+  return matched.length > 0
+    ? matched.map((p) => p.advisory).join("\n")
+    : undefined;
+}
+
+/**
  * Check if a command matches a discouraged pattern.
  * Returns the pattern if matched, undefined otherwise.
  */
@@ -203,6 +266,15 @@ export async function handleRunTool(
     // Check for advisory (non-blocking guidance)
     const advisory = getCommandAdvisory(fullCommand);
 
+    // Output-conditioned advisory (tools that exit 0 on failure); scans the
+    // raw output, not the truncated/filtered copy sent in the response
+    const outputAdvisory = getOutputAdvisory({
+      command: fullCommand,
+      stdout: result.stdout ?? "",
+      stderr: result.stderr ?? "",
+      exitCode: result.exitCode,
+    });
+
     return formatResponse("run_tool", {
       command: fullCommand,
       stdout,
@@ -215,6 +287,7 @@ export async function handleRunTool(
       }),
       ...(findings && { findings, parsed_metadata: parsedMetadata }),
       ...(advisory && { advisory }),
+      ...(outputAdvisory && { output_advisory: outputAdvisory }),
     }, startTime);
   } catch (error) {
     return formatError("run_tool", toREMnuxError(error, config.mode), startTime);

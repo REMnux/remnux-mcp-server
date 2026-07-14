@@ -117,8 +117,9 @@ const BASE_HINTS: Record<string, string> = {
     "When the JavaScript lives on a live web page — or deobfuscation reveals a next-stage URL — js_unshroud " +
     "loads the URL in an instrumented Playwright browser and records runtime behavior (executed scripts, " +
     "deobfuscated code, network activity) as JSONL events: run_tool command=\"xvfb-run -a js_unshroud run " +
-    "--url <url> --out %OUTPUT%/js_unshroud-events.jsonl\" (xvfb-run is required on headless systems; the run " +
-    "can exit 0 even when the browser fails to launch, so confirm the JSONL has events). Then summarize with " +
+    "--url <url> --out %OUTPUT%/js_unshroud-events.jsonl\" (current REMnux versions start a virtual display " +
+    "automatically, and the xvfb-run -a prefix is harmless there but required on older installs; the run can " +
+    "exit 0 even when the browser fails to launch, so confirm the JSONL has events). Then summarize with " +
     "run_tool command=\"js_unshroud analyze --input %OUTPUT%/js_unshroud-events.jsonl --format stats\" and " +
     "drill down with its query/correlate subcommands. It takes URLs, not local files, and it contacts the " +
     "live site — weigh OPSEC (get_osint_guidance topic='tradecraft') before visiting adversary infrastructure.",

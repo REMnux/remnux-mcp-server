@@ -234,6 +234,153 @@ describe("handleRunTool", () => {
       expect(env.data.advisory).toContain("pestr");
     });
 
+    it("returns output_advisory when js_unshroud browser fails to launch (exit 0)", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue({
+        stdout: "",
+        stderr:
+          "Error during monitoring: ...\nerror: launch: Target page, context or browser has been closed",
+        exitCode: 0,
+      });
+
+      const result = await handleRunTool(deps, {
+        command: "js_unshroud run --url https://example.com --out /tmp/e.jsonl",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true);
+      expect(env.data.exit_code).toBe(0);
+      expect(env.data.output_advisory).toContain("POSSIBLE CAPTURE FAILURE");
+      expect(env.data.output_advisory).toContain("xvfb-run");
+    });
+
+    it("returns output_advisory when only 'Error during monitoring' appears", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue({
+        stdout: "Error during monitoring: something failed",
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const result = await handleRunTool(deps, {
+        command: "xvfb-run -a js_unshroud run --url https://example.com --out e.jsonl",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.data.output_advisory).toContain("POSSIBLE CAPTURE FAILURE");
+    });
+
+    it("returns output_advisory for the raw binary path invocation", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue({
+        stdout: "",
+        stderr: "browserType.launch: Failed to launch chromium",
+        exitCode: 0,
+      });
+
+      const result = await handleRunTool(deps, {
+        command:
+          "/opt/js_unshroud/js_unshroud-linux-x64 run --url https://example.com --out e.jsonl",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.data.output_advisory).toContain("POSSIBLE CAPTURE FAILURE");
+    });
+
+    it("scans pre-truncation output for the failure signal", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      // Failure text sits past the 100KB stdout response budget
+      const bigStdout = "x".repeat(101 * 1024) + "\nError during monitoring: launch failed";
+      vi.mocked(deps.connector.executeShell).mockResolvedValue({
+        stdout: bigStdout,
+        stderr: "",
+        exitCode: 0,
+      });
+
+      const result = await handleRunTool(deps, {
+        command: "js_unshroud run --url https://example.com --out e.jsonl",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.data.truncated).toBe(true);
+      expect(env.data.stdout).not.toContain("Error during monitoring");
+      expect(env.data.output_advisory).toContain("POSSIBLE CAPTURE FAILURE");
+    });
+
+    it("does not fire when js_unshroud is mentioned but not invoked", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      // grep over saved logs that themselves contain a failure trace
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(
+        ok("saved.log:error: launch: Target page, context or browser has been closed"),
+      );
+
+      const result = await handleRunTool(deps, {
+        command: "grep -r js_unshroud /home/remnux/files/output/",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.data.output_advisory).toBeUndefined();
+    });
+
+    it("does not fire for display-free subcommands (analyze/query/correlate)", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue({
+        stdout: "",
+        stderr: "Error during monitoring: quoted in analyzed events",
+        exitCode: 0,
+      });
+
+      const result = await handleRunTool(deps, {
+        command: "js_unshroud analyze --input /tmp/e.jsonl --format stats",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.data.output_advisory).toBeUndefined();
+    });
+
+    it("fires on a nonzero exit code too", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue({
+        stdout: "",
+        stderr: "browserType.launch: Failed to launch browser",
+        exitCode: 1,
+      });
+
+      const result = await handleRunTool(deps, {
+        command: "js_unshroud run --url https://example.com --out e.jsonl",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.data.output_advisory).toContain("POSSIBLE CAPTURE FAILURE");
+    });
+
+    it("does not return output_advisory for a healthy js_unshroud run", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("capture complete"));
+
+      const result = await handleRunTool(deps, {
+        command: "js_unshroud run --url https://example.com --out /tmp/e.jsonl",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.success).toBe(true);
+      expect(env.data.output_advisory).toBeUndefined();
+    });
+
+    it("does not return output_advisory when another tool emits the same text", async () => {
+      const deps = createMockDeps({ noSandbox: true });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(
+        ok("log line: browser has been closed"),
+      );
+
+      const result = await handleRunTool(deps, {
+        command: "grep -r closed logs/",
+      });
+
+      const env = parseEnvelope(result);
+      expect(env.data.output_advisory).toBeUndefined();
+    });
+
     it("does not return advisory for pestr command", async () => {
       const deps = createMockDeps({ noSandbox: true });
       vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("output"));
