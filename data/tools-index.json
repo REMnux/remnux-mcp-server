@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-07-14",
+  "updated": "2026-07-21",
   "tools": [
     {
       "command": "1768",
@@ -1149,6 +1149,13 @@
       "category": "Use Artificial Intelligence",
       "description": "MCP server for using the REMnux malware analysis toolkit via AI assistants.",
       "website": "https://github.com/REMnux/remnux-mcp-server"
+    },
+    {
+      "command": "restrict-egress",
+      "name": "restrict-egress",
+      "category": "General Utilities",
+      "description": "Restrict the host's outbound network access to an allowlist of domains and CIDRs, using an nftables default-deny egress policy that survives reboots and re-resolves load-balanced endpoints.",
+      "website": "https://github.com/REMnux/distro/blob/master/files/restrict-egress"
     },
     {
       "command": "rhino-debugger",
