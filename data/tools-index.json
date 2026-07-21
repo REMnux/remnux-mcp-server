@@ -1154,7 +1154,7 @@
       "command": "restrict-egress",
       "name": "restrict-egress",
       "category": "General Utilities",
-      "description": "Restrict the host's outbound network access to an allowlist of domains and CIDRs, using an nftables default-deny egress policy that survives reboots and re-resolves load-balanced endpoints.",
+      "description": "Restrict the host's outbound network access to an allowlist of domains and CIDRs, using an nftables default-deny egress policy that survives reboots and re-resolves load-balanced endpoints. Requires systemd, so it runs on a host or VM only and is not functional inside containers.",
       "website": "https://github.com/REMnux/distro/blob/master/files/restrict-egress"
     },
     {
