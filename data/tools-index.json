@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-07-22",
+  "updated": "2026-07-23",
   "tools": [
     {
       "command": "1768",
@@ -743,6 +743,13 @@
       "category": "Examine Static Properties: PE Files",
       "description": "Perform static analysis of suspicious PE files.",
       "website": "https://github.com/JusticeRage/Manalyze"
+    },
+    {
+      "command": "mermaid-view",
+      "name": "Mermaid Viewer",
+      "category": "View or Edit Files",
+      "description": "View Mermaid diagrams, such as AI-generated code-analysis workflow diagrams, in a local browser.",
+      "website": "https://mermaid.js.org/"
     },
     {
       "command": "mitmproxy",
