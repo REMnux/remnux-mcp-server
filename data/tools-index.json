@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-07-23",
+  "updated": "2026-08-06",
   "tools": [
     {
       "command": "1768",
@@ -813,6 +813,13 @@
       "category": "Analyze Documents: Microsoft Office",
       "description": "Encrypt and decrypt OOXML Microsoft Office documents.",
       "website": "https://github.com/herumi/msoffice"
+    },
+    {
+      "command": "mutool",
+      "name": "mutool",
+      "category": "Analyze Documents: PDF",
+      "description": "Examine, convert, and manipulate PDF files, including extracting embedded streams and repairing malformed documents.",
+      "website": "https://mupdf.com"
     },
     {
       "command": "myip",
