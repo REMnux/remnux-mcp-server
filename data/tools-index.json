@@ -395,6 +395,13 @@
       "website": "https://www.epicsol.org/"
     },
     {
+      "command": "etl-parser",
+      "name": "etl-parser",
+      "category": "Gather and Analyze Data",
+      "description": "Parse Windows Event Trace Log (ETL) files.",
+      "website": "https://github.com/airbus-cert/etl-parser"
+    },
+    {
       "command": "evilclippy",
       "name": "EvilClippy",
       "category": "Analyze Documents: Microsoft Office",
