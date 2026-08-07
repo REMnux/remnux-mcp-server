@@ -200,6 +200,46 @@ describe("matchFileType", () => {
     expect(result.name).toBe("Archive");
   });
 
+  it("matches Windows Event Trace Logs as ETL via file magic", () => {
+    // Real `file` 5.45 output for a netsh-captured trace. No filename is
+    // passed, so this asserts the magic pattern itself — the extension
+    // fallback cannot mask a broken regex here.
+    const result = matchFileType(
+      'NetTrace.etl: Windows Event Trace Log "C:\\Users\\user\\AppData\\Local\\Temp\\NetTraces\\NetTrace.etl"',
+    );
+    expect(result.name).toBe("ETL");
+  });
+
+  it("content patterns still win over the .etl extension fallback", () => {
+    // A PE renamed to .etl must classify as PE — extension fallbacks only
+    // apply when no category pattern matched the `file` output.
+    const result = matchFileType(
+      "renamed.etl: PE32 executable (GUI) Intel 80386, for MS Windows",
+      "renamed.etl",
+    );
+    expect(result.name).toBe("PE");
+  });
+
+  it("classifies HFS-misidentified .etl traces as ETL via extension fallback", () => {
+    // Real `file` 5.45 output for a logman-captured AMSI trace: libmagic
+    // collides with the Apple HFS/HFS+ resource fork signature, so the
+    // extension fallback (deliberately not gated on "data") must win.
+    const result = matchFileType(
+      "AMSITrace.etl: Apple HFS/HFS+ resource fork, map offset 0x20020000, map length 0",
+      "AMSITrace.etl",
+    );
+    expect(result.name).toBe("ETL");
+  });
+
+  it("classifies .etl reported as data as ETL via extension fallback", () => {
+    expect(matchFileType("trace.etl: data", "trace.etl").name).toBe("ETL");
+  });
+
+  it("does not route non-.etl HFS resource forks to ETL", () => {
+    const result = matchFileType("rsrc: Apple HFS/HFS+ resource fork, map offset 0x100");
+    expect(result.name).toBe("Unknown");
+  });
+
   it("still classifies a zip-based .docx as OOXML, not Archive", () => {
     const result = matchFileType("report.docx: Zip archive data", "report.docx");
     expect(result.name).toBe("OOXML");

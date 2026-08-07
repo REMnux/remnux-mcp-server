@@ -165,6 +165,17 @@ const BASE_HINTS: Record<string, string> = {
     "Look for resolved API names, network connections, file system access, and registry modifications in emulation output. " +
     "For deep analysis, qltool (Qiling) provides multi-platform emulation and tracesc traces execution via Wine. " +
     "Use strings and xorsearch for static indicators before emulation.",
+  ETL:
+    "Windows Event Trace Log (ETL) detected. Start with etl2xml to convert the trace to XML, " +
+    "then inspect the events. This build decodes AMSI traces: search the XML for AmsiScript " +
+    "(TraceLogging captures) or Microsoft_Antimalware_Scan_Interface (manifest/logman captures) " +
+    "to recover the script content the antimalware engine scanned — an empty result means the " +
+    "trace holds no AMSI events, not that it is clean. etl2pcap extracts network packets when " +
+    "the trace contains Microsoft-Windows-NDIS-PacketCapture events (a 24-byte header-only pcap " +
+    "means none were present); to continue with the network toolchain, run tshark or capinfos " +
+    "on it directly via run_tool (e.g. run_tool command='capinfos %OUTPUT%/etl2pcap.pcap'), or " +
+    "copy it into the samples directory to use analyze_file. Note that `file` misidentifies some ETL variants " +
+    "(e.g. as an Apple HFS resource fork) — the .etl extension is the reliable signal.",
   Memory:
     "Memory image detected. Start with vol3-info to identify OS and kernel version. " +
     "vol3-pslist and vol3-pstree reveal running processes. " +

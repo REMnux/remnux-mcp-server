@@ -45,6 +45,9 @@ const KNOWN_ALIASES: Record<string, string> = {
   rtfobj: "oletools",
   // Volatility 3
   vol3: "volatility-framework",
+  // etl-parser package provides both ETL converters
+  etl2xml: "etl-parser",
+  etl2pcap: "etl-parser",
   // capinfos ships with the Wireshark/tshark package
   capinfos: "tshark",
   // Qiling framework

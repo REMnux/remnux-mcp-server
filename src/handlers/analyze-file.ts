@@ -99,6 +99,10 @@ export function generateNextSteps(
       steps.push("Dump suspicious process: run_tool command='vol3 -f <file> windows.memmap --pid <pid> --dump'");
       steps.push("Extract injected code: run_tool command='vol3 -f <file> windows.malfind --dump'");
       break;
+    case "ETL":
+      steps.push("Recover AMSI-scanned script content from the decoded trace: run_tool command='grep -B2 -A8 AmsiScript %OUTPUT%/etl2xml.xml' (manifest/logman captures log Microsoft_Antimalware_Scan_Interface events instead) — no matches means the trace holds no AMSI events, not that it is clean");
+      steps.push("If %OUTPUT%/etl2pcap.pcap is larger than the 24-byte empty header, triage the extracted packets: run_tool command='capinfos %OUTPUT%/etl2pcap.pcap', then tshark, or copy the pcap into the samples directory to run analyze_file on it");
+      break;
     case "Archive":
       steps.push("Unpack with the extract_archive tool (not raw unzip) — it auto-tries malware passwords (infected, malware, virus) and handles WinZip AES-256 .zip and header-encrypted .7z (-mhe=on) via 7z");
       steps.push("After extraction, run analyze_file or suggest_tools on each extracted file to continue analysis");

@@ -1335,6 +1335,37 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tier: "deep",
   },
 
+  // ── ETL (Windows Event Trace Log) analysis ──────────────────────────────
+  {
+    name: "etl2xml",
+    description:
+      "Convert a Windows Event Trace Log (ETL) file to XML for inspection. " +
+      "REMnux's build decodes AMSI events, recovering scanned script content from antimalware traces.",
+    command: "etl2xml",
+    inputStyle: "flag",
+    inputFlag: "-i",
+    suffixArgs: ["-o", "%OUTPUT%/etl2xml.xml"],
+    outputFormat: "text",
+    timeout: 300,
+    tags: ["etl"],
+    tier: "quick",
+  },
+  {
+    name: "etl2pcap",
+    description:
+      "Extract network packets from an ETL trace into a PCAP file. Only traces containing " +
+      "Microsoft-Windows-NDIS-PacketCapture events (e.g. from `netsh trace`) yield packets: " +
+      "a 24-byte header-only pcap means the trace holds no packet events, not that the tool failed.",
+    command: "etl2pcap",
+    inputStyle: "flag",
+    inputFlag: "-i",
+    suffixArgs: ["-o", "%OUTPUT%/etl2pcap.pcap"],
+    outputFormat: "text",
+    timeout: 300,
+    tags: ["etl"],
+    tier: "standard",
+  },
+
   // ── Cross-type / general ────────────────────────────────────────────────
   {
     name: "ssdeep",

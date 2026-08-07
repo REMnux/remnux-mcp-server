@@ -96,6 +96,10 @@ export const FILE_TYPE_CATEGORIES: FileTypeCategory[] = [
     name: "PCAP",
     patterns: [/pcap capture/i, /tcpdump/i, /pcapng/i, /pcap-ng/i],
   },
+  {
+    name: "ETL",
+    patterns: [/Windows Event Trace Log/i],
+  },
   // Archive must come AFTER OOXML and JAR: those are zip-based too, and their
   // more specific patterns (and the OOXML zip-archive extension fallback below)
   // win first. Only unambiguous archive signatures match here — a bare "Zip
@@ -128,6 +132,7 @@ export const CATEGORY_TAG_MAP: Record<string, string> = {
   Email: "email",
   APK: "apk",
   PCAP: "pcap",
+  ETL: "etl",
   Archive: "fallback",
   Memory: "memory",
   Shellcode: "shellcode",
@@ -146,6 +151,13 @@ const PYTHON_EXTENSIONS = /\.(pyc|pyo)$/i;
 
 /** PCAP file extensions — used as fallback for network captures. */
 const PCAP_EXTENSIONS = /\.(pcap|pcapng|cap)$/i;
+
+/** ETL file extensions — used as fallback for Windows Event Trace Logs.
+ * Not gated on `file` reporting "data": libmagic identifies some real ETL
+ * variants correctly ("Windows Event Trace Log") but misidentifies others —
+ * logman kernel-session captures can collide with the Apple HFS/HFS+ resource
+ * fork magic — so the extension must win whenever no category pattern matched. */
+const ETL_EXTENSIONS = /\.etl$/i;
 
 /** Memory image extensions — used as fallback when `file` reports "data". */
 const MEMORY_EXTENSIONS = /\.(img|raw|mem|vmem|dmp|lime)$/i;
@@ -219,6 +231,12 @@ export function matchFileType(fileOutput: string, filename?: string): FileTypeCa
   // Fallback: PCAP files — `file` may report "data" for some capture formats
   if (filename && PCAP_EXTENSIONS.test(filename)) {
     return FILE_TYPE_CATEGORIES.find((c) => c.name === "PCAP")!;
+  }
+
+  // Fallback: ETL traces — unconditional like PCAP (see ETL_EXTENSIONS comment:
+  // `file` misidentifies logman kernel-session captures as HFS resource forks)
+  if (filename && ETL_EXTENSIONS.test(filename)) {
+    return FILE_TYPE_CATEGORIES.find((c) => c.name === "ETL")!;
   }
 
   // Fallback: memory images — `file` reports "data" for raw memory dumps

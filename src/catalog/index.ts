@@ -26,6 +26,13 @@ export interface ToolsIndex {
 /**
  * Maps salt-states categories to MCP file-type category names.
  * Multiple salt-states categories can map to one MCP category.
+ *
+ * Deliberately unmapped: grab-bag salt categories such as "Gather and Analyze
+ * Data", "Perform Memory Forensics", and "Explore Network Interactions: *".
+ * Tools from those categories reach the AI through registry entries plus a
+ * file-type category instead (volatility3 → Memory, tshark → PCAP,
+ * etl-parser → ETL). Mapping a grab-bag category here would dump its unrelated
+ * tools into one file type's additional_tools — do not "fix" the omission.
  */
 const SALT_TO_MCP_CATEGORY: Record<string, string> = {
   // PE
