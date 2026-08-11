@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-08-06",
+  "updated": "2026-08-11",
   "tools": [
     {
       "command": "1768",
@@ -1114,6 +1114,13 @@
       "category": "Analyze Documents: PDF",
       "description": "Manipulate (merge, convert, transform) PDF files.",
       "website": "http://qpdf.sourceforge.net/"
+    },
+    {
+      "command": "r2decomp",
+      "name": "r2decomp",
+      "category": "Statically Analyze Code: General",
+      "description": "Decompile the function behind a capa match using radare2 and the Ghidra decompiler.",
+      "website": "https://github.com/lennyzeltser/r2decomp"
     },
     {
       "command": "r2pipe",
