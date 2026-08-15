@@ -53,6 +53,9 @@ export type AnalyzeFileArgs = z.input<typeof analyzeFileSchema>;
 export const checkToolsSchema = z.object({});
 export type CheckToolsArgs = z.infer<typeof checkToolsSchema>;
 
+export const getServerInfoSchema = z.object({});
+export type GetServerInfoArgs = z.infer<typeof getServerInfoSchema>;
+
 export const suggestToolsSchema = z.object({
   file: z.string().describe("Filename relative to samples directory, or absolute path in local mode"),
   depth: z.enum(["quick", "standard", "deep"]).optional().default("standard").describe(

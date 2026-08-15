@@ -662,3 +662,26 @@ describe("response envelope", () => {
     expect(envelope.metadata.elapsed_ms).toBeGreaterThanOrEqual(0);
   });
 });
+
+// =========================================================================
+// get_server_info
+// =========================================================================
+
+describe("get_server_info", () => {
+  it("is registered and reports the package version and connector mode over MCP", async () => {
+    vi.mocked(mockConnector.executeShell).mockResolvedValueOnce(ok("7.0.9\n"));
+
+    const tools = await client.listTools();
+    expect(tools.tools.map((t) => t.name)).toContain("get_server_info");
+
+    const { envelope, isError } = await callTool("get_server_info", {});
+    expect(isError).toBeFalsy();
+    expect(envelope.success).toBe(true);
+    expect(envelope.tool).toBe("get_server_info");
+    expect(envelope.data.connector_mode).toBe("docker");
+    expect(envelope.data.remnux_version).toBe("7.0.9");
+    // Version comes from package.json, the same source the McpServer identity uses.
+    expect(typeof envelope.data.server_version).toBe("string");
+    expect(envelope.data.server_version).toMatch(/^\d+\.\d+\.\d+/);
+  });
+});

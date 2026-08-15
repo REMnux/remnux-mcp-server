@@ -20,6 +20,7 @@ import {
   suggestToolsSchema,
   extractIOCsSchema,
   checkToolsSchema,
+  getServerInfoSchema,
   getToolHelpSchema,
   getReportTemplateSchema,
   getReportGuidanceSchema,
@@ -40,6 +41,7 @@ import { handleDownloadFile } from "./handlers/download-file.js";
 import { handleAnalyzeFile } from "./handlers/analyze-file.js";
 import { handleExtractIOCs } from "./handlers/extract-iocs.js";
 import { handleCheckTools } from "./handlers/check-tools.js";
+import { handleGetServerInfo } from "./handlers/get-server-info.js";
 import { handleSuggestTools } from "./handlers/suggest-tools.js";
 import { handleGetToolHelp } from "./handlers/get-tool-help.js";
 import { handleGetReportTemplate, handleGetReportGuidance } from "./handlers/report.js";
@@ -304,6 +306,16 @@ export async function createServer(config: ServerConfig) {
     "Check which REMnux analysis tools are installed and available. Returns a summary of installed vs missing tools across all file type categories.",
     checkToolsSchema.shape,
     () => handleCheckTools(deps)
+  );
+
+  // Tool: get_server_info - Server version, connector mode, REMnux version
+  server.tool(
+    "get_server_info",
+    "Report the remnux-mcp-server version, how it reaches REMnux (connector mode and transport), " +
+    "and the REMnux distro version on the target. Use for diagnostics and when documenting which " +
+    "server/REMnux versions produced an analysis.",
+    getServerInfoSchema.shape,
+    () => handleGetServerInfo(deps, pkgVersion)
   );
 
   // Tool: get_report_template - Bundled malware analysis report template (offline)
