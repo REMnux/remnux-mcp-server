@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-08-11",
+  "updated": "2026-08-17",
   "tools": [
     {
       "command": "1768",
@@ -1182,7 +1182,7 @@
       "command": "restrict-egress",
       "name": "restrict-egress",
       "category": "General Utilities",
-      "description": "Restrict outbound network access to an allowlist of domains and CIDRs using an nftables default-deny egress policy. It installs a persistent, self-refreshing lockdown on a VM or host, or enforces a one-shot lockdown inside a container with the apply command.",
+      "description": "Restrict outbound network access to an allowlist of domains and CIDRs using an nftables default-deny egress policy. It installs a persistent, self-refreshing lockdown on a VM or host, or enforces a one-shot lockdown inside a container with the apply command. Where dnsmasq and systemd-resolved are present, domain entries are coupled to DNS: a local dnsmasq inserts each answered IP into the allow set before the client sees it, so rotating load-balancer addresses never miss.",
       "website": "https://github.com/REMnux/distro/blob/master/files/restrict-egress"
     },
     {
