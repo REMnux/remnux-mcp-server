@@ -5,9 +5,9 @@ export const runToolSchema = z.object({
     "Command to execute (can include pipes, e.g., 'strings sample.exe | grep -i password'). " +
     "The server returns stdout whole up to 102,400 characters, so a trailing '| head -N' or '| tail -N' only " +
     "discards lines you would otherwise receive; narrow by content with grep when you want a subset. " +
-    "If a response sets truncated: true, follow its truncation_notice: it names the returned line range and a " +
-    "sed -n recipe for the rest, plus a redirect recipe using %OUTPUT%/<file> when an output directory is configured " +
-    "(the server replaces %OUTPUT% with that directory)."
+    "If a response sets truncated: true, follow its truncation_notice: the captured stdout is saved in the output " +
+    "directory as stdout_saved_file when an output directory is configured, and the notice gives a sed -n recipe on " +
+    "that file (or a redirect recipe) using %OUTPUT%/<file>, which the server replaces with that directory."
   ),
   input_file: z.string().optional().describe(
     "Input file path (relative to samples dir, or absolute path in local mode), appended as the final argument " +

@@ -553,6 +553,72 @@ describe("oversized-output contract", () => {
     });
   });
 
+  describe("spill-to-file on stdout truncation", () => {
+    const bigOut = () => "o".repeat(31) + "\n";
+    it("saves captured stdout under a hash name, reports stdout_saved_file, and points the recipe at the file", async () => {
+      const deps = createMockDeps({ noSandbox: true, outputDir: "/output" });
+      const big = bigOut().repeat(4000); // 128,000 chars, 4000 lines
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(big));
+      const env = parseEnvelope(await handleRunTool(deps, { command: "pestr", input_file: "sample.exe" }));
+      expect(env.data.stdout_truncated).toBe(true);
+      expect(env.data.stdout_saved_file).toMatch(/^run_tool-pestr-[0-9a-f]{12}\.stdout\.txt$/);
+      expect(deps.connector.writeFile).toHaveBeenCalledWith(`/output/${env.data.stdout_saved_file}`, Buffer.from(big, "utf-8"));
+      const notice: string = env.data.truncation_notice;
+      expect(notice).toContain(`'%OUTPUT%/${env.data.stdout_saved_file}'`);
+      expect(notice).toMatch(/sed -n '3201,\$p'/);          // 102400 / 32 = 3200 complete lines returned
+      expect(notice).toContain("saved");
+      expect(notice).not.toMatch(/re-run/i);                  // no need to re-run: the file exists
+      expect(notice).not.toMatch(/\bfull output\b/i);
+    });
+
+    it("uses the same file name for the same command (idempotent re-runs overwrite)", async () => {
+      const deps = createMockDeps({ noSandbox: true, outputDir: "/output" });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(bigOut().repeat(4000)));
+      const a = parseEnvelope(await handleRunTool(deps, { command: "pestr", input_file: "sample.exe" }));
+      const b = parseEnvelope(await handleRunTool(deps, { command: "pestr", input_file: "sample.exe" }));
+      const c = parseEnvelope(await handleRunTool(deps, { command: "pestr", input_file: "other.exe" }));
+      expect(a.data.stdout_saved_file).toBe(b.data.stdout_saved_file);
+      expect(c.data.stdout_saved_file).not.toBe(a.data.stdout_saved_file);
+    });
+
+    it("falls back to the re-run recipe when the write fails", async () => {
+      const deps = createMockDeps({ noSandbox: true, outputDir: "/output" });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(bigOut().repeat(4000)));
+      vi.mocked(deps.connector.writeFile).mockRejectedValue(new Error("EACCES"));
+      const env = parseEnvelope(await handleRunTool(deps, { command: "pestr", input_file: "sample.exe" }));
+      expect(env.data.truncated).toBe(true);
+      expect(env.data.stdout_saved_file).toBeUndefined();
+      expect(env.data.truncation_notice).toMatch(/re-run/i);
+      expect(env.data.truncation_notice).toMatch(/sed -n '3201,\$p'/);
+    });
+
+    it("does not spill captured stdout over 500 KiB (re-run recipe instead)", async () => {
+      const deps = createMockDeps({ noSandbox: true, outputDir: "/output" });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(bigOut().repeat(20000))); // 640,000 chars
+      const env = parseEnvelope(await handleRunTool(deps, { command: "pestr", input_file: "sample.exe" }));
+      expect(deps.connector.writeFile).not.toHaveBeenCalled();
+      expect(env.data.stdout_saved_file).toBeUndefined();
+      expect(env.data.truncation_notice).toMatch(/re-run/i);
+    });
+
+    it("does not spill when no output directory is configured", async () => {
+      const deps = createMockDeps({ noSandbox: true, outputDir: "" });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(bigOut().repeat(4000)));
+      const env = parseEnvelope(await handleRunTool(deps, { command: "pestr", input_file: "sample.exe" }));
+      expect(deps.connector.writeFile).not.toHaveBeenCalled();
+      expect(env.data.stdout_saved_file).toBeUndefined();
+      expect(env.data.truncation_notice).not.toContain("%OUTPUT%");
+    });
+
+    it("does not spill on stderr-only overflow", async () => {
+      const deps = createMockDeps({ noSandbox: true, outputDir: "/output" });
+      vi.mocked(deps.connector.executeShell).mockResolvedValue({ stdout: "ok", stderr: "e".repeat(STDERR_CAP + 1), exitCode: 0 });
+      const env = parseEnvelope(await handleRunTool(deps, { command: "tool sample.exe" }));
+      expect(deps.connector.writeFile).not.toHaveBeenCalled();
+      expect(env.data.stdout_saved_file).toBeUndefined();
+    });
+  });
+
   describe("per-stream truncation notice and fields", () => {
     it("stdout overflow: per-stream fields, line numbers, %OUTPUT% recipe, never head", async () => {
       const deps = createMockDeps({ noSandbox: true, outputDir: "/output" });
@@ -575,7 +641,6 @@ describe("oversized-output contract", () => {
       expect(notice).toContain("6401");                                // omitted range starts after the last complete line
       // open-ended range: connector trimming or the 10 MiB connector cap can never make it miss the tail
       expect(notice).toMatch(/sed -n '6401,\$p' '%OUTPUT%\/run_tool-[A-Za-z0-9._-]+\.stdout\.txt'/);
-      expect(notice).toContain("> '%OUTPUT%/run_tool-");
       expect(notice).not.toMatch(/sed -n '6401,8000p'/);
       expect(notice).not.toContain("head -N");
       expect(notice).not.toMatch(/\bfull output\b/i);
@@ -651,15 +716,44 @@ describe("oversized-output contract", () => {
       expect(env.data.findings_scope).toBeUndefined();
     });
 
-    it("marks findings_scope returned_prefix when findings were parsed from a truncated stdout", async () => {
+    it("parses findings from the captured stdout, past the returned prefix (findings_scope captured_stdout)", async () => {
       const deps = createMockDeps({ noSandbox: true, outputDir: "/output" });
-      // yara-rules has a parser; one real match line, then padding past the cap
-      const body = "rule_one /samples/sample.exe\n" + "x".repeat(STDOUT_CAP + 5) + "\n";
+      // yara-rules has a parser; a match line AFTER the 100 KiB cap must still be found
+      const body = "x".repeat(STDOUT_CAP + 5) + "\nrule_late /samples/sample.exe\n";
       vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(body));
       const env = parseEnvelope(await handleRunTool(deps, { command: "yara-rules sample.exe" }));
       expect(env.data.truncated).toBe(true);
+      expect(JSON.stringify(env.data.findings)).toContain("rule_late");
+      expect(env.data.findings_scope).toBe("captured_stdout");
+    });
+
+    it("bounds parsing at 512 KiB of captured stdout (findings_scope captured_prefix)", async () => {
+      const deps = createMockDeps({ noSandbox: true, outputDir: "/output" });
+      const body = "rule_early /samples/sample.exe\n" + "x".repeat(600 * 1024) + "\nrule_late /samples/sample.exe\n";
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(body));
+      const env = parseEnvelope(await handleRunTool(deps, { command: "yara-rules sample.exe" }));
+      expect(JSON.stringify(env.data.findings)).toContain("rule_early");
+      expect(JSON.stringify(env.data.findings)).not.toContain("rule_late");
+      expect(env.data.findings_scope).toBe("captured_prefix");
+    });
+
+    it("pipeline_limited wins when the command was capped AND the server truncated", async () => {
+      const deps = createMockDeps({ noSandbox: true, outputDir: "/output" });
+      const body = "rule_one /samples/sample.exe\n" + "x".repeat(STDOUT_CAP + 5) + "\n";
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(body));
+      const env = parseEnvelope(await handleRunTool(deps, { command: "yara-rules sample.exe | head -999999" }));
+      expect(env.data.truncated).toBe(true);
       expect(env.data.findings).toBeDefined();
-      expect(env.data.findings_scope).toBe("returned_prefix");
+      expect(env.data.findings_scope).toBe("pipeline_limited");
+    });
+
+    it("caps the number of findings in the response and reports the total", async () => {
+      const deps = createMockDeps({ noSandbox: true, outputDir: "/output" });
+      const body = Array.from({ length: 20000 }, (_, i) => `rule_${i} /samples/sample.exe`).join("\n") + "\n";
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(body));
+      const env = parseEnvelope(await handleRunTool(deps, { command: "yara-rules sample.exe" }));
+      expect(env.data.findings.length).toBe(500);
+      expect(env.data.findings_total).toBeGreaterThan(500);
     });
 
     it("marks findings_scope pipeline_limited when the command itself capped the parsed output", async () => {
@@ -693,6 +787,7 @@ describe("run_tool schema documents the output contract", () => {
     expect(cmd).toMatch(/head/);
     expect(cmd).toContain("%OUTPUT%");
     expect(cmd).toMatch(/output directory is configured/);
+    expect(cmd).toContain("stdout_saved_file");
     expect(cmd).toContain("truncated");
   });
 

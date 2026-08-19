@@ -211,10 +211,12 @@ export async function createServer(config: ServerConfig) {
   // Tool: download_file - Download a file from the output directory
   server.tool(
     "download_file",
-    "Download a file from the output directory (returns base64-encoded content). Use this to retrieve analysis results. " +
+    "Download a file from the output directory to a directory on the host (output_path); returns the host path. " +
+    "Use this to retrieve analysis results, including the text files the server saves when tool output exceeds " +
+    "a response budget (run_tool: stdout_saved_file, e.g. run_tool-<tool>-<hash>.stdout.txt; analyze_file: " +
+    "<tool>-<sample>.txt). To read such a file in-session instead, use run_tool with grep/sed -n on %OUTPUT%/<file>. " +
     "Files are wrapped in a password-protected archive by default to prevent AV/EDR triggers. " +
-    "Pass archive: false for harmless files like text reports. " +
-    "Provide output_path to save directly to the host filesystem.",
+    "Pass archive: false for harmless files like text reports.",
     downloadFileSchema.shape,
     (args) => handleDownloadFile(deps, args)
   );
@@ -243,7 +245,9 @@ export async function createServer(config: ServerConfig) {
   server.tool(
     "extract_iocs",
     "Extract IOCs (IPs, domains, URLs, hashes, registry keys, etc.) from text. " +
-    "Pass output from run_tool or analyze_file to identify indicators. " +
+    "Pass output from run_tool or analyze_file to identify indicators. If that output was truncated " +
+    "(truncated: true), first read the saved file via run_tool (e.g. grep -iE 'https?://|[0-9]+\\.[0-9]+\\.' on " +
+    "%OUTPUT%/<stdout_saved_file>) and pass that output, or the IOCs past the cut are missed. " +
     "Works well with Volatility 3 plugin output (netscan, cmdline, filescan). " +
     "Returns deduplicated IOCs with confidence scores. " +
     "Note: an IOC extracted from a binary's strings is an artifact (present in the file) — not evidence the " +

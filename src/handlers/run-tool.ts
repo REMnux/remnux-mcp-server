@@ -9,6 +9,7 @@ import { toolRegistry } from "../tools/registry.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
 import { OUTPUT_SENTINEL } from "../tools/invoker.js";
 import { createHash } from "crypto";
+import { saveOversizedOutput } from "./output-spill.js";
 
 /**
  * Pre-execution warning patterns for discouraged commands.
@@ -148,6 +149,13 @@ export function detectPipedLimiter(
 // Response budgets (JS string length): 100 KiB of stdout, 50 KiB of stderr.
 const STDOUT_CAP_CHARS = 100 * 1024;
 const MAX_STDERR_RESPONSE = 50 * 1024;
+// Parsers run on captured stdout (not just the returned slice) up to this
+// bound, mirroring analyze_file's IOC_SCAN_CAP, so a finding past the response
+// cap is still reported rather than silently lost.
+const PARSE_CAP_CHARS = 512 * 1024;
+// Parsers can emit one finding per line, so the response carries at most this
+// many; findings_total reports the parsed count when capped.
+const MAX_FINDINGS = 500;
 
 function limiterAdvisory(l: { limiter: "head" | "tail"; stage: string }): string {
   const part = l.limiter === "head" ? "leading" : "trailing";
@@ -205,6 +213,8 @@ function buildTruncationNotice(args: {
   stderrCapturedLength: number;
   outputDirSet: boolean;
   outFile: string;
+  /** true when the captured stdout was already written to <outputDir>/<outFile> */
+  savedFile: boolean;
 }): string {
   const parts: string[] = [];
   const fmt = (n: number) => String(n); // raw integers: copy-safe into sed ranges
@@ -220,7 +230,10 @@ function buildTruncationNotice(args: {
       `stdout: ${fmt(args.stdoutCapturedLines)} line(s) captured (${fmt(args.stdoutCapturedLength)} characters); ` +
       `the first line alone fills the ${cap}-character limit, so line ranges cannot help. Narrow by content ` +
       `(e.g. \`<command> | grep -oE '<pattern>'\`) or chunk it: ` +
-      (args.outputDirSet
+      (args.savedFile
+        ? `the captured stdout is saved as ${outPath}; run_tool \`fold -w 1000 ${outPath} | sed -n '103,$p'\` ` +
+          `(chunks of 1000 characters from character 102001 to the end; repeat with a later start if still cut). `
+        : args.outputDirSet
         ? `re-run with \` > ${outPath}\` appended, then \`fold -w 1000 ${outPath} | sed -n '103,$p'\` ` +
           `(chunks of 1000 characters from character 102001 to the end; repeat with a later start if still cut). `
         : `\`<command> | fold -w 1000 | sed -n '103,$p'\` (chunks of 1000 characters from character 102001; ` +
@@ -236,7 +249,12 @@ function buildTruncationNotice(args: {
       `stdout: ${fmt(args.stdoutCapturedLines)} lines captured (${fmt(args.stdoutCapturedLength)} characters); ` +
       `lines 1-${fmt(args.stdoutReturnedLines)} returned in full, the rest omitted (the cut can fall mid-line, ` +
       `so the range below re-reads the cut line whole). `;
-    if (args.outputDirSet) {
+    if (args.savedFile) {
+      msg +=
+        `The captured stdout is saved as ${outPath} (the server resolves %OUTPUT% to the output directory): ` +
+        `read the omitted part with run_tool \`sed -n '${range}' ${outPath}\`, grep that file for specifics, ` +
+        `or fetch it with download_file '${args.outFile}'. `;
+    } else if (args.outputDirSet) {
       msg +=
         `To read the omitted part: re-run the same command with \` > ${outPath}\` appended ` +
         `(the server resolves %OUTPUT% to the output directory), then run_tool \`sed -n '${range}' ${outPath}\` ` +
@@ -466,16 +484,44 @@ export async function handleRunTool(
       stderr = stderr.slice(0, MAX_STDERR_RESPONSE);
     }
 
-    // Auto-parse output if command matches a known tool with a parser
+    // Auto-parse output if command matches a known tool with a parser. Parse
+    // the CAPTURED stdout (bounded), not just the returned slice, so a finding
+    // past the response cap is still reported; findings_scope says which.
     let findings;
+    let findingsTotal: number | undefined;
     let parsedMetadata;
+    let findingsScope: "captured_stdout" | "captured_prefix" | "pipeline_limited" | undefined;
     const toolName = detectToolName(fullCommand);
-    if (toolName && hasParser(toolName) && stdout) {
-      const parsed = parseToolOutput(toolName, stdout);
+    const capturedStdout = result.stdout || "";
+    if (toolName && hasParser(toolName) && capturedStdout) {
+      const parseInput = stdoutTruncated ? capturedStdout.slice(0, PARSE_CAP_CHARS) : stdout;
+      const parsed = parseToolOutput(toolName, parseInput);
       if (parsed.parsed) {
         findings = parsed.findings;
         parsedMetadata = parsed.metadata;
+        if (findings.length > MAX_FINDINGS) {
+          findingsTotal = findings.length;
+          findings = findings.slice(0, MAX_FINDINGS);
+        }
+        // The agent's own head/tail limited the producer: that loss is
+        // upstream of anything the server captured, so it takes precedence.
+        if (detectPipedLimiter(fullCommand)) {
+          findingsScope = "pipeline_limited";
+        } else if (stdoutTruncated) {
+          findingsScope = capturedStdout.length > PARSE_CAP_CHARS ? "captured_prefix" : "captured_stdout";
+        }
       }
+    }
+
+    // Spill the captured stdout to the output directory (bounded, hash-named,
+    // idempotent per command) so the omitted tail can be read without
+    // re-running the tool. Non-fatal: on failure the notice carries the
+    // re-run recipe instead.
+    const outFile = suggestedOutputFilename(fullCommand, toolName);
+    let stdoutSavedFile: string | undefined;
+    if (stdoutTruncated) {
+      const spill = await saveOversizedOutput(connector, config.outputDir, outFile, capturedStdout);
+      if (spill.saved) stdoutSavedFile = outFile;
     }
 
     // Check for advisory (non-blocking guidance)
@@ -505,7 +551,8 @@ export async function handleRunTool(
           stdoutReturnedLines,
           stderrCapturedLength,
           outputDirSet: Boolean(config.outputDir),
-          outFile: suggestedOutputFilename(fullCommand, toolName),
+          outFile,
+          savedFile: Boolean(stdoutSavedFile),
         }),
         full_stdout_length: fullStdoutLength, // legacy alias of stdout_captured_length
         stdout_truncated: stdoutTruncated,
@@ -516,10 +563,11 @@ export async function handleRunTool(
           stdout_captured_lines: stdoutCapturedLines,
           stdout_returned_lines: stdoutReturnedLines,
         }),
+        ...(stdoutSavedFile && { stdout_saved_file: stdoutSavedFile }),
       }),
       ...(findings && { findings, parsed_metadata: parsedMetadata }),
-      ...(findings && stdoutTruncated && { findings_scope: "returned_prefix" }),
-      ...(findings && !stdoutTruncated && detectPipedLimiter(fullCommand) && { findings_scope: "pipeline_limited" }),
+      ...(findingsTotal !== undefined && { findings_total: findingsTotal }),
+      ...(findings && findingsScope && { findings_scope: findingsScope }),
       ...(advisory && { advisory }),
       ...(outputAdvisory && { output_advisory: outputAdvisory }),
     }, startTime);

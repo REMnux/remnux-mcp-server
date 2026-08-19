@@ -374,7 +374,7 @@ Unexpected AI behavior during analysis may indicate prompt injection strings in 
 
 **Getting samples in:** Use `upload_from_host` to transfer files from the host filesystem into the REMnux samples directory. For HTTP transport deployments where the MCP server runs inside REMnux, use scp/sftp to place files in the samples directory directly.
 
-**Getting output out:** Most analysis tools write to stdout, which `run_tool` captures directly and returns whole up to 100 KB (stderr up to 50 KB). Larger output is cut and the response carries a `truncation_notice` with the omitted line range and a redirect recipe (`> '%OUTPUT%/<file>'`, then `sed -n 'N,$p'` or `grep` on that file), so an AI agent never needs to pre-cap output with `| head`, which would silently drop the tail. For tools that write output files, use `download_file` to retrieve them from the output directory. Note that the output directory may be host-mounted, so redirected tool output lands wherever that directory lives.
+**Getting output out:** Most analysis tools write to stdout, which `run_tool` captures directly and returns whole up to 100 KB (stderr up to 50 KB). Larger output is cut: the captured stdout (up to 500 KB) is saved to the output directory under a deterministic name (`run_tool-<tool>-<hash>.stdout.txt`, reported as `stdout_saved_file`), and the response carries a `truncation_notice` with the returned line range and a `sed -n 'N,$p'` / `grep` recipe on that file (or a `> '%OUTPUT%/<file>'` re-run recipe when saving was not possible), so an AI agent never needs to pre-cap output with `| head`, which would silently drop the tail. Saved files are overwritten by re-runs of the same command and are never deleted automatically; clear the output directory when a case is done. Note that the output directory may be host-mounted, so saved and redirected tool output lands wherever that directory lives.
 
 ### Docker Volume Mounts
 
@@ -409,7 +409,7 @@ Then reference mounted files using the subdirectory path:
 | "Invalid file path" (with `--sandbox`) | Path outside samples/output dirs | Use a relative path or remove `--sandbox` |
 | "Command timed out" | Tool took too long | Increase `--timeout` value |
 | "[Truncated at ...]" (`analyze_file`) | A tool's output exceeded its per-tool budget | The full output is saved to the output directory and the marker names it as `%OUTPUT%/<file>`; query it with `run_tool` (grep, jq) or fetch it with `download_file` |
-| `truncated: true` (`run_tool`) | stdout over 100 KB or stderr over 50 KB | Follow `truncation_notice`: it names the returned line range and a `> '%OUTPUT%/<file>'` redirect recipe (then `sed -n 'N,$p'` on that file). `head` returns another prefix and cannot recover the tail |
+| `truncated: true` (`run_tool`) | stdout over 100 KB or stderr over 50 KB | Follow `truncation_notice`: the captured stdout (up to 500 KB) is saved as `stdout_saved_file` in the output directory, and the notice gives a `sed -n 'N,$p' '%OUTPUT%/<file>'` recipe for the omitted lines (or a `> '%OUTPUT%/<file>'` re-run recipe when it could not be saved). `head` returns another prefix and cannot recover the tail |
 | `advisory: PARTIAL: ...` (`run_tool`) | A pipeline stage is `head` or `tail` | The stage discards producer output the server would have returned whole (up to 100 KB); drop it, or filter by content with `grep` |
 
 ### Debug Tips

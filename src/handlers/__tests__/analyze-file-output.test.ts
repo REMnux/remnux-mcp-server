@@ -201,3 +201,19 @@ describe("analyze_file — truncation hints are runnable", () => {
     expect(deps.connector.writeFile).toHaveBeenCalledWith("/output/pestr-test.exe.txt", expect.anything());
   });
 });
+
+describe("analyze_file — spill failure degrades to a fileless marker", () => {
+  it("keeps the truncation marker without a saved-file reference when the write fails", async () => {
+    const deps = createMockDeps({ outputDir: "/output" });
+    vi.mocked(deps.connector.execute).mockResolvedValue(ok("/samples/a.js: JavaScript source, ASCII text"));
+    vi.mocked(deps.connector.executeShell).mockImplementation(async (cmd: string) =>
+      cmd.startsWith("strings") ? ok("str\n".repeat(5000)) : ok("output"),
+    );
+    vi.mocked(deps.connector.writeFile).mockRejectedValue(new Error("EACCES"));
+    const env = parseEnvelope(await handleAnalyzeFile(deps, { file: "a.js", depth: "quick" }));
+    const strings = env.data.tools_run.find((t: { name: string }) => t.name === "strings");
+    expect(strings.truncated).toBe(true);
+    expect(strings.output).toContain("[Truncated at");
+    expect(strings.output).not.toContain("Saved in full");
+  });
+});

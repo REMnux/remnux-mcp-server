@@ -1,4 +1,5 @@
 import type { HandlerDeps } from "./types.js";
+import { saveOversizedOutput } from "./output-spill.js";
 import type { AnalyzeFileArgs } from "../schemas/tools.js";
 import { validateFilePath } from "../security/blocklist.js";
 import { matchFileType, CATEGORY_TAG_MAP } from "../file-type-mappings.js";
@@ -250,7 +251,6 @@ function generateTriageSummary(
 
 const DEFAULT_OUTPUT_BUDGET = 40 * 1024; // 40KB default
 const TOTAL_RESPONSE_BUDGET = 120 * 1024; // 120KB total across all tools
-const MAX_SAVED_OUTPUT_SIZE = 500 * 1024; // 500KB max saved file
 // Per-tool cap on the full output retained for IOC extraction / advisories.
 // Bounds memory when a tool streams a very large output, while staying well
 // above where real IOCs sit (e.g. a C2 URL ~25KB into webcrack output).
@@ -550,15 +550,9 @@ export async function handleAnalyzeFile(
         const safeFile = args.file.replace(/[^a-zA-Z0-9._-]/g, "_");
         const outFilename = `${tool.name}-${safeFile}.txt`;
 
-        if (fullLen <= MAX_SAVED_OUTPUT_SIZE) {
-          try {
-            const outPath = `${config.outputDir}/${outFilename}`;
-            await connector.writeFile(outPath, Buffer.from(output, "utf-8"));
-            savedOutputFile = outFilename;
-          } catch {
-            // Non-fatal: truncation hint won't include file reference
-          }
-        }
+        // Non-fatal: on any failure the truncation hint simply carries no file reference
+        const spill = await saveOversizedOutput(connector, config.outputDir, outFilename, output);
+        if (spill.saved) savedOutputFile = outFilename;
 
         // Build truncation message with optional parsing hints
         const hints = PARSING_HINTS[tool.name]?.map(h => h.replace(/<file>/g, outFilename));
@@ -568,7 +562,7 @@ export async function handleAnalyzeFile(
           if (hints && hints.length > 0) {
             truncationMsg += `\n[Query with: ${hints[0]}]`;
           }
-        } else if (fullLen > MAX_SAVED_OUTPUT_SIZE) {
+        } else if (!spill.saved && spill.reason === "too_large") {
           truncationMsg = `\n\n[Output too large (${Math.round(fullLen / 1024)}KB) to save. Re-run tool with filters.]`;
         } else {
           truncationMsg = `\n\n[Truncated at ${Math.round(budget / 1024)}KB of ${Math.round(fullLen / 1024)}KB total]`;
