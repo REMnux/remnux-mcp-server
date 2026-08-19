@@ -122,6 +122,8 @@ export async function createServer(config: ServerConfig) {
   server.tool(
     "run_tool",
     "Execute a command in REMnux. Supports piped commands (e.g., 'oledump.py sample.doc | grep VBA'). " +
+    "stdout is returned whole up to 102,400 characters (see the command parameter for the truncation contract), " +
+    "so do not pre-cap output with '| head'; filter by content with grep instead. " +
     "String extraction: For PE files use 'pestr'; for non-PE use 'strings' (ASCII) and 'strings -el' (Unicode). " +
     "Note: capa matches under namespaces like collection/* or data-manipulation/* can be artifact-level (matched " +
     "on strings/data) rather than behavioral; a behavioral capability requires the corresponding APIs to be " +

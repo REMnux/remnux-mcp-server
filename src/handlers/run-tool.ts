@@ -8,6 +8,7 @@ import { parseToolOutput, hasParser } from "../parsers/index.js";
 import { toolRegistry } from "../tools/registry.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
 import { OUTPUT_SENTINEL } from "../tools/invoker.js";
+import { createHash } from "crypto";
 
 /**
  * Pre-execution warning patterns for discouraged commands.
@@ -56,9 +57,215 @@ const ADVISORY_PATTERNS: AdvisoryPattern[] = [
   },
 ];
 
+/**
+ * Split a shell command on unquoted, unescaped single `|` characters (pipe
+ * stages). `||` is a control operator, not a pipe, and `|` inside quotes or
+ * after a backslash is literal text, so none of those split. This is not a
+ * full shell parser; it only needs to find the pipeline's last stage.
+ */
+function splitPipeline(command: string): string[] {
+  const stages: string[] = [];
+  let current = "";
+  let quote: "'" | '"' | null = null;
+  for (let i = 0; i < command.length; i++) {
+    const ch = command[i];
+    if (quote) {
+      current += ch;
+      if (ch === "\\" && quote === '"' && i + 1 < command.length) {
+        current += command[++i];
+      } else if (ch === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (ch === "\\" && i + 1 < command.length) {
+      current += ch + command[++i];
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      quote = ch;
+      current += ch;
+      continue;
+    }
+    if (ch === "#" && (i === 0 || /\s/.test(command[i - 1]))) {
+      break; // the rest of the line is a shell comment
+    }
+    if (ch === "|") {
+      if (command[i + 1] === "|") {
+        current += "||";
+        i++;
+        continue;
+      }
+      if (command[i + 1] === "&") i++; // `|&` pipes stderr too; still a pipe
+      stages.push(current);
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+  stages.push(current);
+  return stages;
+}
+
+/**
+ * Detect a `head` or `tail` stage that reads from a pipe (any stage after the
+ * first; `tail -n 50 file` with no pipe before it is deliberate paging).
+ * Excluded: `tail -f/-F/--follow` (streams rather than limits) and
+ * `tail -n +1` (returns every line). Such a stage discards producer output the
+ * server would otherwise have returned whole, with exit 0 and no other
+ * signal — the model-side mirror of server truncation, and an upstream
+ * `head -500 | grep` caps the producer just as a terminal one does. Returns
+ * the first such stage's text (whitespace-normalized, trailing redirects and
+ * operators dropped, length-capped) and which limiter it is, or undefined.
+ */
+export function detectPipedLimiter(
+  command: string,
+): { limiter: "head" | "tail"; stage: string } | undefined {
+  const stages = splitPipeline(command);
+  for (let n = 1; n < stages.length; n++) {
+    // Keep only the command word and its arguments: drop anything after a
+    // redirect or control operator that follows the limiter.
+    const text = stages[n].trim().split(/\s*(?:\d*[<>]|&&|;)/)[0].trim();
+    const words = text.split(/\s+/).filter(Boolean);
+    if (words.length === 0) continue;
+    const cmd = words[0].replace(/^.*\//, "");
+    if (cmd !== "head" && cmd !== "tail") continue;
+    if (cmd === "tail") {
+      const args = words.slice(1);
+      const follows = args.some(
+        (w) => w === "--follow" || w.startsWith("--follow=") || /^-[A-Za-z]*[fF][A-Za-z]*$/.test(w),
+      );
+      if (follows) continue;
+      // `tail -n +1` / `tail +1` / `--lines=+1` print from line 1: nothing is dropped
+      const fromStart = args.some((w, k) => w === "+1" || w === "--lines=+1" || (w === "-n" && args[k + 1] === "+1"));
+      if (fromStart) continue;
+    }
+    return { limiter: cmd, stage: text.replace(/\s+/g, " ").slice(0, 60) };
+  }
+  return undefined;
+}
+
+// Response budgets (JS string length): 100 KiB of stdout, 50 KiB of stderr.
+const STDOUT_CAP_CHARS = 100 * 1024;
+const MAX_STDERR_RESPONSE = 50 * 1024;
+
+function limiterAdvisory(l: { limiter: "head" | "tail"; stage: string }): string {
+  const part = l.limiter === "head" ? "leading" : "trailing";
+  return (
+    `PARTIAL: the pipeline stage '${l.stage}' keeps only the ${part} part of its input; anything past that ` +
+    `point is discarded with no signal, and a pipeline's exit status is its last stage's, not the producer's. ` +
+    `run_tool returns stdout whole up to ${STDOUT_CAP_CHARS.toLocaleString("en-US")} characters and says so when ` +
+    `it has to cut, so drop the ${l.limiter} stage, or select by content with grep.`
+  );
+}
+
+/**
+ * Collect every matching command advisory (newline-joined) so a command like
+ * `strings x | head` carries both the INCOMPLETE and the PARTIAL guidance.
+ */
 function getCommandAdvisory(command: string): string | undefined {
-  const matched = ADVISORY_PATTERNS.find((p) => p.match(command));
-  return matched?.advisory;
+  const advisories = ADVISORY_PATTERNS.filter((p) => p.match(command)).map((p) => p.advisory);
+  const limiter = detectPipedLimiter(command);
+  if (limiter) advisories.push(limiterAdvisory(limiter));
+  return advisories.length > 0 ? advisories.join("\n") : undefined;
+}
+
+/** Count lines the way `wc -l` would, plus one for a final unterminated line. */
+function countLines(text: string): number {
+  if (text.length === 0) return 0;
+  let n = 0;
+  for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) === 10) n++;
+  return text.endsWith("\n") ? n : n + 1;
+}
+
+/**
+ * Deterministic, sanitized filename for the redirect-to-file recovery recipe:
+ * derived only from the registry tool name (or the sanitized command word) and
+ * a hash of the full command, so re-running the same command maps to the same
+ * file and no untrusted text reaches the filename.
+ */
+function suggestedOutputFilename(fullCommand: string, toolName: string | undefined): string {
+  const firstWord = fullCommand.trim().split(/\s/)[0]?.replace(/^.*\//, "") ?? "";
+  const base = (toolName ?? firstWord).replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 32) || "cmd";
+  const hash = createHash("sha256").update(fullCommand).digest("hex").slice(0, 12);
+  return `run_tool-${base}-${hash}.stdout.txt`;
+}
+
+/**
+ * Per-stream truncation notice. Names the omitted line range with
+ * server-computed integers and gives a recovery recipe that can actually reach
+ * the tail; `head` is never offered as a remedy (it returns another prefix).
+ */
+function buildTruncationNotice(args: {
+  stdoutTruncated: boolean;
+  stderrTruncated: boolean;
+  stdoutCapturedLength: number;
+  stdoutCapturedLines: number;
+  stdoutReturnedLines: number;
+  stderrCapturedLength: number;
+  outputDirSet: boolean;
+  outFile: string;
+}): string {
+  const parts: string[] = [];
+  const fmt = (n: number) => String(n); // raw integers: copy-safe into sed ranges
+  const cap = STDOUT_CAP_CHARS.toLocaleString("en-US");
+  // Quoted so an output directory with spaces still resolves (substitution is textual).
+  const outPath = `'${OUTPUT_SENTINEL}${args.outFile}'`;
+  const errPath = `'${OUTPUT_SENTINEL}${args.outFile.replace(/\.stdout\.txt$/, ".stderr.txt")}'`;
+  if (args.stdoutTruncated && args.stdoutReturnedLines === 0) {
+    // Not even one complete line fits: line ranges cannot help, so offer
+    // content and chunking recipes instead. (`cut -c` slices per line, not
+    // the stream, so it is not offered.)
+    parts.push(
+      `stdout: ${fmt(args.stdoutCapturedLines)} line(s) captured (${fmt(args.stdoutCapturedLength)} characters); ` +
+      `the first line alone fills the ${cap}-character limit, so line ranges cannot help. Narrow by content ` +
+      `(e.g. \`<command> | grep -oE '<pattern>'\`) or chunk it: ` +
+      (args.outputDirSet
+        ? `re-run with \` > ${outPath}\` appended, then \`fold -w 1000 ${outPath} | sed -n '103,$p'\` ` +
+          `(chunks of 1000 characters from character 102001 to the end; repeat with a later start if still cut). `
+        : `\`<command> | fold -w 1000 | sed -n '103,$p'\` (chunks of 1000 characters from character 102001; ` +
+          `repeat with a later start if still cut). `) +
+      "'head' returns another prefix and cannot recover the omitted part.",
+    );
+  } else if (args.stdoutTruncated) {
+    const from = args.stdoutReturnedLines + 1;
+    // Open-ended range: the line count describes captured stdout, which the
+    // connector trims and caps (10 MiB), so a fixed end could miss the tail.
+    const range = `${from},$p`;
+    let msg =
+      `stdout: ${fmt(args.stdoutCapturedLines)} lines captured (${fmt(args.stdoutCapturedLength)} characters); ` +
+      `lines 1-${fmt(args.stdoutReturnedLines)} returned in full, the rest omitted (the cut can fall mid-line, ` +
+      `so the range below re-reads the cut line whole). `;
+    if (args.outputDirSet) {
+      msg +=
+        `To read the omitted part: re-run the same command with \` > ${outPath}\` appended ` +
+        `(the server resolves %OUTPUT% to the output directory), then run_tool \`sed -n '${range}' ${outPath}\` ` +
+        `(grep that file for specifics; download_file fetches '${args.outFile}'). If re-running is cheap, ` +
+        `\`<command> | sed -n '${range}'\` does it in one call. `;
+    } else {
+      msg +=
+        `To read the omitted part, re-run as \`<command> | sed -n '${range}'\` (repeat with a later start if that ` +
+        `is still over the limit), or narrow by content with grep. `;
+    }
+    msg += "'head' returns another prefix and cannot recover the omitted tail.";
+    parts.push(msg);
+  }
+  if (args.stderrTruncated) {
+    let msg =
+      `stderr: ${fmt(args.stderrCapturedLength)} characters captured (after noise filtering), the first ` +
+      `${fmt(MAX_STDERR_RESPONSE)} returned` +
+      (args.stdoutTruncated ? ". " : "; stdout is complete. ");
+    if (args.outputDirSet) {
+      msg +=
+        `To keep all of stderr, re-run as \`( <command> ) 2> ${errPath}\` (the parentheses matter for a pipeline: ` +
+        `a bare 2> covers only its last stage; use \`( <command> ) > ${outPath} 2>&1\` for both streams) and ` +
+        `query that file with grep or sed -n.`;
+    } else {
+      msg += "To see more of it, re-run as `( <command> ) 2>&1 | grep -i error` or with a similar filter.";
+    }
+    parts.push(msg);
+  }
+  return parts.join("\n");
 }
 
 /**
@@ -219,8 +426,7 @@ export async function handleRunTool(
     }
   }
 
-  const MAX_STDOUT_RESPONSE = 100 * 1024; // 100KB — fits in LLM context
-  const MAX_STDERR_RESPONSE = 50 * 1024;
+  const MAX_STDOUT_RESPONSE = STDOUT_CAP_CHARS; // 100KB — fits in LLM context
 
   try {
     const execOptions: { timeout: number; cwd?: string } = {
@@ -239,16 +445,25 @@ export async function handleRunTool(
 
     stderr = filterStderrNoise(stderr);
 
-    let truncated = false;
     const fullStdoutLength = stdout.length;
+    const stderrCapturedLength = stderr.length; // after noise filtering
+    const stdoutTruncated = stdout.length > MAX_STDOUT_RESPONSE;
+    const stderrTruncated = stderr.length > MAX_STDERR_RESPONSE;
+    const truncated = stdoutTruncated || stderrTruncated;
 
-    if (stdout.length > MAX_STDOUT_RESPONSE) {
+    // Line accounting only on the (rare) truncated path; the returned stdout
+    // stays an exact slice with nothing appended, so a forged marker inside
+    // the sample's output cannot masquerade as server metadata.
+    let stdoutCapturedLines = 0;
+    let stdoutReturnedLines = 0;
+    if (stdoutTruncated) {
+      stdoutCapturedLines = countLines(stdout);
       stdout = stdout.slice(0, MAX_STDOUT_RESPONSE);
-      truncated = true;
+      // complete lines inside the slice; a trailing partial line is re-read by the recipe
+      for (let i = 0; i < stdout.length; i++) if (stdout.charCodeAt(i) === 10) stdoutReturnedLines++;
     }
-    if (stderr.length > MAX_STDERR_RESPONSE) {
+    if (stderrTruncated) {
       stderr = stderr.slice(0, MAX_STDERR_RESPONSE);
-      truncated = true;
     }
 
     // Auto-parse output if command matches a known tool with a parser
@@ -282,10 +497,29 @@ export async function handleRunTool(
       exit_code: result.exitCode,
       truncated,
       ...(truncated && {
-        truncation_notice: "Output exceeded response size limit. Use 'run_tool' with '| head -N' or redirect to a file for full output.",
-        full_stdout_length: fullStdoutLength,
+        truncation_notice: buildTruncationNotice({
+          stdoutTruncated,
+          stderrTruncated,
+          stdoutCapturedLength: fullStdoutLength,
+          stdoutCapturedLines,
+          stdoutReturnedLines,
+          stderrCapturedLength,
+          outputDirSet: Boolean(config.outputDir),
+          outFile: suggestedOutputFilename(fullCommand, toolName),
+        }),
+        full_stdout_length: fullStdoutLength, // legacy alias of stdout_captured_length
+        stdout_truncated: stdoutTruncated,
+        stderr_truncated: stderrTruncated,
+        stdout_captured_length: fullStdoutLength,
+        stderr_captured_length: stderrCapturedLength,
+        ...(stdoutTruncated && {
+          stdout_captured_lines: stdoutCapturedLines,
+          stdout_returned_lines: stdoutReturnedLines,
+        }),
       }),
       ...(findings && { findings, parsed_metadata: parsedMetadata }),
+      ...(findings && stdoutTruncated && { findings_scope: "returned_prefix" }),
+      ...(findings && !stdoutTruncated && detectPipedLimiter(fullCommand) && { findings_scope: "pipeline_limited" }),
       ...(advisory && { advisory }),
       ...(outputAdvisory && { output_advisory: outputAdvisory }),
     }, startTime);

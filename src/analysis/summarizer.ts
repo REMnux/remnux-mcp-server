@@ -277,8 +277,15 @@ export function generateSummary(
     const status = getToolStatus(tool);
     const keyLines = extractKeyLines(tool.output);
 
-    // Track which files were saved for full output retrieval
-    const savedMatch = tool.output?.match(/Full output: output\/([^\s\]]+)/);
+    // Track which files were saved for full output retrieval. The marker is
+    // written by analyze_file's truncation path as
+    // "Saved in full as %OUTPUT%/<file> (...)" (legacy form: "Full output: output/<file>").
+    // Only trust the marker when the server actually truncated this tool's
+    // output: sample-derived text could otherwise forge a saved_to entry.
+    const savedMatch = tool.truncated
+      ? (tool.output?.match(/Saved in full as %OUTPUT%\/([^\s\](]+)/) ??
+        tool.output?.match(/Full output: output\/([^\s\]]+)/))
+      : null;
     const savedTo = savedMatch ? savedMatch[1] : undefined;
     if (savedTo) savedFiles.push(savedTo);
 
@@ -313,7 +320,7 @@ export function generateSummary(
     suggested_next_steps: nextSteps,
     full_output_hint:
       savedFiles.length > 0
-        ? `Full tool outputs saved to output directory. Use download_file to retrieve: ${savedFiles.join(", ")}`
+        ? `Full tool outputs saved to the output directory: ${savedFiles.join(", ")}. Query them with run_tool using %OUTPUT%/<file> (e.g. grep), or fetch with download_file.`
         : "Use run_tool to re-run specific tools for full output.",
     analysis_guidance: analysisGuidance,
     ...(workflowHint && { workflow_hint: workflowHint }),

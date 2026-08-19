@@ -1,8 +1,20 @@
 import { z } from "zod";
 
 export const runToolSchema = z.object({
-  command: z.string().describe("Command to execute (can include pipes, e.g., 'strings sample.exe | grep -i password')"),
-  input_file: z.string().optional().describe("Input file path (relative to samples dir, or absolute path in local mode) - appended to command"),
+  command: z.string().describe(
+    "Command to execute (can include pipes, e.g., 'strings sample.exe | grep -i password'). " +
+    "The server returns stdout whole up to 102,400 characters, so a trailing '| head -N' or '| tail -N' only " +
+    "discards lines you would otherwise receive; narrow by content with grep when you want a subset. " +
+    "If a response sets truncated: true, follow its truncation_notice: it names the returned line range and a " +
+    "sed -n recipe for the rest, plus a redirect recipe using %OUTPUT%/<file> when an output directory is configured " +
+    "(the server replaces %OUTPUT% with that directory)."
+  ),
+  input_file: z.string().optional().describe(
+    "Input file path (relative to samples dir, or absolute path in local mode), appended as the final argument " +
+    "of the whole command, after any pipe, so in a pipeline it reaches the last stage (e.g. head), not the tool. " +
+    "When piping, put the sample's absolute path inline in command and omit input_file (list_files reports the " +
+    "samples directory path; without input_file the command does not run in the samples directory)."
+  ),
   timeout: z.number().optional().describe("Timeout in seconds (default: 300)"),
 });
 export type RunToolArgs = z.infer<typeof runToolSchema>;

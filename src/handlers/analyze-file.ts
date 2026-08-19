@@ -282,25 +282,37 @@ const TOOL_OUTPUT_BUDGETS: Record<string, number> = {
   "tshark-fingerprint": 15 * 1024,
 };
 
-/** Parsing hints for querying large output files with jq/grep */
-const PARSING_HINTS: Record<string, string[]> = {
+/**
+ * Parsing hints for querying saved (oversized) tool output with jq/grep.
+ * Every hint is a runnable run_tool command: `%OUTPUT%/<file>` is the sentinel
+ * the server resolves to the output directory (a bare `output/<file>` is not
+ * shell-resolvable from the samples cwd, so it is never used here).
+ */
+export const PARSING_HINTS: Record<string, string[]> = {
   capa: [
-    "Count capabilities: run_tool command='jq \".rules | keys | length\" output/<file>'",
-    "List ATT&CK techniques: run_tool command='jq -r \".rules[].attack[].technique\" output/<file> | sort -u'",
-    "Show specific capability: run_tool command='jq \".rules[\\\"<capability-name>\\\"]\" output/<file>'",
+    "Count capabilities: run_tool command='jq \".rules | keys | length\" \"%OUTPUT%/<file>\"'",
+    "List ATT&CK techniques: run_tool command='jq -r \".rules[].attack[].technique\" \"%OUTPUT%/<file>\" | sort -u'",
+    "Show specific capability: run_tool command='jq \".rules[\\\"<capability-name>\\\"]\" \"%OUTPUT%/<file>\"'",
   ],
   floss: [
-    "Search for URLs: run_tool command='grep -oE \"https?://[^\\\"]+\" output/<file> | sort -u'",
-    "Search for IPs: run_tool command='grep -oE \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\" output/<file> | sort -u'",
-    "Find base64 strings: run_tool command='grep -E \"^[A-Za-z0-9+/]{20,}=*$\" output/<file>'",
+    "Search for URLs: run_tool command='grep -oE \"https?://[^\\\"]+\" \"%OUTPUT%/<file>\" | sort -u'",
+    "Search for IPs: run_tool command='grep -oE \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\" \"%OUTPUT%/<file>\" | sort -u'",
+    "Find base64 strings: run_tool command='grep -E \"^[A-Za-z0-9+/]{20,}=*$\" \"%OUTPUT%/<file>\"'",
   ],
   olevba: [
-    "Show VBA code only: run_tool command='grep -A 100 \"VBA MACRO\" output/<file>'",
-    "Find suspicious keywords: run_tool command='grep -iE \"shell|exec|powershell|cmd\" output/<file>'",
+    "Show VBA code only: run_tool command='grep -A 100 \"VBA MACRO\" \"%OUTPUT%/<file>\"'",
+    "Find suspicious keywords: run_tool command='grep -iE \"shell|exec|powershell|cmd\" \"%OUTPUT%/<file>\"'",
   ],
   strings: [
-    "Search for URLs: run_tool command='grep -oE \"https?://[^\\\"]+\" output/<file> | sort -u'",
-    "Search for paths: run_tool command='grep -E \"[A-Za-z]:\\\\\\\\|/usr/|/etc/\" output/<file>'",
+    "Search for URLs: run_tool command='grep -oE \"https?://[^\\\"]+\" \"%OUTPUT%/<file>\" | sort -u'",
+    "Search for paths: run_tool command='grep -E \"[A-Za-z]:\\\\\\\\|/usr/|/etc/\" \"%OUTPUT%/<file>\"'",
+  ],
+  // pestr output is long and its interesting strings (URLs, paths, mutexes)
+  // can sit anywhere, so query the saved file by content rather than paging it.
+  pestr: [
+    "Search for URLs: run_tool command='grep -oE \"https?://[^\\\"[:space:]]+\" \"%OUTPUT%/<file>\" | sort -u'",
+    "Search for IPs: run_tool command='grep -oE \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\" \"%OUTPUT%/<file>\" | sort -u'",
+    "Search for paths: run_tool command='grep -E \"[A-Za-z]:\\\\\\\\|/usr/|/etc/\" \"%OUTPUT%/<file>\"'",
   ],
 };
 
@@ -552,7 +564,7 @@ export async function handleAnalyzeFile(
         const hints = PARSING_HINTS[tool.name]?.map(h => h.replace(/<file>/g, outFilename));
         let truncationMsg: string;
         if (savedOutputFile) {
-          truncationMsg = `\n\n[Truncated at ${Math.round(budget / 1024)}KB of ${Math.round(fullLen / 1024)}KB total. Full output: output/${savedOutputFile}]`;
+          truncationMsg = `\n\n[Truncated at ${Math.round(budget / 1024)}KB of ${Math.round(fullLen / 1024)}KB total. Saved in full as %OUTPUT%/${savedOutputFile} (query it with run_tool, or download_file '${savedOutputFile}')]`;
           if (hints && hints.length > 0) {
             truncationMsg += `\n[Query with: ${hints[0]}]`;
           }

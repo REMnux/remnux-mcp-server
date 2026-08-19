@@ -274,7 +274,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 
 ### Key Behaviors
 
-**Discouraged patterns:** Some commands trigger warnings with guidance to use better alternatives. For example, raw `yara` is discouraged in favor of `yara-forge` or `yara-rules`, which are pre-configured with structured output parsers. Add `--acknowledge-raw` to proceed anyway.
+**Discouraged patterns:** Some commands trigger warnings with guidance to use better alternatives. For example, raw `yara` is discouraged in favor of `yara-forge` or `yara-rules`, which are pre-configured with structured output parsers. Add `--acknowledge-raw` to proceed anyway. Non-blocking `advisory` messages cover softer cases: plain `strings` (ASCII only; use `pestr` or `strings -el`) and a pipeline ending in `head`/`tail` (`PARTIAL`: the stage discarded output the server returns whole up to 100 KB).
 
 **Depth tiers:** `analyze_file` supports three depth levels — `quick` (fast triage, ~15 tools), `standard` (default, ~60 tools), and `deep` (maximum coverage, ~78 tools). Higher tiers include all tools from lower tiers. The tools selected depend on detected file type; examine the tool definitions in the source for specifics.
 
@@ -374,7 +374,7 @@ Unexpected AI behavior during analysis may indicate prompt injection strings in 
 
 **Getting samples in:** Use `upload_from_host` to transfer files from the host filesystem into the REMnux samples directory. For HTTP transport deployments where the MCP server runs inside REMnux, use scp/sftp to place files in the samples directory directly.
 
-**Getting output out:** Most analysis tools write to stdout, which `run_tool` captures directly. For tools that write output files, use `download_file` to retrieve them from the output directory.
+**Getting output out:** Most analysis tools write to stdout, which `run_tool` captures directly and returns whole up to 100 KB (stderr up to 50 KB). Larger output is cut and the response carries a `truncation_notice` with the omitted line range and a redirect recipe (`> '%OUTPUT%/<file>'`, then `sed -n 'N,$p'` or `grep` on that file), so an AI agent never needs to pre-cap output with `| head`, which would silently drop the tail. For tools that write output files, use `download_file` to retrieve them from the output directory. Note that the output directory may be host-mounted, so redirected tool output lands wherever that directory lives.
 
 ### Docker Volume Mounts
 
@@ -408,7 +408,9 @@ Then reference mounted files using the subdirectory path:
 | "Invalid file path" | Path traversal or special chars | Use simple relative paths without `..` |
 | "Invalid file path" (with `--sandbox`) | Path outside samples/output dirs | Use a relative path or remove `--sandbox` |
 | "Command timed out" | Tool took too long | Increase `--timeout` value |
-| "[Truncated at ...]" | Output exceeded per-tool budget | Full output saved to output dir, use `download_file` to retrieve |
+| "[Truncated at ...]" (`analyze_file`) | A tool's output exceeded its per-tool budget | The full output is saved to the output directory and the marker names it as `%OUTPUT%/<file>`; query it with `run_tool` (grep, jq) or fetch it with `download_file` |
+| `truncated: true` (`run_tool`) | stdout over 100 KB or stderr over 50 KB | Follow `truncation_notice`: it names the returned line range and a `> '%OUTPUT%/<file>'` redirect recipe (then `sed -n 'N,$p'` on that file). `head` returns another prefix and cannot recover the tail |
+| `advisory: PARTIAL: ...` (`run_tool`) | A pipeline stage is `head` or `tail` | The stage discards producer output the server would have returned whole (up to 100 KB); drop it, or filter by content with `grep` |
 
 ### Debug Tips
 

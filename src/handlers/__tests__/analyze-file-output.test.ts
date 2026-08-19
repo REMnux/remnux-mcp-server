@@ -141,3 +141,63 @@ describe("generateNextSteps — no /tmp leak in model-facing step hints", () => 
     }
   });
 });
+
+describe("analyze_file — truncation hints are runnable", () => {
+  it("every PARSING_HINT references %OUTPUT%/<file>, never a bare output/<file>", async () => {
+    const mod = await import("../analyze-file.js");
+    const hints = (mod as unknown as { PARSING_HINTS: Record<string, string[]> }).PARSING_HINTS;
+    expect(hints).toBeDefined();
+    expect(Object.keys(hints)).toContain("pestr");
+    for (const [tool, list] of Object.entries(hints)) {
+      expect(list.length, tool).toBeGreaterThan(0);
+      for (const h of list) {
+        expect(h, `${tool}: ${h}`).toContain("%OUTPUT%/<file>");
+        expect(h, `${tool}: ${h}`).not.toMatch(/(^|[^%])output\/<file>/);
+      }
+    }
+  });
+
+  it("oversized strings output carries a %OUTPUT% saved-file marker and query hint (full mode)", async () => {
+    const deps = createMockDeps({ outputDir: "/output" });
+    // strings runs in the quick tier for JavaScript (not PE, where pestr replaces it)
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/a.js: JavaScript source, ASCII text"),
+    );
+    // strings has a 15KB display budget; 20KB keeps the whole response under the summary threshold
+    const big = "str\n".repeat(5000);
+    vi.mocked(deps.connector.executeShell).mockImplementation(async (cmd: string) =>
+      cmd.startsWith("strings") ? ok(big) : ok("output"),
+    );
+
+    const result = await handleAnalyzeFile(deps, { file: "a.js", depth: "quick" });
+    const env = parseEnvelope(result);
+    expect(env.data.mode).toBeUndefined();
+    const strings = env.data.tools_run.find((t: { name: string }) => t.name === "strings");
+    expect(strings).toBeDefined();
+    expect(strings.truncated).toBe(true);
+    expect(strings.output).toContain("%OUTPUT%/strings-a.js.txt");
+    expect(strings.output).toContain("[Query with:");
+    expect(strings.output).not.toMatch(/[^%]output\/strings-a\.js\.txt/);
+    expect(deps.connector.writeFile).toHaveBeenCalledWith("/output/strings-a.js.txt", expect.anything());
+  });
+
+  it("oversized pestr output in summary mode still reports saved_to from the new marker", async () => {
+    const deps = createMockDeps({ outputDir: "/output" });
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/test.exe: PE32 executable (GUI) Intel 80386, for MS Windows"),
+    );
+    const big = Array.from({ length: 6000 }, (_, i) => `0x${i.toString(16)} .rdata str${i}`).join("\n");
+    vi.mocked(deps.connector.executeShell).mockImplementation(async (cmd: string) =>
+      cmd.startsWith("pestr") ? ok(big) : ok("output"),
+    );
+
+    const result = await handleAnalyzeFile(deps, { file: "test.exe", depth: "quick" });
+    const env = parseEnvelope(result);
+    expect(env.data.mode).toBe("summary");
+    const pestr = env.data.tools.find((t: { name: string }) => t.name === "pestr");
+    expect(pestr).toBeDefined();
+    expect(pestr.saved_to).toBe("pestr-test.exe.txt");
+    expect(env.data.full_output_hint).toContain("pestr-test.exe.txt");
+    expect(deps.connector.writeFile).toHaveBeenCalledWith("/output/pestr-test.exe.txt", expect.anything());
+  });
+});
