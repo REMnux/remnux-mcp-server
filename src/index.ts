@@ -121,7 +121,8 @@ export async function createServer(config: ServerConfig) {
   // Tool: run_tool - Execute a command in REMnux
   server.tool(
     "run_tool",
-    "Execute a command in REMnux. Supports piped commands (e.g., 'oledump.py sample.doc | grep VBA'). " +
+    "Execute a command in REMnux. Supports piped commands (e.g., 'oledump.py /home/remnux/files/samples/sample.doc | grep VBA'; " +
+    "use input_file for a single-tool command, or an absolute path inline when piping). " +
     "stdout is returned whole up to 102,400 characters (see the command parameter for the truncation contract), " +
     "so do not pre-cap output with '| head'; filter by content with grep instead. " +
     "String extraction: For PE files use 'pestr'; for non-PE use 'strings' (ASCII) and 'strings -el' (Unicode). " +

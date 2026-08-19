@@ -2,7 +2,8 @@ import { z } from "zod";
 
 export const runToolSchema = z.object({
   command: z.string().describe(
-    "Command to execute (can include pipes, e.g., 'strings sample.exe | grep -i password'). " +
+    "Command to execute (can include pipes, e.g., 'strings /home/remnux/files/samples/sample.exe | grep -i password'; " +
+    "commands run in the user's home, so name samples by absolute path or via input_file). " +
     "The server returns stdout whole up to 102,400 characters, so a trailing '| head -N' or '| tail -N' only " +
     "discards lines you would otherwise receive; narrow by content with grep when you want a subset. " +
     "If a response sets truncated: true, follow its truncation_notice: the captured stdout is saved in the output " +

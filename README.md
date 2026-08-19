@@ -296,11 +296,15 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
   "timeout": 600
 }
 
-// Extract embedded content from OOXML document
+// Extract embedded content from OOXML document. input_file is appended after
+// the whole command, so a piped command names the sample inline by absolute
+// path (commands run in the user's home, not the samples directory).
 {
-  "command": "zipdump.py -s 3 -d sample.docx | xmldump.py pretty"
+  "command": "zipdump.py -s 3 -d /home/remnux/files/samples/sample.docx | xmldump.py pretty"
 }
 ```
+
+`input_file` resolves a name relative to the samples directory and appends it as the final argument. Without it, reference samples by absolute path (`list_files` reports the samples directory path); a bare relative name does not resolve. Output up to 100 KB is returned whole, so there is no need to pre-cap with `| head` (see [Getting output out](#file-workflow)).
 
 ### Example: analyze_file
 
@@ -391,10 +395,10 @@ docker run -d --name remnux \
 # -v ~/remnux-workspace/output:/home/remnux/files/output:rw
 ```
 
-Then reference mounted files using the subdirectory path:
+Then reference mounted files by absolute path (`vol3 -f` takes the image before the plugin name, so `input_file`, which is appended last, does not fit here):
 
 ```jsonc
-{ "command": "vol3 -f evidence/memory.raw windows.pslist" }
+{ "command": "vol3 -f /home/remnux/files/samples/evidence/memory.raw windows.pslist" }
 ```
 
 ## Troubleshooting
