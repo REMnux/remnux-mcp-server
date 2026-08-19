@@ -15,6 +15,9 @@ overrides:
   esbuild@<=0.24.2: '>=0.25.0'
   fast-uri@<=3.1.0: '>=3.1.1'
   fast-uri@<=3.1.1: '>=3.1.2'
+  # bounded to the 3.x line: ajv declares fast-uri ^3.0.1, and an open-ended
+  # '>=3.1.4' resolves to 4.x, crossing ajv's declared range
+  fast-uri@<=3.1.3: '>=3.1.4 <4'
   hono@<4.12.12: '>=4.12.12'
   hono@<4.12.14: '>=4.12.14'
   hono@<4.12.16: '>=4.12.16'
