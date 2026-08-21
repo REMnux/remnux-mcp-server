@@ -37,30 +37,69 @@ function readPkg(p) {
   try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; }
 }
 
-/** Override keys look like `name@range` or `'@scope/name@range'`. Extract the name. */
+/**
+ * Extract the package an override actually targets.
+ *
+ * pnpm supports a parent selector, `parent@range>child`, where the rule governs
+ * the CHILD. Reading the parent instead audits the wrong package and silently
+ * skips the forced one, so the child wins when `>` is present.
+ * https://pnpm.io/settings#overrides
+ */
 function overrideTargetName(key) {
-  const at = key.lastIndexOf("@");
-  return at > 0 ? key.slice(0, at) : key;
+  const raw = String(key).trim().replace(/^'|'$/g, "");
+  // A `>` is only a parent selector when what follows starts a PACKAGE NAME.
+  // Ranges contain `>` too: `brace-expansion@>=4.0.0 <5.0.9` must not be read
+  // as a selector, or the target parses as '=4.0.0 <5.0.9'.
+  let spec = raw;
+  for (let i = raw.length - 1; i >= 0; i--) {
+    if (raw[i] !== ">") continue;
+    const rest = raw.slice(i + 1);
+    if (/^[a-zA-Z@]/.test(rest)) spec = rest;
+    break;
+  }
+  spec = spec.trim();
+  // Strip a trailing `@range`, keeping a leading `@scope/`.
+  const at = spec.lastIndexOf("@");
+  return at > 0 ? spec.slice(0, at) : spec;
 }
 
+/** pnpm replacement protocols that are not semver ranges at all. */
+const PROTOCOL_RE = /^(npm:|workspace:|link:|file:|catalog:|jsr:|\$)/;
+
 /**
- * Does a replacement value carry an upper bound?
+ * Classify a replacement value: does it pin an upper bound?
  *
- * Bounded:   '>=7.6.5 <8'  '^4.12.34'  '~1.2.3'  '1.2.3'  '>=1 <2'
- * Unbounded: '>=1.1.13'  '>1.0.0'  '*'
+ * Decided from the parsed range, not the string's shape. String shape accepted
+ * `>=1 || <2` and `^1 || >=2` -- both upward-unbounded -- because they merely
+ * contain `<` or start with `^`. Every comparator set in the union must have a
+ * finite upper bound for the whole range to be bounded.
  *
- * A bare `>=`/`>` comparator with no `<` is the exact shape that crossed a
- * major boundary every time this defect appeared.
+ * Returns { verdict: "bounded" | "unbounded" | "not-semver", detail }.
  */
-function isBounded(value) {
+function classifyReplacement(value) {
   const v = String(value).trim();
-  if (v === "*" || v === "") return false;
-  if (v.includes("<")) return true;
-  // caret, tilde, exact, or hyphen range all bound the upper end
-  if (/^[\^~]/.test(v)) return true;
-  if (/^\d/.test(v)) return true;
-  if (/\s-\s/.test(v)) return true;
-  return false;
+  if (v === "") return { verdict: "unbounded", detail: "empty" };
+  // `-` removes a dependency; an exact aliased version pins precisely.
+  if (v === "-") return { verdict: "bounded", detail: "removal" };
+  if (PROTOCOL_RE.test(v)) {
+    const aliased = /^npm:.*@(\d[^@]*)$/.exec(v);
+    if (aliased && semver.valid(aliased[1])) {
+      return { verdict: "bounded", detail: `alias pinned to ${aliased[1]}` };
+    }
+    return { verdict: "not-semver", detail: `protocol replacement '${v}'` };
+  }
+  let range;
+  try {
+    range = new semver.Range(v);
+  } catch {
+    return { verdict: "not-semver", detail: `unparseable range '${v}'` };
+  }
+  const everySetBounded = range.set.every((comparators) =>
+    comparators.some((c) => c.operator === "<" || c.operator === "<=" || (c.operator === "" && c.semver !== semver.Comparator.ANY))
+  );
+  return everySetBounded
+    ? { verdict: "bounded", detail: "" }
+    : { verdict: "unbounded", detail: `no upper bound in '${v}'` };
 }
 
 /** Strip a pnpm peer-suffix: `@hono/node-server@2.1.1(hono@4.13.2)` -> `@hono/node-server@2.1.1`. */
@@ -82,10 +121,9 @@ function splitSpec(spec) {
  * the range it DECLARES. The store dir encodes `name@version[_peerhash]`, with
  * `/` in scoped names written as `+`.
  */
-function declaredRangeFrom(parentName, parentVersion, depName) {
-  if (!existsSync(PNPM_DIR)) return undefined;
+function declaredRangeFrom(parentName, parentVersion, depName, storeEntries) {
   const prefix = `${parentName.replace("/", "+")}@${parentVersion}`;
-  for (const entry of readdirSync(PNPM_DIR)) {
+  for (const entry of storeEntries) {
     if (entry !== prefix && !entry.startsWith(`${prefix}_`)) continue;
     const pkg = readPkg(join(PNPM_DIR, entry, "node_modules", parentName, "package.json"));
     if (!pkg) continue;
@@ -105,36 +143,62 @@ function declaredRangeFrom(parentName, parentVersion, depName) {
 function collectEdges(targetNames) {
   const lock = parseYaml(readFileSync(join(ROOT, "pnpm-lock.yaml"), "utf8"));
   const edges = [];
+  /** Edges discovered but NOT judgeable. Tracked, never silently dropped. */
+  const skipped = [];
   const seen = new Set();
+  // Cache the store listing: it was re-read once per edge.
+  const storeEntries = existsSync(PNPM_DIR) ? readdirSync(PNPM_DIR) : [];
 
-  // root importer: declared ranges live in our own package.json
+  // Root importer: take the RESOLVED version from the lockfile importer, not
+  // from node_modules, so a stale install cannot make us judge the wrong tree.
   const rootPkg = readPkg(join(ROOT, "package.json")) ?? {};
-  const rootDeclared = { ...rootPkg.dependencies, ...rootPkg.devDependencies };
+  const rootDeclared = {
+    ...rootPkg.dependencies,
+    ...rootPkg.devDependencies,
+    ...rootPkg.optionalDependencies,
+  };
+  const importer = lock.importers?.["."] ?? {};
+  const importerResolved = {
+    ...importer.dependencies,
+    ...importer.devDependencies,
+    ...importer.optionalDependencies,
+  };
   for (const [depName, declared] of Object.entries(rootDeclared)) {
     if (!targetNames.has(depName)) continue;
-    const installed = readPkg(join(ROOT, "node_modules", depName, "package.json"));
-    if (installed?.version) {
-      edges.push({ parent: "(root)", dep: depName, declared, resolved: installed.version });
+    const entry = importerResolved[depName];
+    const resolved = entry && typeof entry === "object" ? stripPeers(String(entry.version)) : undefined;
+    if (!resolved) {
+      skipped.push({ parent: "(root)", dep: depName, why: "no resolution recorded in the lockfile importer" });
+      continue;
     }
+    edges.push({ parent: "(root)", dep: depName, declared, resolved });
   }
 
   for (const [rawParent, snap] of Object.entries(lock.snapshots ?? {})) {
-    const deps = snap?.dependencies;
-    if (!deps) continue;
+    // optionalDependencies are real edges an override still governs.
+    const deps = { ...snap?.dependencies, ...snap?.optionalDependencies };
+    if (!Object.keys(deps).length) continue;
     const parent = splitSpec(rawParent);
     if (!parent) continue;
     for (const [depName, rawDepVer] of Object.entries(deps)) {
       if (!targetNames.has(depName)) continue;
       const resolved = stripPeers(String(rawDepVer));
-      const declared = declaredRangeFrom(parent.name, parent.version, depName);
-      if (!declared) continue; // parent version not in store (pruned) — cannot judge
       const key = `${parent.name}@${parent.version}|${depName}@${resolved}`;
       if (seen.has(key)) continue;
       seen.add(key);
+      const declared = declaredRangeFrom(parent.name, parent.version, depName, storeEntries);
+      if (!declared) {
+        skipped.push({
+          parent: `${parent.name}@${parent.version}`,
+          dep: depName,
+          why: "parent manifest not present in the store, so its declared range is unknown",
+        });
+        continue;
+      }
       edges.push({ parent: `${parent.name}@${parent.version}`, dep: depName, declared, resolved });
     }
   }
-  return edges;
+  return { edges, skipped };
 }
 
 function audit({ overrides, rawText, inject }) {
@@ -145,13 +209,28 @@ function audit({ overrides, rawText, inject }) {
 
   // ---- Check A: bounded replacements
   for (const [key, value] of entries) {
-    if (!isBounded(value)) {
+    const { verdict, detail } = classifyReplacement(value);
+    if (verdict === "bounded") continue;
+    if (verdict === "not-semver") {
+      // Fail closed: a value this check cannot reason about must not pass
+      // silently, or the guarantee is hollow.
       errors.push({
         check: "A",
         rule: `${key}: '${value}'`,
-        msg: `unbounded replacement. An open-ended '>=' can cross a major boundary the declaring parent never stated. Add an upper bound, e.g. '${value} <${(semver.major(semver.minVersion(String(value)) ?? "0.0.0") || 0) + 1}'.`,
+        msg: `replacement cannot be checked for an upper bound (${detail}). Pin it to an explicit version, or extend this audit to understand it.`,
       });
+      continue;
     }
+    let suggestion = "";
+    try {
+      const min = semver.minVersion(String(value));
+      if (min) suggestion = ` For example '${value} <${semver.major(min) + 1}'.`;
+    } catch { /* no suggestion for exotic values */ }
+    errors.push({
+      check: "A",
+      rule: `${key}: '${value}'`,
+      msg: `unbounded replacement (${detail}). An open-ended range can cross a major boundary the declaring parent never stated.${suggestion}`,
+    });
   }
 
   // ---- Check C: advisory citation (warning only)
@@ -169,15 +248,22 @@ function audit({ overrides, rawText, inject }) {
   }
 
   // ---- Check B: resolutions stay inside every declaring parent's range
-  const targets = new Set(entries.map(([k]) => overrideTargetName(k.replace(/^'|'$/g, ""))));
-  const edges = collectEdges(targets);
+  const targets = new Set(entries.map(([k]) => overrideTargetName(k)));
+  const collected = collectEdges(targets);
   const checkedEdges = inject?.outOfRange
-    ? [...edges, { parent: "synthetic-parent@1.0.0", dep: [...targets][0] ?? "zod", declared: "^0.0.1", resolved: "9.9.9" }]
-    : edges;
+    ? [...collected.edges, { parent: "synthetic-parent@1.0.0", dep: [...targets][0] ?? "zod", declared: "^0.0.1", resolved: "9.9.9" }]
+    : collected.edges;
+
+  /** Per-target accounting, so "green" cannot mean "never looked". */
+  const judgedPerTarget = new Map([...targets].map((t) => [t, 0]));
+  const unjudged = [...collected.skipped];
 
   for (const e of checkedEdges) {
-    if (!semver.validRange(e.declared)) continue; // workspace:/link:/git specs
-    if (!semver.valid(e.resolved)) continue;
+    if (!semver.validRange(e.declared) || !semver.valid(e.resolved)) {
+      unjudged.push({ parent: e.parent, dep: e.dep, why: `non-semver spec (declared '${e.declared}', resolved '${e.resolved}')` });
+      continue;
+    }
+    judgedPerTarget.set(e.dep, (judgedPerTarget.get(e.dep) ?? 0) + 1);
     if (!semver.satisfies(e.resolved, e.declared, { includePrerelease: true })) {
       errors.push({
         check: "B",
@@ -187,7 +273,31 @@ function audit({ overrides, rawText, inject }) {
     }
   }
 
-  return { errors, warnings, edgeCount: checkedEdges.length, ruleCount: entries.length };
+  // Fail closed per rule. Previously a new rule whose only edges were optional
+  // or whose parent was pruned got ZERO examination while the aggregate edge
+  // count stayed non-zero and the gate reported green.
+  for (const [target, count] of judgedPerTarget) {
+    if (target.startsWith("synthetic-pkg")) continue;
+    if (count === 0) {
+      errors.push({
+        check: "B",
+        rule: target,
+        msg: "override rule governs this package but NO dependency edge for it could be judged. The rule may be dead, or its edges unreadable; either way this check proves nothing about it.",
+      });
+    }
+  }
+  for (const s of unjudged) {
+    warnings.push({ check: "B", rule: `${s.dep} <- ${s.parent}`, msg: `edge not judged: ${s.why}` });
+  }
+
+  return {
+    errors,
+    warnings,
+    edgeCount: checkedEdges.length,
+    judgedCount: [...judgedPerTarget.values()].reduce((a, b) => a + b, 0),
+    skippedCount: unjudged.length,
+    ruleCount: entries.length,
+  };
 }
 
 // ---------------------------------------------------------------- selftest
@@ -219,24 +329,47 @@ if (process.argv.includes("--selftest")) {
     && bCount(withOutOfRange) === bCount(clean) + 1);
   expect("check B actually inspected dependency edges (not vacuously empty)",
     clean.edgeCount > 0);
-  expect("isBounded accepts a bounded range", isBounded(">=7.6.5 <8") && isBounded("^4.12.34"));
-  expect("isBounded rejects an open-ended range", !isBounded(">=1.1.13") && !isBounded(">1.0.0"));
+  const v = (x) => classifyReplacement(x).verdict;
+  expect("classifier accepts genuinely bounded ranges",
+    v(">=7.6.5 <8") === "bounded" && v("^4.12.34") === "bounded" && v("~1.2.3") === "bounded"
+    && v("1.2.3") === "bounded" && v("1.x") === "bounded");
+  expect("classifier rejects open-ended ranges",
+    v(">=1.1.13") === "unbounded" && v(">1.0.0") === "unbounded" && v("*") === "unbounded");
+  expect("classifier rejects unions with an unbounded arm (string shape accepted these)",
+    v(">=1 || <2") === "unbounded" && v("^1 || >=2") === "unbounded");
+  expect("classifier flags non-semver protocols instead of crashing",
+    v("latest") === "not-semver" && v("workspace:*") === "not-semver" && v("$foo") === "not-semver");
+  expect("classifier understands an exact npm alias and a removal",
+    v("npm:pkg@1.2.3") === "bounded" && v("-") === "bounded");
+  expect("parent selector targets the CHILD, not the parent",
+    overrideTargetName("qar@1>zoo") === "zoo" && overrideTargetName("'@scope/a@1>@scope/b'") === "@scope/b");
+  expect("a > INSIDE a range is not mistaken for a parent selector",
+    overrideTargetName("brace-expansion@>=4.0.0 <5.0.9") === "brace-expansion"
+    && overrideTargetName("qs@>6.11.1") === "qs"
+    && overrideTargetName("hono@>=4.0.0 <=4.12.11") === "hono");
+  expect("plain and scoped keys still resolve to their own name",
+    overrideTargetName("qs@<6.15.2") === "qs" && overrideTargetName("'@hono/node-server@<1.19.15'") === "@hono/node-server");
+  expect("a rule whose package has no judgeable edge FAILS closed",
+    audit({ overrides: { ...overrides, "definitely-not-installed-pkg@<9": "9.0.0" }, rawText })
+      .errors.some((e) => e.check === "B" && e.rule === "definitely-not-installed-pkg"));
+  expect("every rule in this repo had at least one edge judged", clean.judgedCount > 0
+    && !clean.errors.some((e) => e.check === "B" && e.msg.includes("NO dependency edge")));
 
-  console.log(`\nselftest: ${failed === 0 ? "PASS" : `FAIL (${failed})`} — inspected ${clean.edgeCount} edges across ${clean.ruleCount} rules`);
+  console.log(`\nselftest: ${failed === 0 ? "PASS" : `FAIL (${failed})`} — judged ${clean.judgedCount} edges across ${clean.ruleCount} rules, ${clean.skippedCount} unjudged`);
   process.exit(failed === 0 ? 0 : 1);
 }
 
 // ------------------------------------------------------------------- main
 const rawText = readFileSync(join(ROOT, "pnpm-workspace.yaml"), "utf8");
 const overrides = parseYaml(rawText)?.overrides ?? {};
-const { errors, warnings, edgeCount, ruleCount } = audit({ overrides, rawText });
+const { errors, warnings, edgeCount, judgedCount, skippedCount, ruleCount } = audit({ overrides, rawText });
 
 for (const w of warnings) console.log(`WARN  [${w.check}] ${w.rule}: ${w.msg}`);
 for (const e of errors) console.error(`ERROR [${e.check}] ${e.rule}: ${e.msg}`);
 
 console.log(
   `\naudit-overrides: ${errors.length} error(s), ${warnings.length} warning(s) ` +
-  `— ${ruleCount} override rules, ${edgeCount} dependency edges inspected`
+  `— ${ruleCount} override rules, ${judgedCount} edges judged, ${skippedCount} unjudged`
 );
 if (edgeCount === 0) {
   console.error("ERROR: inspected 0 dependency edges. Run `pnpm install` first; a check that cannot see the tree passes vacuously.");
