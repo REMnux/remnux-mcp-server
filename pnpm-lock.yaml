@@ -26,7 +26,7 @@ importers:
   .:
     dependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.0.0
+        specifier: ^1.30.0
         version: 1.30.0(zod@3.25.76)
       dockerode:
         specifier: ^4.0.0
@@ -38,7 +38,7 @@ importers:
         specifier: ^1.15.0
         version: 1.17.0
       zod:
-        specifier: ^3.23.0
+        specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
       '@types/dockerode':

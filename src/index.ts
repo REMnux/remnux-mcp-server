@@ -694,8 +694,12 @@ async function startHttpServer(config: ServerConfig) {
     if (res.headersSent) return next(err);
     const status = typeof err?.status === "number" ? err.status : 500;
     const code = status === 413 ? -32600 : status === 400 ? -32700 : -32603;
+    // Name the recovery path on 413 so an AI client self-heals instead of
+    // dead-ending: the limit is body-parser's 100kb default, applied inside the
+    // SDK's createMcpExpressApp, and large text belongs in a file rather than in
+    // a request body (or the model's context) anyway.
     const message =
-      status === 413 ? "Request entity too large"
+      status === 413 ? "Request entity too large. Write the text to a file in the samples directory, then process it with run_tool instead of sending it inline."
       : status === 400 ? "Parse error"
       : "Internal error";
     res.status(status).json({ jsonrpc: "2.0", error: { code, message }, id: null });
