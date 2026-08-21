@@ -24,6 +24,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
 
+      # CI runs on branch pushes and pull requests, but NOT on tag pushes, and a
+      # tag push is what triggers this workflow. Without these, a tag could
+      # publish a commit that never went through lint, the test suite, the
+      # stale-build check, or the dependency-override audit. `pnpm test` runs
+      # pretest, which covers the latter two.
+      - run: pnpm run lint
+      - run: pnpm test
+
       - name: Publish to npm
         if: github.event_name == 'push'  # tag pushes only; manual dispatch builds without publishing
         run: |

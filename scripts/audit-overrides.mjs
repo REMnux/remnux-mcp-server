@@ -123,13 +123,24 @@ function splitSpec(spec) {
  */
 function declaredRangeFrom(parentName, parentVersion, depName, storeEntries) {
   const prefix = `${parentName.replace("/", "+")}@${parentVersion}`;
+  let sawManifest = false;
   for (const entry of storeEntries) {
     if (entry !== prefix && !entry.startsWith(`${prefix}_`)) continue;
     const pkg = readPkg(join(PNPM_DIR, entry, "node_modules", parentName, "package.json"));
     if (!pkg) continue;
-    return pkg.dependencies?.[depName] ?? pkg.optionalDependencies?.[depName];
+    sawManifest = true;
+    // peerDependencies count: a peer range is a declared constraint the
+    // override must still respect. @hono/node-server declares hono ^4 as a
+    // PEER, so reading only dependencies left that edge unjudgeable.
+    const range =
+      pkg.dependencies?.[depName] ??
+      pkg.optionalDependencies?.[depName] ??
+      pkg.peerDependencies?.[depName];
+    if (range) return { range };
   }
-  return undefined;
+  return { range: undefined, why: sawManifest
+    ? "parent manifest found but it declares no range for this dependency"
+    : "parent manifest not present in the store, so its declared range is unknown" };
 }
 
 /**
@@ -186,13 +197,9 @@ function collectEdges(targetNames) {
       const key = `${parent.name}@${parent.version}|${depName}@${resolved}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      const declared = declaredRangeFrom(parent.name, parent.version, depName, storeEntries);
+      const { range: declared, why } = declaredRangeFrom(parent.name, parent.version, depName, storeEntries);
       if (!declared) {
-        skipped.push({
-          parent: `${parent.name}@${parent.version}`,
-          dep: depName,
-          why: "parent manifest not present in the store, so its declared range is unknown",
-        });
+        skipped.push({ parent: `${parent.name}@${parent.version}`, dep: depName, why });
         continue;
       }
       edges.push({ parent: `${parent.name}@${parent.version}`, dep: depName, declared, resolved });

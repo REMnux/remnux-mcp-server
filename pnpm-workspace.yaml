@@ -27,11 +27,18 @@ overrides:
   brace-expansion@>=4.0.0 <5.0.9: '>=5.0.9 <6'
   # bounded to the 0.28 line both parents declare (tsx ~0.28.0, vite
   # ^0.27.0 || ^0.28.0). The floor is 0.28.1, NOT 0.25.0: besides
-  # GHSA-67mh-4wv8-2f99 (<=0.24.2), esbuild carries GHSA-gv7w-rqvm-qjhr (high,
-  # >=0.17.0 <0.28.1) and GHSA-g7r4-m6w7-qqqr (>=0.27.3 <0.28.1). tsx's ~0.28.0
-  # still permits 0.28.0, which both of those affect, so this rule genuinely
-  # binds and must not be dropped.
+  # GHSA-67mh-4wv8-2f99 (<=0.24.2), GHSA-g7r4-m6w7-qqqr affects >=0.27.3 <0.28.1
+  # and tsx's ~0.28.0 still permits 0.28.0, so this rule genuinely binds.
+  # (GHSA-gv7w-rqvm-qjhr was cited here previously; it was WITHDRAWN 2026-06-17
+  # and is not a justification.)
   'esbuild@<0.28.1': '>=0.28.1 <0.29'
+  # bounded to the 4.x line the sdk declares (^4.11.4). One consolidated floor
+  # replaces the six overlapping rungs removed earlier: those were bad
+  # configuration, but deleting them outright left NO floor, and ^4.11.4 still
+  # permits 4.11.4 through 4.12.33 which every open hono advisory affects
+  # (GHSA-f23p-vx2j-j53r, GHSA-54fx-42gc-7vw4, GHSA-8j4g-w8fx-2239 and others,
+  # all patched at 4.12.34).
+  'hono@<4.12.34': '>=4.12.34 <5'
   # bounded to the 3.x line: ajv declares fast-uri ^3.0.1, and an open-ended
   # '>=3.1.4' resolves to 4.x, crossing ajv's declared range. Supersedes the
   # removed '<=3.1.0' and '<=3.1.1' rungs, whose floors sat lower still.
@@ -39,8 +46,6 @@ overrides:
   # so 3.1.4 was itself inside a vulnerable range. Also clears
   # GHSA-v2hh-gcrm-f6hx (<=3.1.3), GHSA-4c8g-83qw-93j6 and GHSA-v39h-62p7-jpjc.
   'fast-uri@<3.1.5': '>=3.1.5 <4'
-  # NOTE: no hono rules. The sdk declares ^4.11.4, which has always permitted every
-  # patched version, so the six rungs removed here never bound anything.
   # NOTE: no ip-address rule. express-rate-limit declares ^10.2.0 and resolves 10.5.0,
   # which is clean. The removed 'ip-address@<=10.1.0' rule was actively harmful: both
   # GHSA-22jq-vg5j-6vgg and GHSA-4xrf-jv44-h6hh affect >=10.1.1, so forcing the tree
