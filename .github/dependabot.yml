@@ -1,0 +1,80 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/New_York
+    # Matches minimumReleaseAge in pnpm-workspace.yaml (10080 minutes = 7 days).
+    # Without this, Dependabot proposes releases that pnpm will then refuse to
+    # install, producing PRs that cannot pass CI.
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      # Grouped so a routine week is one PR to review rather than a dozen.
+      dev-tooling:
+        patterns:
+          - "eslint*"
+          - "@types/*"
+          - "typescript*"
+          - "vite"
+          - "vitest"
+          - "tsx"
+          - "husky"
+          - "lint-staged"
+        update-types:
+          - minor
+          - patch
+      runtime:
+        patterns:
+          - "@modelcontextprotocol/sdk"
+          - "dockerode"
+          - "ioc-extractor"
+          - "ssh2"
+          - "zod"
+        update-types:
+          - minor
+          - patch
+      transitive-security:
+        patterns:
+          - "*"
+        update-types:
+          - patch
+    ignore:
+      # Majors on direct dependencies land through a deliberate migration, not a
+      # bot PR: the vitest 1 -> 4 bump needed a new config file (its default
+      # exclude no longer covers dist/, which silently doubled the collected
+      # suite) and a peer dependency declared by hand. Security advisories are
+      # NOT suppressed by this -- Dependabot still opens security PRs and alerts
+      # regardless of `ignore`.
+      - dependency-name: "@modelcontextprotocol/sdk"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "dockerode"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "ioc-extractor"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "ssh2"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "zod"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 3
