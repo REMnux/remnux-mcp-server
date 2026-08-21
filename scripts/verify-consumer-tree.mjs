@@ -33,14 +33,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
  * actionable. Anything not listed here fails the gate.
  */
 const ALLOWED = new Map([
-  [
-    "GHSA-w5hq-g745-h8pq",
-    "uuid via dockerode. Affects v3()/v5()/v6() only when the CALLER supplies " +
-      "an undersized buf or bad offset. dockerode is the only uuid consumer and " +
-      "calls v4() with no arguments (lib/session.js:4,7); v4() throws RangeError. " +
-      "That call site is reachable only through dockerode's BuildKit session " +
-      "path, which this server never invokes. dockerode 5 drops uuid entirely.",
-  ],
+  // Empty on purpose. GHSA-w5hq-g745-h8pq (uuid via dockerode) was the sole
+  // entry and was removed when dockerode 5.0.0 dropped its uuid dependency
+  // outright: the edge that carried the advisory no longer exists, so there is
+  // nothing left to accept. An empty list is the desired steady state — add an
+  // entry only for an advisory that is genuinely unreachable AND unfixable, and
+  // delete it the moment the gate reports it STALE.
 ]);
 
 function run(cmd, args, cwd) {
@@ -171,8 +169,19 @@ try {
 
 console.log(`\nverify-consumer-tree: ${failed === 0 ? "PASS" : `FAIL (${failed} unaccepted)`}`);
 if (selftest) {
+  // Exactly one failure means the injected advisory is the only one: the gate
+  // fires AND the real consumer tree is clean. Distinguish the two failure
+  // modes explicitly — this is the release gate's sole run (see publish.yml),
+  // so a maintainer reading a blocked release must be able to tell "the gate
+  // is broken" from "the gate is working and the tree is dirty".
   const ok = failed === 1;
-  console.log(ok ? "selftest: PASS — the gate rejects an unaccepted advisory" : "selftest: FAIL — injected advisory did not fail the gate");
+  if (ok) {
+    console.log("selftest: PASS — the gate rejects an unaccepted advisory");
+  } else if (failed === 0) {
+    console.log("selftest: FAIL — the injected advisory did NOT fail the gate; advisory extraction is broken");
+  } else {
+    console.log(`selftest: FAIL — ${failed - 1} real unaccepted advisor${failed - 1 === 1 ? "y is" : "ies are"} present in the consumer tree (listed above); the gate itself is working`);
+  }
   process.exit(ok ? 0 : 1);
 }
 process.exit(failed === 0 ? 0 : 1);

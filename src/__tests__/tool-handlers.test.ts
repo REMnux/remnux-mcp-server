@@ -685,3 +685,59 @@ describe("get_server_info", () => {
     expect(envelope.data.server_version).toMatch(/^\d+\.\d+\.\d+/);
   });
 });
+
+// =========================================================================
+// tools/list wire contract
+// =========================================================================
+
+/**
+ * Guards the SHAPE of the JSON Schema clients receive, not just tool names.
+ *
+ * Why this exists: a zod 3 -> 4 bump silently dropped `additionalProperties:
+ * false` from 16 of the 19 tool schemas while the entire suite stayed green,
+ * because nothing here observed the generated schema. An open input schema lets
+ * a confused or prompt-injected client push unvalidated extra keys at a server
+ * that, in docker/ssh deployments, runs on the ANALYST'S WORKSTATION — outside
+ * the container isolation the threat model relies on.
+ *
+ * Deliberately NOT a snapshot. Descriptions and fields are edited constantly
+ * here, and a churning snapshot gets rubber-stamped, which recreates the blind
+ * spot with extra ceremony. These assertions are immune to description and
+ * field edits; they fire only when a tool is added or removed, or when the
+ * zod -> JSON Schema pipeline changes the closed-object contract.
+ */
+describe("tools/list wire contract", () => {
+  it("closes every tool schema that accepts arguments", async () => {
+    const { tools } = await client.listTools();
+
+    // The exemption is derived from "takes no arguments", NOT from a list of
+    // names. A name allowlist would leave a NEWLY ADDED tool unasserted until
+    // someone remembered to classify it; deriving it means a new tool that
+    // accepts arguments is protected by default.
+    const open: string[] = [];
+    for (const tool of tools) {
+      const schema = tool.inputSchema as {
+        type?: string;
+        properties?: Record<string, unknown>;
+        additionalProperties?: unknown;
+      };
+      expect(schema.type, `${tool.name}: inputSchema.type`).toBe("object");
+      if (Object.keys(schema.properties ?? {}).length === 0) continue;
+      if (schema.additionalProperties !== false) open.push(tool.name);
+    }
+
+    expect(
+      open,
+      `these tools accept arguments but their JSON Schema is open, so unknown ` +
+        `keys are not rejected: ${open.join(", ")}`
+    ).toEqual([]);
+  });
+
+  it("exposes the expected number of tools", async () => {
+    const { tools } = await client.listTools();
+    // Bump deliberately when adding or removing a tool. This is what makes the
+    // assertion above meaningful: without it, a tool could vanish from the
+    // wire entirely and the closed-schema check would still pass vacuously.
+    expect(tools.length).toBe(19);
+  });
+});

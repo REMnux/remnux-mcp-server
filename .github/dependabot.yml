@@ -49,15 +49,35 @@ updates:
         update-types:
           - patch
     ignore:
-      # CORRECTION: `ignore` DOES apply to security updates, not only version
-      # updates, so an ignored major can mean no security PR is opened (the
-      # alert still appears). Ignores are therefore limited to DEV tooling,
-      # where a major lands through a deliberate migration -- vitest 1 -> 4
-      # needed a new config file, because its default exclude no longer covers
-      # dist/ and an unscoped run silently doubled the collected suite, plus a
-      # peer declared by hand. RUNTIME dependencies are deliberately NOT
-      # ignored: for a security tool, receiving the PR matters more than the
-      # noise of an occasional major.
+      # WHICH ignores are safe here, and why (corrected 2026-08-21).
+      #
+      # An earlier note said flatly that `ignore` applies to security updates as
+      # well as version updates. That is true of `versions:` conditions and NOT
+      # true of `update-types:`-only conditions. GitHub documents it: "update-types
+      # only affects version updates, not security updates" and "Security updates
+      # will always be created regardless of the update-types setting"
+      # (docs.github.com -> Controlling which dependencies are updated).
+      # dependabot-core agrees: updater/lib/dependabot/job.rb logs
+      # " (doesn't apply to security update)" for an update_types condition when
+      # the job is security_updates_only.
+      #
+      # THE RULE THAT FOLLOWS:
+      #   * Every entry below is `update-types:`-only. Routine major PRs stop;
+      #     security PRs still arrive. Keep it that way.
+      #   * NEVER add a `versions:` ignore for a runtime dependency -- that form
+      #     DOES suppress security updates, which is the trap the old note was
+      #     reaching for.
+      #   * A runtime entry needs a documented reason and a migration plan. Dev
+      #     tooling needs neither: a dev major lands through deliberate migration
+      #     (vitest 1 -> 4 needed a new config file, because its default exclude
+      #     no longer covers dist/ and an unscoped run silently doubled the
+      #     collected suite, plus a peer declared by hand), and dev packages never
+      #     enter the published tree.
+      #
+      # Two backstops make this safe even if that behaviour ever regresses:
+      # Dependabot ALERTS are unaffected by `ignore` entirely, and
+      # scripts/verify-consumer-tree.mjs blocks the publish on any advisory in the
+      # tree a consumer would actually receive.
       - dependency-name: "vitest"
         update-types: ["version-update:semver-major"]
       - dependency-name: "vite"
@@ -65,6 +85,36 @@ updates:
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
       - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # @types/node stays on the SAME MAJOR as engines.node (">=20.0.0"). Typing
+      # against Node 26 would let src/ compile against APIs absent on a Node 20
+      # REMnux box, and no job here would catch it because CI runs Node 22.
+      # Precisely: ^20 resolves to 20.19.x, so this bounds type drift to the
+      # Node 20 API surface -- it does not pin to 20.0.0, and APIs added later
+      # in the 20.x line are still reachable. Raise this with engines.node, not
+      # before it.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # lint-staged 17 requires Node >=22.22.1, a whole major above this
+      # package's floor. The 16.x line in use requires >=20.17, which stays
+      # inside the supported major. Dev-only and never in the published `files`
+      # tree, so staying on 16 costs nothing on the consumer side.
+      - dependency-name: "lint-staged"
+        update-types: ["version-update:semver-major"]
+      # zod is the ONE runtime entry, and it is here because the major was
+      # declined on measured evidence, not to reduce noise for its own sake.
+      # Under zod 4 the MCP SDK's schema conversion drops
+      # `additionalProperties: false` from every tool input schema that takes
+      # arguments -- 16 of 19 -- silently opening the wire contract while the
+      # whole suite stays green. Without this entry, every 4.x release reopens
+      # that PR and re-asks a settled question, and the failure mode is one
+      # reflex merge. Migration plan if zod 3 must be left: move
+      # src/schemas/tools.ts to z.strictObject(), or register tools through
+      # registerTool with full schemas rather than passing .shape to
+      # server.tool(), then confirm the "tools/list wire contract" test in
+      # src/__tests__/tool-handlers.test.ts still passes -- it asserts exactly
+      # this invariant and fails loudly under zod 4 today.
+      - dependency-name: "zod"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions

@@ -12,11 +12,11 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
@@ -41,7 +41,20 @@ jobs:
       # only from the installing root, so `npm install -g` resolves fresh from
       # the caret ranges in package.json. Auditing our lockfile says nothing
       # about what lands on a REMnux box.
-      - run: node scripts/verify-consumer-tree.mjs
+      # --selftest, NOT a plain run. Until 2026-08-21 the ALLOWED list held a
+      # live advisory, so every publish incidentally proved that advisory
+      # extraction still worked. With the consumer tree clean, a plain run
+      # reports "0 advisories" and exits 0 whether the parser works or silently
+      # returns nothing -- a broken parser is indistinguishable from a clean
+      # tree. --selftest injects one synthetic advisory and exits 0 only when
+      # `failed === 1`, so it asserts BOTH that the gate still fires AND that
+      # the synthetic finding is the only one, i.e. the real tree is clean. It
+      # therefore subsumes the plain run; running both would just add a second
+      # unlocked npm install + audit cycle and a second chance for a transient
+      # registry failure to block a release. Expect the log to read
+      # "verify-consumer-tree: FAIL (1 unaccepted)" followed by
+      # "selftest: PASS" -- that pair is the success case.
+      - run: node scripts/verify-consumer-tree.mjs --selftest
 
       - name: Publish to npm
         if: github.event_name == 'push'  # tag pushes only; manual dispatch builds without publishing

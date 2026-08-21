@@ -67,17 +67,20 @@ overrides:
   # >=6.11.1 <=6.15.1 and GHSA-w7fw-mjwx-w883 affects >=6.7.0 <=6.14.1; 6.15.2
   # clears both, and ^6.14.0 still permits affected versions, so this rule binds.
   'qs@<6.15.2': '>=6.15.2 <7'
-  # NOTE: no uuid rule. GHSA-w5hq-g745-h8pq affects v3()/v5()/v6() only when the
-  # CALLER supplies a short buf or a bad offset. dockerode is the only uuid
-  # consumer in the graph and calls v4() with no arguments (lib/session.js:4,7);
-  # v4() throws RangeError rather than truncating, so the advisory is unreachable.
-  # The removed rule `uuid@<11.1.1: '>=11.1.1'` was open-ended and resolved uuid
-  # 14, four majors past dockerode's declared ^10.0.0. uuid >=12 is ESM-only and
-  # dockerode require()s it eagerly, so require('dockerode') threw ERR_REQUIRE_ESM
-  # on Node 20.0-20.18 -- inside this package's own engines range. Do NOT re-add a
-  # uuid override to clear the audit finding: `pnpm audit --prod` reporting this
-  # advisory is the accepted, cheaper cost. pnpm's auditConfig.ignoreGhsas was
-  # tested in both pnpm-workspace.yaml and package.json under pnpm 10.33 and
-  # suppressed nothing in either location, so the finding is dismissed on the
-  # GitHub Dependabot alert instead, where the rationale stays visible.
-  # Revisit when dockerode 5 lands: it drops the uuid dependency entirely.
+  # RESOLVED 2026-08-21: no uuid rule, and no uuid in the graph. dockerode 5.0.0
+  # dropped the uuid dependency outright, so GHSA-w5hq-g745-h8pq left the tree
+  # with the edge that carried it and `pnpm audit --prod` is now clean.
+  # The history is kept because it is the case AGAINST reaching for an override
+  # here again: the removed rule `uuid@<11.1.1: '>=11.1.1'` was open-ended and
+  # resolved uuid 14, four majors past dockerode's declared ^10.0.0. uuid >=12 is
+  # ESM-only and dockerode require()d it eagerly, so require('dockerode') threw
+  # ERR_REQUIRE_ESM on Node 20.0-20.18 -- inside this package's own engines range.
+  # Suppression was no better: pnpm's auditConfig.ignoreGhsas was tested in both
+  # pnpm-workspace.yaml and package.json under pnpm 10.33 and suppressed nothing.
+  # The lesson is narrower than "overrides don't work" -- every rule above is an
+  # override that DOES work, because a patched version exists inside the range
+  # the parent declares. uuid was the case where none did: dockerode declared
+  # ^10.0.0 and the fix landed in 11.1.1, outside it. When no patched version
+  # exists inside the parent's declared range, there is nothing to override to;
+  # reaching past the range is what broke Node 20 here. Wait for the parent to
+  # move, and keep every rule bounded to the range the parent declares.
