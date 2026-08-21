@@ -5,6 +5,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
+import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { createConnector, type ConnectorConfig } from "./connectors/index.js";
@@ -560,6 +561,30 @@ export async function startServer(config: ServerConfig) {
   }
 }
 
+/**
+ * Bearer-token verifier for the HTTP transport.
+ *
+ * Exported so tests exercise the real verifier rather than a copy — a duplicated
+ * verifier in the test helper cannot catch a defect in this one.
+ *
+ * Throws InvalidTokenError, not a bare Error: requireBearerAuth maps
+ * InvalidTokenError to 401 and *anything else* to 500, so a bare Error reports a
+ * wrong token as a server fault.
+ */
+export function createTokenVerifier(token: string): OAuthTokenVerifier {
+  const tokenBuf = Buffer.from(token);
+  return {
+    async verifyAccessToken(t: string): Promise<AuthInfo> {
+      const inputBuf = Buffer.from(t);
+      const match = inputBuf.length === tokenBuf.length && timingSafeEqual(inputBuf, tokenBuf);
+      if (!match) {
+        throw new InvalidTokenError("Invalid token");
+      }
+      return { token: t, clientId: "remnux-client", scopes: [], expiresAt: Math.floor(Date.now() / 1000) + 86400 };
+    },
+  };
+}
+
 async function startHttpServer(config: ServerConfig) {
   const host = config.httpHost ?? "127.0.0.1";
   const port = config.httpPort ?? 3000;
@@ -582,18 +607,7 @@ async function startHttpServer(config: ServerConfig) {
 
   // Bearer token auth middleware
   if (token) {
-    const tokenBuf = Buffer.from(token);
-    const verifier: OAuthTokenVerifier = {
-      async verifyAccessToken(t: string): Promise<AuthInfo> {
-        const inputBuf = Buffer.from(t);
-        const match = inputBuf.length === tokenBuf.length && timingSafeEqual(inputBuf, tokenBuf);
-        if (!match) {
-          throw new Error("Invalid token");
-        }
-        return { token: t, clientId: "remnux-client", scopes: [], expiresAt: Math.floor(Date.now() / 1000) + 86400 };
-      },
-    };
-    app.use("/mcp", requireBearerAuth({ verifier }));
+    app.use("/mcp", requireBearerAuth({ verifier: createTokenVerifier(token) }));
   } else {
     console.error(
       "WARNING: No auth token configured. Set --http-token or MCP_TOKEN env var for production use."
@@ -669,6 +683,22 @@ async function startHttpServer(config: ServerConfig) {
         res.status(500).json({ jsonrpc: "2.0", error: { code: -32603, message: "Internal error" } });
       }
     }
+  });
+
+  // Express's default error handler renders an HTML page. On a JSON-RPC endpoint
+  // that breaks any conforming client, which parses the response as JSON — most
+  // visibly for body-parser's 413 (request entity too large) and its 400 on
+  // malformed JSON. Answer in JSON-RPC instead.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.use("/mcp", (err: any, _req: any, res: any, next: any) => {
+    if (res.headersSent) return next(err);
+    const status = typeof err?.status === "number" ? err.status : 500;
+    const code = status === 413 ? -32600 : status === 400 ? -32700 : -32603;
+    const message =
+      status === 413 ? "Request entity too large"
+      : status === 400 ? "Parse error"
+      : "Internal error";
+    res.status(status).json({ jsonrpc: "2.0", error: { code, message }, id: null });
   });
 
   const warnings = !(config.noSandbox ?? false)

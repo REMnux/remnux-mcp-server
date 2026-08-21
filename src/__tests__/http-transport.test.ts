@@ -4,9 +4,7 @@ import { randomUUID } from "node:crypto";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
-import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
-import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
-import { createServer } from "../index.js";
+import { createServer, createTokenVerifier } from "../index.js";
 
 const TEST_TOKEN = "test-token-123";
 
@@ -41,13 +39,9 @@ function createTestApp(options: { token?: string } = {}) {
   const app = createMcpExpressApp({ host: "127.0.0.1" });
 
   if (options.token) {
-    const verifier: OAuthTokenVerifier = {
-      async verifyAccessToken(t: string): Promise<AuthInfo> {
-        if (t !== options.token) throw new Error("Invalid token");
-        return { token: t, clientId: "test-client", scopes: [], expiresAt: Math.floor(Date.now() / 1000) + 3600 };
-      },
-    };
-    app.use("/mcp", requireBearerAuth({ verifier }));
+    // Use the production verifier, not a copy: a duplicated verifier here cannot
+    // catch a defect in the real one.
+    app.use("/mcp", requireBearerAuth({ verifier: createTokenVerifier(options.token) }));
   }
 
   const sessions = new Map<string, StreamableHTTPServerTransport>();
@@ -128,6 +122,42 @@ describe("HTTP Transport", () => {
     const res = await fetch(mcpUrl(result.port), {
       method: "POST",
       headers: MCP_HEADERS,
+      body: JSON.stringify(initRequest()),
+    });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects an incorrect bearer token with 401, not 500", async () => {
+    const app = createTestApp({ token: TEST_TOKEN });
+    const result = await listenOnFreePort(app);
+    server = result.server;
+
+    const res = await fetch(mcpUrl(result.port), {
+      method: "POST",
+      headers: { ...MCP_HEADERS, "Authorization": "Bearer wrong-token-entirely" },
+      body: JSON.stringify(initRequest()),
+    });
+
+    // A bare Error from the verifier surfaces as 500 (server fault) instead of
+    // 401 (auth failure), because requireBearerAuth maps only InvalidTokenError
+    // to 401. Guard the status explicitly.
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects a same-length incorrect bearer token with 401", async () => {
+    const app = createTestApp({ token: TEST_TOKEN });
+    const result = await listenOnFreePort(app);
+    server = result.server;
+
+    // Same length as TEST_TOKEN, so this exercises the timingSafeEqual branch
+    // rather than the length short-circuit.
+    const sameLength = "x".repeat(TEST_TOKEN.length);
+    expect(sameLength.length).toBe(TEST_TOKEN.length);
+
+    const res = await fetch(mcpUrl(result.port), {
+      method: "POST",
+      headers: { ...MCP_HEADERS, "Authorization": `Bearer ${sameLength}` },
       body: JSON.stringify(initRequest()),
     });
 
