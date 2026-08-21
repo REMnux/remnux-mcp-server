@@ -48,6 +48,87 @@ function run(cmd, args, cwd) {
 const selftest = process.argv.includes("--selftest");
 const work = mkdtempSync(join(tmpdir(), "consumer-tree-"));
 let failed = 0;
+let shapeFailures = 0;
+
+/**
+ * Extract advisories from an npm audit v2 `vulnerabilities` object.
+ *
+ * Fails CLOSED on every shape it cannot account for. An advisory object this
+ * parser cannot identify is an ERROR, not an omission: silently ignoring one
+ * would let the very finding the gate exists to catch slip through as a clean
+ * run. In particular a missing or empty `via` is rejected, not iterated as
+ * "nothing here" (the earlier `vuln.via ?? []` did exactly that).
+ */
+function extractAdvisories(vulnerabilities) {
+  if (Array.isArray(vulnerabilities)) {
+    throw new Error("npm audit 'vulnerabilities' is an array, not the keyed object a v2 report carries");
+  }
+  const found = new Map();
+  // Every string-only chain must reach an entry that carries an advisory
+  // OBJECT. A self-reference or a cycle of string references would otherwise
+  // pass every per-entry check and contribute nothing: zero advisories, clean
+  // run, fail-open.
+  //
+  // Reachability is precomputed once as a multi-source reverse BFS: seed the
+  // packages that carry a direct advisory object, then propagate backward along
+  // reverse `via` edges (child -> the parents that name it). A package reaches
+  // an object iff BFS marks it. This is sound on cyclic graphs — a cycle that
+  // exits to an object marks every node in the cycle, and a closed cycle marks
+  // none — where a forward DFS can wrongly finalize a cycle node as false while
+  // an ancestor it depends on is still unresolved. O(V+E), no recursion, so a
+  // pathologically deep chain neither overflows the stack nor hangs the gate.
+  const reachesSet = new Set();
+  const parentsOf = new Map(); // child name -> [parent names that list it in via]
+  const queue = [];
+  for (const [name, v] of Object.entries(vulnerabilities)) {
+    if (!Array.isArray(v?.via)) continue;
+    if (v.via.some((x) => typeof x === "object" && x !== null)) { reachesSet.add(name); queue.push(name); }
+    for (const x of v.via) {
+      if (typeof x !== "string") continue;
+      if (!parentsOf.has(x)) parentsOf.set(x, []);
+      parentsOf.get(x).push(name);
+    }
+  }
+  for (let i = 0; i < queue.length; i++) {
+    for (const parent of parentsOf.get(queue[i]) ?? []) {
+      if (!reachesSet.has(parent)) { reachesSet.add(parent); queue.push(parent); }
+    }
+  }
+  const reachesObject = (name) => reachesSet.has(name);
+  for (const [pkgName, vuln] of Object.entries(vulnerabilities)) {
+    if (!Array.isArray(vuln?.via) || vuln.via.length === 0) {
+      throw new Error(
+        `vulnerability entry for ${pkgName} has no usable 'via' array, so its advisory cannot be identified: ${JSON.stringify(vuln).slice(0, 200)}`
+      );
+    }
+    for (const via of vuln.via) {
+      // A string `via` names another vulnerable package whose own top-level
+      // entry carries the advisory object. Require that entry to exist, or the
+      // chain ends nowhere and the advisory is lost.
+      if (typeof via === "string") {
+        if (!Object.prototype.hasOwnProperty.call(vulnerabilities, via)) {
+          throw new Error(`via chain for ${pkgName} names '${via}', which has no top-level vulnerability entry`);
+        }
+        if (!reachesObject(via)) {
+          throw new Error(`via chain for ${pkgName} through '${via}' never reaches an advisory object (self-reference or cycle)`);
+        }
+        continue;
+      }
+      if (typeof via !== "object" || via === null) {
+        throw new Error(`unrecognised via entry for ${pkgName}: ${JSON.stringify(via).slice(0, 200)}`);
+      }
+      const id = via.url ? String(via.url).split("/").pop() : undefined;
+      const key = id && /^GHSA-/i.test(id) ? id : via.source != null ? `source-${via.source}` : undefined;
+      if (!key) {
+        throw new Error(
+          `advisory for ${pkgName} has neither a GHSA url nor a source id, so it cannot be checked against the accepted list: ${JSON.stringify(via).slice(0, 200)}`
+        );
+      }
+      found.set(key, { name: via.name ?? vuln.name ?? pkgName, severity: via.severity ?? vuln.severity ?? "unknown", title: via.title ?? "" });
+    }
+  }
+  return found;
+}
 
 try {
   console.log("packing the tarball that would be published…");
@@ -56,7 +137,10 @@ try {
 
   writeFileSync(join(work, "package.json"), JSON.stringify({ name: "consumer-probe", version: "1.0.0", private: true }, null, 2));
   console.log("installing it the way a consumer would (npm, no lockfile, no overrides)…");
-  run("npm", ["install", "--no-audit", "--no-fund", tarball], work);
+  // --ignore-scripts: this is an advisory inspection of the resolved tree, not
+  // a build. It runs inside the publish job, so the freshest unlocked graph
+  // must not get to execute lifecycle scripts there.
+  run("npm", ["install", "--no-audit", "--no-fund", "--ignore-scripts", tarball], work);
 
   // --- what did the consumer actually get, for every package we override?
   const overridden = ["hono", "@hono/node-server", "protobufjs", "brace-expansion", "fast-uri", "qs", "postcss", "path-to-regexp", "uuid", "ip-address", "esbuild"];
@@ -117,28 +201,66 @@ try {
     };
   }
 
-  // Extract advisories. An advisory object this parser cannot identify is an
-  // ERROR, not an omission: silently ignoring one would let the very finding
-  // the gate exists to catch slip through as a clean run.
-  const found = new Map();
-  for (const [pkgName, vuln] of Object.entries(report.vulnerabilities)) {
-    for (const via of vuln.via ?? []) {
-      // A string `via` names another vulnerable package, whose own entry is
-      // also present at top level, so it needs no handling here.
-      if (typeof via === "string") continue;
-      if (typeof via !== "object" || via === null) {
-        throw new Error(`unrecognised via entry for ${pkgName}: ${JSON.stringify(via).slice(0, 200)}`);
-      }
-      const id = via.url ? String(via.url).split("/").pop() : undefined;
-      const key = id && /^GHSA-/i.test(id) ? id : via.source != null ? `source-${via.source}` : undefined;
-      if (!key) {
-        throw new Error(
-          `advisory for ${pkgName} has neither a GHSA url nor a source id, so it cannot be checked against the accepted list: ${JSON.stringify(via).slice(0, 200)}`
-        );
-      }
-      found.set(key, { name: via.name ?? vuln.name ?? pkgName, severity: via.severity ?? vuln.severity ?? "unknown", title: via.title ?? "" });
+  if (selftest) {
+    // Parser shape controls. The injected advisory above proves the happy path
+    // fires; these prove the parser FAILS CLOSED on the shapes that previously
+    // slipped through: `via` missing or empty was iterated as `?? []` and read
+    // as "no advisory", which is exactly the silent pass this gate must never
+    // produce. Each case is a report fragment the real parser must reject (or,
+    // for the last one, accept with exactly one advisory).
+    const ghsa = "https://github.com/advisories/GHSA-aaaa-bbbb-cccc";
+    const mustThrow = [
+      ["via missing", { p: { name: "p", severity: "high" } }],
+      ["via empty", { p: { name: "p", severity: "high", via: [] } }],
+      ["via not an array", { p: { name: "p", severity: "high", via: "q" } }],
+      ["string via naming an absent entry", { p: { name: "p", severity: "high", via: ["ghost"] } }],
+      ["object via with no GHSA url or source", { p: { name: "p", severity: "high", via: [{ title: "x" }] } }],
+      ["string via self-reference", { p: { name: "p", severity: "high", via: ["p"] } }],
+      ["string via cycle with no advisory object", { p: { name: "p", via: ["q"] }, q: { name: "q", via: ["p"] } }],
+      ["vulnerabilities as an array", []],
+    ];
+    for (const [label, fragment] of mustThrow) {
+      let threw = false;
+      try { extractAdvisories(fragment); } catch { threw = true; }
+      console.log(`${threw ? "PASS" : "FAIL"}  parser rejects: ${label}`);
+      if (!threw) shapeFailures++;
     }
+    let chainOk = false;
+    try {
+      chainOk = extractAdvisories({ p: { name: "p", via: ["q"] }, q: { name: "q", via: [{ url: ghsa, severity: "high" }] } }).size === 1;
+    } catch { chainOk = false; }
+    console.log(`${chainOk ? "PASS" : "FAIL"}  parser follows a transitive chain to exactly one advisory`);
+    if (!chainOk) shapeFailures++;
+
+    // A pathologically deep but structurally valid string-via chain must not
+    // blow the recursion stack (the earlier recursive reachesObject did). 200k
+    // links overflow a recursive walk and resolve fine iteratively.
+    const deep = {};
+    const DEPTH = 200000;
+    for (let i = 0; i < DEPTH; i++) {
+      deep[`p${i}`] = { name: `p${i}`, via: [i < DEPTH - 1 ? `p${i + 1}` : { url: ghsa, severity: "high" }] };
+    }
+    let deepOk = false;
+    try { deepOk = extractAdvisories(deep).size === 1; } catch { deepOk = false; }
+    console.log(`${deepOk ? "PASS" : "FAIL"}  parser walks a ${DEPTH}-link chain without overflowing the stack`);
+    if (!deepOk) shapeFailures++;
+
+    // Soundness on a cycle WITH an exit: a→[b,c], b→a, c→advisory. b reaches
+    // the advisory through a→c, so the whole graph must resolve (a forward DFS
+    // could wrongly finalize b=false while a is still in progress).
+    let cycleExitOk = false;
+    try {
+      cycleExitOk = extractAdvisories({
+        a: { name: "a", via: ["b", "c"] },
+        b: { name: "b", via: ["a"] },
+        c: { name: "c", via: [{ url: ghsa, severity: "high" }] },
+      }).size === 1;
+    } catch { cycleExitOk = false; }
+    console.log(`${cycleExitOk ? "PASS" : "FAIL"}  parser resolves a cycle that exits to an advisory (soundness)`);
+    if (!cycleExitOk) shapeFailures++;
   }
+
+  const found = extractAdvisories(report.vulnerabilities);
 
 
 
@@ -174,9 +296,11 @@ if (selftest) {
   // modes explicitly — this is the release gate's sole run (see publish.yml),
   // so a maintainer reading a blocked release must be able to tell "the gate
   // is broken" from "the gate is working and the tree is dirty".
-  const ok = failed === 1;
+  const ok = failed === 1 && shapeFailures === 0;
   if (ok) {
-    console.log("selftest: PASS — the gate rejects an unaccepted advisory");
+    console.log("selftest: PASS — the gate rejects an unaccepted advisory and the parser fails closed on malformed entries");
+  } else if (shapeFailures > 0) {
+    console.log(`selftest: FAIL — ${shapeFailures} parser shape control(s) did not fail closed (listed above)`);
   } else if (failed === 0) {
     console.log("selftest: FAIL — the injected advisory did NOT fail the gate; advisory extraction is broken");
   } else {

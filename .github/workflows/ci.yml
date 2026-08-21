@@ -36,6 +36,9 @@ jobs:
       # paths (see the header of the script), and a false positive in pretest
       # would block every local test run.
       - run: node scripts/audit-overrides.mjs
+      # The failure paths too: a plain run on a clean configuration cannot tell
+      # a working checker from one whose checks silently stopped firing.
+      - run: node scripts/audit-overrides.mjs --selftest
 
       # The committed suite is deterministic and self-contained. The radare2
       # golden test (src/__tests__/verify-string-usage.golden.test.ts) is gated

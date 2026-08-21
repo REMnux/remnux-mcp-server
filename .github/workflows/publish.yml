@@ -35,6 +35,7 @@ jobs:
       # out of pretest because a false positive there blocks every local test
       # run, so `pnpm test` no longer covers it.
       - run: node scripts/audit-overrides.mjs
+      - run: node scripts/audit-overrides.mjs --selftest
 
       # Audits the tree a CONSUMER receives, not the one we lock. pnpm-lock.yaml
       # and pnpm-workspace.yaml are never published and npm applies overrides

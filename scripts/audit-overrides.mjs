@@ -20,8 +20,15 @@
  *   C (warn)  — every override should cite the advisory it exists for.
  *
  * KNOWN LIMITS, so a green run is not read as more than it is:
- *   - Accounting is per target PACKAGE, not per rule. Two rules naming the same
- *     package share a counter, so one live edge marks both covered.
+ *   - Accounting is per RULE, via ruleMatchesEdge (kind-aware, pnpm-equivalent).
+ *     Its one gap: when two rules' selectors OVERLAP on the same edge, pnpm
+ *     picks one winner but this audit credits every matching rule, so a rule
+ *     fully shadowed by a more specific sibling is not reported. A DEAD rule
+ *     (no matching edge at all) still is — that is the case worth catching.
+ *   - Parent selectors (`parent@range>child`) are matched heuristically on the
+ *     parent's name and version; the root importer has neither, so a parent
+ *     rule that only a root edge could satisfy is reported as a WARNING, never
+ *     a blocking error.
  *   - A `-` removal override deletes the edge Check B looks for, so such a rule
  *     reports as having nothing judgeable.
  *   - The `parent>child` selector is resolved with a heuristic, not pnpm's own
@@ -166,6 +173,81 @@ function declaredRangeFrom(parentName, parentVersion, depName, storeEntries) {
  * current lockfile does not resolve. A checker that reports stale findings gets
  * ignored, which is worse than no checker.
  */
+/**
+ * Parse an override key into pnpm-equivalent matching fields. pnpm applies a
+ * `pkg@selector` override to an edge by matching the SELECTOR against the range
+ * the parent declares: a semver selector matches when the ranges intersect, a
+ * non-semver selector (`latest`, `workspace:*`) matches only on exact spec
+ * equality, and a parent selector (`parent@prange>child`) binds the parent,
+ * not the child's declared range. Modelling each kind separately keeps a rule
+ * from being credited against an edge pnpm would never route to it.
+ *   kind: "all"   — bare `pkg`; governs every edge of the target
+ *   kind: "range" — semver selector; matches by range intersection
+ *   kind: "exact" — non-semver selector; matches by exact declared-spec equality
+ *   kind: "parent"— `parent@prange>child`; matches by parent name + version
+ */
+function parseRuleSelector(key) {
+  const raw = String(key).trim().replace(/^'|'$/g, "");
+  for (let i = raw.length - 1; i >= 0; i--) {
+    if (raw[i] !== ">") continue;
+    const rest = raw.slice(i + 1);
+    if (/^[a-zA-Z@]/.test(rest)) {
+      const parentSpec = raw.slice(0, i).trim();
+      const pat = parentSpec.lastIndexOf("@");
+      return {
+        kind: "parent",
+        parentName: pat > 0 ? parentSpec.slice(0, pat) : parentSpec,
+        parentRange: (pat > 0 ? parentSpec.slice(pat + 1).trim() : "") || "*",
+      };
+    }
+    break;
+  }
+  const at = raw.lastIndexOf("@");
+  const sel = at > 0 ? raw.slice(at + 1).trim() : "";
+  if (!sel) return { kind: "all" };
+  if (semver.validRange(sel)) return { kind: "range", range: sel };
+  return { kind: "exact", spec: sel };
+}
+
+/** Split an edge's `name@version` parent label; `(root)` has no version. */
+function splitEdgeParent(parent) {
+  if (parent === "(root)") return { name: "(root)", version: null };
+  const at = String(parent).lastIndexOf("@");
+  return at > 0 ? { name: parent.slice(0, at), version: parent.slice(at + 1) } : { name: parent, version: null };
+}
+
+/** Would pnpm route this edge to this rule? Pure — no I/O, for unit testing. */
+function ruleMatchesEdge(rule, edge) {
+  if (rule.target !== edge.dep) return false;
+  switch (rule.selector.kind) {
+    case "all":
+      return true;
+    case "range":
+      try { return semver.intersects(rule.selector.range, edge.declared); } catch { return false; }
+    case "exact":
+      return edge.declared === rule.selector.spec;
+    case "parent": {
+      const p = splitEdgeParent(edge.parent);
+      if (p.name !== rule.selector.parentName) return false;
+      if (rule.selector.parentRange === "*" || !semver.validRange(rule.selector.parentRange)) return true;
+      try { return p.version != null && semver.satisfies(p.version, rule.selector.parentRange); } catch { return true; }
+    }
+    default:
+      return false;
+  }
+}
+
+/** Per-rule judged-edge counts. Pure — the seam the dead-sibling control tests. */
+function judgeRules(rules, edges) {
+  const counts = new Map(rules.map((r) => [r.bare, 0]));
+  for (const e of edges) {
+    for (const r of rules) {
+      if (ruleMatchesEdge(r, e)) counts.set(r.bare, counts.get(r.bare) + 1);
+    }
+  }
+  return counts;
+}
+
 function collectEdges(targetNames) {
   const lock = parseYaml(readFileSync(join(ROOT, "pnpm-lock.yaml"), "utf8"));
   const edges = [];
@@ -277,19 +359,31 @@ function audit({ overrides, rawText, inject }) {
     : collected.edges;
 
   /**
-   * Accounting is per TARGET PACKAGE, not per rule: two rules naming the same
-   * package share one counter, so one live edge marks both covered. That is a
-   * known limit, not a per-rule guarantee.
+   * Accounting is per RULE, attributed through `ruleMatchesEdge` (the same
+   * kind-aware model pnpm uses; see parseRuleSelector). Counting per target
+   * package instead (the earlier form) let one live edge mark every rule for
+   * that package covered, so a dead sibling rule (two brace-expansion rules,
+   * one of which nothing declares into) was invisible.
+   * Known limit: when two rules' selectors OVERLAP on the same edge, pnpm
+   * applies one winner, but this audit credits every matching rule. A rule
+   * fully shadowed by a more specific sibling is therefore not reported; a DEAD
+   * rule (no matching edge at all) is — which is the case this control exists
+   * to catch.
    */
-  const judgedPerTarget = new Map([...targets].map((t) => [t, 0]));
+  const rules = entries.map(([key]) => ({
+    bare: String(key).trim().replace(/^'|'$/g, ""),
+    target: overrideTargetName(key),
+    selector: parseRuleSelector(key),
+  }));
   const unjudged = [...collected.skipped];
+  const judgeableEdges = [];
 
   for (const e of checkedEdges) {
     if (!semver.validRange(e.declared) || !semver.valid(e.resolved)) {
       unjudged.push({ parent: e.parent, dep: e.dep, why: `non-semver spec (declared '${e.declared}', resolved '${e.resolved}')` });
       continue;
     }
-    judgedPerTarget.set(e.dep, (judgedPerTarget.get(e.dep) ?? 0) + 1);
+    judgeableEdges.push(e);
     if (!semver.satisfies(e.resolved, e.declared)) {
       errors.push({
         check: "B",
@@ -299,16 +393,32 @@ function audit({ overrides, rawText, inject }) {
     }
   }
 
+  const judgedPerRule = judgeRules(rules, judgeableEdges);
+  const judgedEdges = judgeableEdges.length;
+  const kindOf = new Map(rules.map((r) => [r.bare, r.selector.kind]));
+
   // Fail closed per rule. Previously a new rule whose only edges were optional
   // or whose parent was pruned got ZERO examination while the aggregate edge
   // count stayed non-zero and the gate reported green.
-  for (const [target, count] of judgedPerTarget) {
-    if (target.startsWith("synthetic-pkg")) continue;
+  for (const [rule, count] of judgedPerRule) {
+    if (rule.startsWith("synthetic-pkg")) continue;
     if (count === 0) {
+      // A parent-selector rule is matched only heuristically (parent name +
+      // version; the root importer carries no name/version to match). An
+      // unmatched one is therefore a WARNING, never a release-blocking error —
+      // the checker must not fail CI on a form it models only approximately.
+      if (kindOf.get(rule) === "parent") {
+        warnings.push({
+          check: "B",
+          rule,
+          msg: "no edge matched this parent-selector rule under the heuristic parent match; verify by hand that pnpm still applies it (parent selectors are not modelled precisely).",
+        });
+        continue;
+      }
       errors.push({
         check: "B",
-        rule: target,
-        msg: "an override targets this package but NO dependency edge for it could be judged. The rule may be dead, removed by a `-` override, or its edges unreadable; either way this check proves nothing about it.",
+        rule,
+        msg: "NO dependency edge matches this rule's selector, so nothing was judged under it. The rule may be dead (no parent declares into its range), removed by a `-` override, or its edges unreadable; either way this check proves nothing about it.",
       });
     }
   }
@@ -320,7 +430,7 @@ function audit({ overrides, rawText, inject }) {
     errors,
     warnings,
     edgeCount: checkedEdges.length,
-    judgedCount: [...judgedPerTarget.values()].reduce((a, b) => a + b, 0),
+    judgedCount: judgedEdges,
     skippedCount: unjudged.length,
     ruleCount: entries.length,
   };
@@ -377,8 +487,41 @@ if (process.argv.includes("--selftest")) {
     overrideTargetName("qs@<6.15.2") === "qs" && overrideTargetName("'@hono/node-server@<1.19.15'") === "@hono/node-server");
   expect("a rule whose package has no judgeable edge FAILS closed",
     audit({ overrides: { ...overrides, "definitely-not-installed-pkg@<9": "9.0.0" }, rawText })
-      .errors.some((e) => e.check === "B" && e.rule === "definitely-not-installed-pkg"));
-  expect("every override TARGET in this repo had at least one edge judged", clean.judgedCount > 0
+      .errors.some((e) => e.check === "B" && e.rule === "definitely-not-installed-pkg@<9"));
+  // Per-rule, not per-target: a dead sibling of a LIVE rule must still be
+  // flagged. Hermetic — fixed synthetic rules and edges, not the live graph,
+  // so a future repo change can never make this control spuriously pass or fail.
+  const mkRule = (key) => ({ bare: key.replace(/^'|'$/g, ""), target: overrideTargetName(key), selector: parseRuleSelector(key) });
+  expect("judgeRules attributes per rule so a dead sibling of a live rule is caught", (() => {
+    const rules = [mkRule("foo@^1"), mkRule("foo@^2")]; // ^2 is the dead sibling
+    const c = judgeRules(rules, [{ parent: "p@1.0.0", dep: "foo", declared: "^1.1.0", resolved: "1.2.0" }]);
+    return c.get("foo@^1") === 1 && c.get("foo@^2") === 0;
+  })());
+  expect("selector parsing: range, non-semver exact, bare package, parent selector", (() => {
+    const range = parseRuleSelector("brace-expansion@<1.1.18");
+    const scoped = parseRuleSelector("'@hono/node-server@<1.19.15'");
+    const exact = parseRuleSelector("pkg@workspace:*");
+    const bare = parseRuleSelector("qs");
+    const parent = parseRuleSelector("react@1>loose-envify");
+    return range.kind === "range" && range.range === "<1.1.18"
+      && scoped.kind === "range" && scoped.range === "<1.19.15"
+      && exact.kind === "exact" && exact.spec === "workspace:*"
+      && bare.kind === "all"
+      && parent.kind === "parent" && parent.parentName === "react" && parent.parentRange === "1";
+  })());
+  expect("ruleMatchesEdge follows the declared range, exact spec, and parent", (() => {
+    const rng = mkRule("brace-expansion@<1.1.18");
+    const exact = mkRule("pkg@workspace:*");
+    const parent = mkRule("react@^18>loose-envify");
+    const edge = (dep, declared, p = "x@1.0.0") => ({ parent: p, dep, declared, resolved: "1.0.0" });
+    return ruleMatchesEdge(rng, edge("brace-expansion", "^1.1.7")) && !ruleMatchesEdge(rng, edge("brace-expansion", "^5.0.0"))
+      && !ruleMatchesEdge(rng, edge("other", "^1.1.7"))                                  // wrong target
+      && ruleMatchesEdge(exact, edge("pkg", "workspace:*")) && !ruleMatchesEdge(exact, edge("pkg", "^1.0.0"))
+      && ruleMatchesEdge(parent, edge("loose-envify", "^1.0.0", "react@18.2.0"))         // parent in range
+      && !ruleMatchesEdge(parent, edge("loose-envify", "^1.0.0", "react@17.0.0"))        // parent out of range
+      && !ruleMatchesEdge(parent, edge("loose-envify", "^1.0.0", "preact@10.0.0"));      // wrong parent
+  })());
+  expect("every override RULE in this repo had at least one edge judged under its selector", clean.judgedCount > 0
     && !clean.errors.some((e) => e.check === "B" && e.msg.includes("NO dependency edge")));
 
   console.log(`\nselftest: ${failed === 0 ? "PASS" : `FAIL (${failed})`} — judged ${clean.judgedCount} edges across ${clean.ruleCount} rules, ${clean.skippedCount} unjudged`);
