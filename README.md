@@ -103,7 +103,7 @@ The MCP server runs inside the REMnux VM or container using the Local connector.
 
 ## Quick Start
 
-**Prerequisites:** Node.js >= 18, plus Docker (for container mode) or SSH access (for VM mode).
+**Prerequisites:** Node.js >= 20, plus Docker (for container mode) or SSH access (for VM mode).
 
 **Optional:** For additional tool documentation beyond what `suggest_tools` and `get_tool_help` provide, you can enable the [REMnux docs MCP server](https://docs.remnux.org/~gitbook/mcp) alongside this one.
 
