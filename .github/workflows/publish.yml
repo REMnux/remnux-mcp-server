@@ -27,10 +27,14 @@ jobs:
       # CI runs on branch pushes and pull requests, but NOT on tag pushes, and a
       # tag push is what triggers this workflow. Without these, a tag could
       # publish a commit that never went through lint, the test suite, the
-      # stale-build check, or the dependency-override audit. `pnpm test` runs
-      # pretest, which covers the latter two.
+      # stale-build check, or the dependency-override audit.
       - run: pnpm run lint
       - run: pnpm test
+
+      # Listed explicitly rather than relying on `pretest`: the audit was moved
+      # out of pretest because a false positive there blocks every local test
+      # run, so `pnpm test` no longer covers it.
+      - run: node scripts/audit-overrides.mjs
 
       # Audits the tree a CONSUMER receives, not the one we lock. pnpm-lock.yaml
       # and pnpm-workspace.yaml are never published and npm applies overrides
