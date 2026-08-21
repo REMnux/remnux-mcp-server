@@ -32,6 +32,11 @@ jobs:
 
       - run: pnpm run lint
 
+      # Runs here rather than in `pretest`: it has documented false-positive
+      # paths (see the header of the script), and a false positive in pretest
+      # would block every local test run.
+      - run: node scripts/audit-overrides.mjs
+
       # The committed suite is deterministic and self-contained. The radare2
       # golden test (src/__tests__/verify-string-usage.golden.test.ts) is gated
       # behind R2_GOLDEN_TEST, which is intentionally NOT set here: it needs a

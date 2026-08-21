@@ -19,6 +19,19 @@
  *               satisfying the range each declaring parent actually states.
  *   C (warn)  — every override should cite the advisory it exists for.
  *
+ * KNOWN LIMITS, so a green run is not read as more than it is:
+ *   - Accounting is per target PACKAGE, not per rule. Two rules naming the same
+ *     package share a counter, so one live edge marks both covered.
+ *   - A `-` removal override deletes the edge Check B looks for, so such a rule
+ *     reports as having nothing judgeable.
+ *   - The `parent>child` selector is resolved with a heuristic, not pnpm's own
+ *     parser. A child whose name starts with a digit, or that carries its own
+ *     range, is not parsed correctly.
+ *   - peerDependencies are read as declared constraints. That is stricter than
+ *     pnpm, which allows peers to be widened.
+ * Because of these, this runs as an explicit command and a CI step rather than
+ * in `pretest`, where a false positive would block all local testing.
+ *
  * Usage:
  *   node scripts/audit-overrides.mjs
  *   node scripts/audit-overrides.mjs --selftest   # prove the checks can fire
@@ -132,9 +145,11 @@ function declaredRangeFrom(parentName, parentVersion, depName, storeEntries) {
     // peerDependencies count: a peer range is a declared constraint the
     // override must still respect. @hono/node-server declares hono ^4 as a
     // PEER, so reading only dependencies left that edge unjudgeable.
+    // optionalDependencies win when a manifest names the same dep in both:
+    // the optional declaration is the effective one.
     const range =
-      pkg.dependencies?.[depName] ??
       pkg.optionalDependencies?.[depName] ??
+      pkg.dependencies?.[depName] ??
       pkg.peerDependencies?.[depName];
     if (range) return { range };
   }
@@ -261,7 +276,11 @@ function audit({ overrides, rawText, inject }) {
     ? [...collected.edges, { parent: "synthetic-parent@1.0.0", dep: [...targets][0] ?? "zod", declared: "^0.0.1", resolved: "9.9.9" }]
     : collected.edges;
 
-  /** Per-target accounting, so "green" cannot mean "never looked". */
+  /**
+   * Accounting is per TARGET PACKAGE, not per rule: two rules naming the same
+   * package share one counter, so one live edge marks both covered. That is a
+   * known limit, not a per-rule guarantee.
+   */
   const judgedPerTarget = new Map([...targets].map((t) => [t, 0]));
   const unjudged = [...collected.skipped];
 
@@ -271,7 +290,7 @@ function audit({ overrides, rawText, inject }) {
       continue;
     }
     judgedPerTarget.set(e.dep, (judgedPerTarget.get(e.dep) ?? 0) + 1);
-    if (!semver.satisfies(e.resolved, e.declared, { includePrerelease: true })) {
+    if (!semver.satisfies(e.resolved, e.declared)) {
       errors.push({
         check: "B",
         rule: `${e.dep}@${e.resolved}`,
@@ -289,7 +308,7 @@ function audit({ overrides, rawText, inject }) {
       errors.push({
         check: "B",
         rule: target,
-        msg: "override rule governs this package but NO dependency edge for it could be judged. The rule may be dead, or its edges unreadable; either way this check proves nothing about it.",
+        msg: "an override targets this package but NO dependency edge for it could be judged. The rule may be dead, removed by a `-` override, or its edges unreadable; either way this check proves nothing about it.",
       });
     }
   }
@@ -359,7 +378,7 @@ if (process.argv.includes("--selftest")) {
   expect("a rule whose package has no judgeable edge FAILS closed",
     audit({ overrides: { ...overrides, "definitely-not-installed-pkg@<9": "9.0.0" }, rawText })
       .errors.some((e) => e.check === "B" && e.rule === "definitely-not-installed-pkg"));
-  expect("every rule in this repo had at least one edge judged", clean.judgedCount > 0
+  expect("every override TARGET in this repo had at least one edge judged", clean.judgedCount > 0
     && !clean.errors.some((e) => e.check === "B" && e.msg.includes("NO dependency edge")));
 
   console.log(`\nselftest: ${failed === 0 ? "PASS" : `FAIL (${failed})`} — judged ${clean.judgedCount} edges across ${clean.ruleCount} rules, ${clean.skippedCount} unjudged`);

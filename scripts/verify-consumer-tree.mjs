@@ -44,7 +44,7 @@ const ALLOWED = new Map([
 ]);
 
 function run(cmd, args, cwd) {
-  return execFileSync(cmd, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 64 * 1024 * 1024 });
+  return execFileSync(cmd, args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 64 * 1024 * 1024, timeout: 10 * 60 * 1000 });
 }
 
 const selftest = process.argv.includes("--selftest");
@@ -72,29 +72,77 @@ try {
   }
 
   // --- audit that tree
+  //
+  // npm audit exits non-zero BOTH when it finds vulnerabilities and when it
+  // fails outright, and the JSON only lands on stdout in the first case.
+  // Treating those the same made this gate fail OPEN: a network error, a killed
+  // child, or an unparseable report all produced `{}` and a clean PASS. A
+  // release gate that passes because npm never answered is worse than no gate,
+  // so every path that is not a well-formed report is now a hard failure.
   let report;
+  let rawAudit;
   try {
-    report = JSON.parse(run("npm", ["audit", "--omit=dev", "--json"], work));
+    rawAudit = run("npm", ["audit", "--omit=dev", "--json"], work);
   } catch (err) {
-    // npm audit exits non-zero when it finds something; the JSON is still on stdout.
-    report = JSON.parse(err.stdout || "{}");
-  }
-
-  const found = new Map();
-  for (const vuln of Object.values(report.vulnerabilities ?? {})) {
-    for (const via of vuln.via ?? []) {
-      if (typeof via === "object" && via.url) {
-        const id = String(via.url).split("/").pop();
-        if (id?.startsWith("GHSA-")) found.set(id, { name: via.name ?? vuln.name, severity: via.severity ?? vuln.severity, title: via.title ?? "" });
-      }
+    rawAudit = err.stdout;
+    if (!rawAudit || !String(rawAudit).trim()) {
+      throw new Error(
+        `npm audit produced no output (exit ${err.status ?? "?"}). Treating as FAILURE, not as a clean tree. stderr: ${String(err.stderr ?? "").slice(0, 400)}`
+      );
     }
+  }
+  try {
+    report = JSON.parse(rawAudit);
+  } catch {
+    throw new Error(`npm audit output is not JSON. Treating as FAILURE. First 400 chars: ${String(rawAudit).slice(0, 400)}`);
+  }
+  if (report.error) {
+    throw new Error(`npm audit reported an error: ${JSON.stringify(report.error).slice(0, 400)}`);
+  }
+  // Shape check: a v2 report always carries auditReportVersion and a
+  // vulnerabilities object. Without them we cannot claim the tree is clean.
+  if (report.auditReportVersion !== 2 || typeof report.vulnerabilities !== "object" || report.vulnerabilities === null) {
+    throw new Error(
+      `npm audit report shape not recognised (auditReportVersion=${report.auditReportVersion}). Treating as FAILURE rather than assuming zero findings.`
+    );
   }
 
   if (selftest) {
-    // Anti-vacuity: an advisory the allowlist does NOT contain must fail the
-    // gate. Without this the gate could pass because it parsed nothing.
-    found.set("GHSA-selftest-0000-0000", { name: "synthetic", severity: "high", title: "injected by --selftest" });
+    // Inject into the REPORT, before extraction, so the run exercises the
+    // parser and the allowlist together. Injecting into the extracted results
+    // instead would still pass with a completely broken parser, which is the
+    // failure this control exists to rule out.
+    report.vulnerabilities["synthetic-selftest-pkg"] = {
+      name: "synthetic-selftest-pkg",
+      severity: "high",
+      via: [{ source: 999999, name: "synthetic-selftest-pkg", severity: "high", title: "injected by --selftest", url: "https://github.com/advisories/GHSA-selftest-0000-0000" }],
+    };
   }
+
+  // Extract advisories. An advisory object this parser cannot identify is an
+  // ERROR, not an omission: silently ignoring one would let the very finding
+  // the gate exists to catch slip through as a clean run.
+  const found = new Map();
+  for (const [pkgName, vuln] of Object.entries(report.vulnerabilities)) {
+    for (const via of vuln.via ?? []) {
+      // A string `via` names another vulnerable package, whose own entry is
+      // also present at top level, so it needs no handling here.
+      if (typeof via === "string") continue;
+      if (typeof via !== "object" || via === null) {
+        throw new Error(`unrecognised via entry for ${pkgName}: ${JSON.stringify(via).slice(0, 200)}`);
+      }
+      const id = via.url ? String(via.url).split("/").pop() : undefined;
+      const key = id && /^GHSA-/i.test(id) ? id : via.source != null ? `source-${via.source}` : undefined;
+      if (!key) {
+        throw new Error(
+          `advisory for ${pkgName} has neither a GHSA url nor a source id, so it cannot be checked against the accepted list: ${JSON.stringify(via).slice(0, 200)}`
+        );
+      }
+      found.set(key, { name: via.name ?? vuln.name ?? pkgName, severity: via.severity ?? vuln.severity ?? "unknown", title: via.title ?? "" });
+    }
+  }
+
+
 
   console.log(`\nadvisories in the consumer tree: ${found.size}`);
   for (const [id, info] of found) {

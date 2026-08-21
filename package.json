@@ -14,7 +14,7 @@
     "start": "node dist/cli.js",
     "lint": "eslint src/",
     "test": "vitest run",
-    "pretest": "pnpm exec tsx scripts/check-stale-build.ts && node scripts/audit-overrides.mjs",
+    "pretest": "pnpm exec tsx scripts/check-stale-build.ts",
     "validate:tools": "pnpm exec tsx scripts/validate-tools.ts",
     "deps:audit-overrides": "node scripts/audit-overrides.mjs",
     "deps:audit-overrides:selftest": "node scripts/audit-overrides.mjs --selftest",
