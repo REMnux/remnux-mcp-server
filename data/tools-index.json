@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-08-17",
+  "updated": "2026-08-21",
   "tools": [
     {
       "command": "1768",
@@ -1548,6 +1548,13 @@
       "category": "Use Artificial Intelligence",
       "description": "Drive x64dbg on a remote Windows VM from OpenCode on REMnux, with eight AI commands for tracing, unpacking, state snapshots, decompiling, YARA scanning, and vulnerability hunting.",
       "website": "https://github.com/REMnux/x64dbg-skills-opencode"
+    },
+    {
+      "command": "x64dbg-documentation",
+      "name": "x64dbg Documentation",
+      "category": "Dynamically Reverse-Engineer Code: General",
+      "description": "Read the official x64dbg documentation offline, including the command reference and format specifiers.",
+      "website": "https://github.com/x64dbg/docs"
     },
     {
       "command": "xlmmacrodeobfuscator",
