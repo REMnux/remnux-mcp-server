@@ -7,7 +7,11 @@ onlyBuiltDependencies:
   - workerd
   - cpu-features
 overrides:
-  '@hono/node-server@<1.19.13': '>=1.19.13'
+  # bounded to the 1.x line the sdk declares (^1.19.9). GHSA-frvp-7c67-39w9 affects
+  # BOTH >=2.0.0 <2.0.5 AND <1.19.15, so the previous open-ended '>=1.19.13' was
+  # doubly wrong: it sat inside the vulnerable 1.x range, and it crossed into 2.x
+  # where the sdk never declared support.
+  '@hono/node-server@<1.19.15': '>=1.19.15 <2'
   '@protobufjs/utf8@<=1.1.0': '>=1.1.1'
   # bounded to the 1.x line: minimatch@3 declares brace-expansion ^1.1.7, and the
   # previous open-ended '>=1.1.13' crossed into 5.x, where a later rule could no
@@ -23,17 +27,18 @@ overrides:
   # bounded to the 3.x line: ajv declares fast-uri ^3.0.1, and an open-ended
   # '>=3.1.4' resolves to 4.x, crossing ajv's declared range
   fast-uri@<=3.1.3: '>=3.1.4 <4'
-  hono@<4.12.12: '>=4.12.12'
-  hono@<4.12.14: '>=4.12.14'
-  hono@<4.12.16: '>=4.12.16'
-  hono@<4.12.18: '>=4.12.18'
-  hono@<4.12.21: '>=4.12.21'
-  hono@>=4.0.0 <=4.12.11: '>=4.12.12'
-  ip-address@<=10.1.0: '>=10.1.1'
+  # NOTE: no hono rules. The sdk declares ^4.11.4, which has always permitted every
+  # patched version, so the six rungs removed here never bound anything.
+  # NOTE: no ip-address rule. express-rate-limit declares ^10.2.0 and resolves 10.5.0,
+  # which is clean. The removed 'ip-address@<=10.1.0' rule was actively harmful: both
+  # GHSA-22jq-vg5j-6vgg and GHSA-4xrf-jv44-h6hh affect >=10.1.1, so forcing the tree
+  # off 10.1.0 moved it INTO the vulnerable window.
   path-to-regexp@>=8.0.0 <8.4.0: '>=8.4.0'
   postcss@<8.5.10: '>=8.5.10'
-  protobufjs@<7.5.5: '>=7.5.5'
-  protobufjs@<=7.5.5: '>=7.5.6'
-  protobufjs@<=7.5.7: '>=7.5.8'
+  # bounded to the 7.x line dockerode declares (^7.3.2). GHSA-j3f2-48v5-ccww affects
+  # 7.x <=7.6.4 and GHSA-f38q-mgvj-vph7 affects <=7.6.2, so 7.6.5 is the real floor;
+  # the previous open-ended '>=7.5.8' both permitted vulnerable 7.x and crossed into
+  # 8.x, where all three current advisories live and dockerode declares no support.
+  'protobufjs@<7.6.5': '>=7.6.5 <8'
   qs@>=6.11.1 <=6.15.1: '>=6.15.2'
   uuid@<11.1.1: '>=11.1.1'
