@@ -32,6 +32,13 @@ jobs:
       - run: pnpm run lint
       - run: pnpm test
 
+      # Audits the tree a CONSUMER receives, not the one we lock. pnpm-lock.yaml
+      # and pnpm-workspace.yaml are never published and npm applies overrides
+      # only from the installing root, so `npm install -g` resolves fresh from
+      # the caret ranges in package.json. Auditing our lockfile says nothing
+      # about what lands on a REMnux box.
+      - run: node scripts/verify-consumer-tree.mjs
+
       - name: Publish to npm
         if: github.event_name == 'push'  # tag pushes only; manual dispatch builds without publishing
         run: |

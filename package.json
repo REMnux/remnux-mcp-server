@@ -18,6 +18,7 @@
     "validate:tools": "pnpm exec tsx scripts/validate-tools.ts",
     "deps:audit-overrides": "node scripts/audit-overrides.mjs",
     "deps:audit-overrides:selftest": "node scripts/audit-overrides.mjs --selftest",
+    "deps:verify-consumer-tree": "node scripts/verify-consumer-tree.mjs",
     "sync:report-guidance": "pnpm exec tsx scripts/sync-report-guidance.ts",
     "preversion": "pnpm run validate:tools && pnpm test",
     "prepare": "husky",
