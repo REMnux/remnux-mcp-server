@@ -14,7 +14,7 @@
     "start": "node dist/cli.js",
     "lint": "eslint src/",
     "test": "vitest run",
-    "pretest": "pnpm exec tsx scripts/check-stale-build.ts",
+    "pretest": "pnpm exec tsx scripts/check-stale-build.ts && node scripts/audit-overrides.mjs",
     "validate:tools": "pnpm exec tsx scripts/validate-tools.ts",
     "deps:audit-overrides": "node scripts/audit-overrides.mjs",
     "deps:audit-overrides:selftest": "node scripts/audit-overrides.mjs --selftest",
@@ -74,7 +74,8 @@
     "tsx": "^4",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.54.0",
-    "vitest": "^1.6.0",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.10",
     "yaml": "2.9.0"
   }
 }

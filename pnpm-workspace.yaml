@@ -12,35 +12,56 @@ overrides:
   # doubly wrong: it sat inside the vulnerable 1.x range, and it crossed into 2.x
   # where the sdk never declared support.
   '@hono/node-server@<1.19.15': '>=1.19.15 <2'
-  '@protobufjs/utf8@<=1.1.0': '>=1.1.1'
+  # NOTE: no @protobufjs/utf8 rule. protobufjs declares ^1.1.1, which already
+  # excludes everything GHSA-q6x5-8v7m-xcrf affects (<=1.1.0); the rule could
+  # never bind.
+  # GHSA-rgw5-rvv9-x895: the 1.x line is affected <1.1.18, patched at 1.1.18.
   # bounded to the 1.x line: minimatch@3 declares brace-expansion ^1.1.7, and the
   # previous open-ended '>=1.1.13' crossed into 5.x, where a later rule could no
   # longer reach it (first matching override wins on the declared spec)
   brace-expansion@<1.1.18: '>=1.1.18 <2'
-  brace-expansion@>=4.0.0 <5.0.5: '>=5.0.5'
-  brace-expansion@>=5.0.0 <5.0.6: '>=5.0.6'
-  # bounded to the 5.x line, same reason as fast-uri below
+  # GHSA-rgw5-rvv9-x895 (also GHSA-mh99-v99m-4gvg, GHSA-3jxr-9vmj-r5cp): the 4.x/5.x
+  # line is affected >=4.0.0 <5.0.9, patched at 5.0.9. Bounded to the 5.x line, same
+  # reason as fast-uri below. Supersedes the removed '>=4.0.0 <5.0.5' and
+  # '>=5.0.0 <5.0.6' rungs, whose floors sat below 5.0.9.
   brace-expansion@>=4.0.0 <5.0.9: '>=5.0.9 <6'
-  esbuild@<=0.24.2: '>=0.25.0'
-  fast-uri@<=3.1.0: '>=3.1.1'
-  fast-uri@<=3.1.1: '>=3.1.2'
+  # bounded to the 0.28 line both parents declare (tsx ~0.28.0, vite
+  # ^0.27.0 || ^0.28.0). The floor is 0.28.1, NOT 0.25.0: besides
+  # GHSA-67mh-4wv8-2f99 (<=0.24.2), esbuild carries GHSA-gv7w-rqvm-qjhr (high,
+  # >=0.17.0 <0.28.1) and GHSA-g7r4-m6w7-qqqr (>=0.27.3 <0.28.1). tsx's ~0.28.0
+  # still permits 0.28.0, which both of those affect, so this rule genuinely
+  # binds and must not be dropped.
+  'esbuild@<0.28.1': '>=0.28.1 <0.29'
   # bounded to the 3.x line: ajv declares fast-uri ^3.0.1, and an open-ended
-  # '>=3.1.4' resolves to 4.x, crossing ajv's declared range
-  fast-uri@<=3.1.3: '>=3.1.4 <4'
+  # '>=3.1.4' resolves to 4.x, crossing ajv's declared range. Supersedes the
+  # removed '<=3.1.0' and '<=3.1.1' rungs, whose floors sat lower still.
+  # Floor RAISED from 3.1.4: GHSA-7p8r-x3mc-p8w7 (high) affects >=3.0.0 <3.1.5,
+  # so 3.1.4 was itself inside a vulnerable range. Also clears
+  # GHSA-v2hh-gcrm-f6hx (<=3.1.3), GHSA-4c8g-83qw-93j6 and GHSA-v39h-62p7-jpjc.
+  'fast-uri@<3.1.5': '>=3.1.5 <4'
   # NOTE: no hono rules. The sdk declares ^4.11.4, which has always permitted every
   # patched version, so the six rungs removed here never bound anything.
   # NOTE: no ip-address rule. express-rate-limit declares ^10.2.0 and resolves 10.5.0,
   # which is clean. The removed 'ip-address@<=10.1.0' rule was actively harmful: both
   # GHSA-22jq-vg5j-6vgg and GHSA-4xrf-jv44-h6hh affect >=10.1.1, so forcing the tree
   # off 10.1.0 moved it INTO the vulnerable window.
-  path-to-regexp@>=8.0.0 <8.4.0: '>=8.4.0'
-  postcss@<8.5.10: '>=8.5.10'
+  # bounded to the 8.x line router declares (^8.0.0). GHSA-27v5-c462-wpq7 and
+  # GHSA-j3q9-mxjg-w52f both affect >=8.0.0 <8.4.0, and ^8.0.0 still permits those,
+  # so unlike the deletions above this rule genuinely binds.
+  'path-to-regexp@<8.4.0': '>=8.4.0 <9'
+  # bounded to the 8.x line vite declares (^8.5.6). Floor RAISED from 8.5.10:
+  # GHSA-fxqj-rqcc-2cmp affects <=8.5.22, so 8.5.10 was itself inside a vulnerable
+  # range. Highest patched floor across the open postcss advisories is 8.5.23.
+  'postcss@<8.5.23': '>=8.5.23 <9'
   # bounded to the 7.x line dockerode declares (^7.3.2). GHSA-j3f2-48v5-ccww affects
   # 7.x <=7.6.4 and GHSA-f38q-mgvj-vph7 affects <=7.6.2, so 7.6.5 is the real floor;
   # the previous open-ended '>=7.5.8' both permitted vulnerable 7.x and crossed into
   # 8.x, where all three current advisories live and dockerode declares no support.
   'protobufjs@<7.6.5': '>=7.6.5 <8'
-  qs@>=6.11.1 <=6.15.1: '>=6.15.2'
+  # bounded to the 6.x line express declares (^6.14.0). GHSA-q8mj-m7cp-5q26 affects
+  # >=6.11.1 <=6.15.1 and GHSA-w7fw-mjwx-w883 affects >=6.7.0 <=6.14.1; 6.15.2
+  # clears both, and ^6.14.0 still permits affected versions, so this rule binds.
+  'qs@<6.15.2': '>=6.15.2 <7'
   # NOTE: no uuid rule. GHSA-w5hq-g745-h8pq affects v3()/v5()/v6() only when the
   # CALLER supplies a short buf or a bad offset. dockerode is the only uuid
   # consumer in the graph and calls v4() with no arguments (lib/session.js:4,7);

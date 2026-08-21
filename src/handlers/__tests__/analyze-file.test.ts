@@ -105,9 +105,13 @@ describe("handleAnalyzeFile", () => {
     vi.mocked(deps.connector.execute).mockResolvedValue(
       ok("/samples/dropper.js: JavaScript source, ASCII text")
     );
-    const deepUrl = "A".repeat(30000) +
+    // Whitespace-broken filler. The property under test is "the URL sits past
+    // the 20KB display budget", which needs 30KB of CONTENT before it, not 30KB
+    // of unbroken run. ioc-extractor is quadratic in unbroken non-whitespace
+    // length, so "A".repeat(30000) made this single test take ~14s.
+    const deepUrl = `${"A".repeat(100)} `.repeat(300) +
       ' downloadUrl: "http://evilc2downloader.com/stage2.ps1" ' +
-      "B".repeat(3000);
+      `${"B".repeat(100)} `.repeat(30);
     vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(deepUrl));
 
     const result = await handleAnalyzeFile(deps, { file: "dropper.js", depth: "standard" });
