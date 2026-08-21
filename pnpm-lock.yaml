@@ -59,6 +59,9 @@ importers:
       lint-staged:
         specifier: ^16.2.7
         version: 16.4.0
+      semver:
+        specifier: ^7.8.5
+        version: 7.8.5
       tsx:
         specifier: ^4
         version: 4.23.12
