@@ -85,6 +85,53 @@ function isLikelyVersionString(ip: string): boolean {
   return nums.every((n) => n >= 0 && n <= 20) && nums.some((n) => n === 0);
 }
 
+/**
+ * Reject "domains" that are really fragments of high-entropy binary data.
+ *
+ * Scanning a packed executable produces a long tail of two-label strings that satisfy a domain
+ * regex but cannot be registrations — "0dpC.Nf", "A.Ad", "C.MS", "Cr.nr". They crowd genuine
+ * domains out of the per-type IOC cap, so they are demoted to noise.
+ *
+ * The signal is casing and label shape rather than a TLD allowlist: every one of these carries a
+ * real ccTLD, so an allowlist does not separate them, while DNS references in tool output are
+ * written lowercase and registrable labels are not one random capital letter.
+ *
+ * Each rule is written to spare the real domains that look superficially similar — "t.co" and
+ * "qq.com" (short but lowercase), "163.com" (all-digit label of three characters), and
+ * "EVIL.COM" (an uppercase configuration string, which malware really does embed).
+ */
+function isImplausibleDomainShape(value: string): boolean {
+  // Every rule below applies only to a bare two-label string, which is the shape this noise
+  // takes. A deeper hostname is left alone for two reasons: in "CDN.example.co.uk" the
+  // second-to-last label is the public suffix "co" rather than the registrable name, so reading
+  // it as one would reject an ordinary host; and a multi-label name is far likelier to be a real
+  // reference than a fragment of binary data.
+  const labels = value.split(".");
+  if (labels.length !== 2) return false;
+  const tld = labels[1];
+  const registrable = labels[0];
+
+  // A capitalized TLD inside an otherwise mixed-case string ("0dpC.Nf", "ANA.Bg", "8.tK").
+  // A uniformly uppercase string such as "EVIL.COM" is exempt — that is a plausible config
+  // string — and so is ordinary title case such as "Bit.ly", whose TLD stays lowercase.
+  if (/[A-Z]/.test(tld) && /[a-z]/.test(value)) return true;
+
+  // A single-digit registrable label ("0.cl", "3.NZ"). Two and three digits are left alone,
+  // because "58.com", "22.cn", "51.la", and "163.com" are real registrations.
+  if (/^\d$/.test(registrable)) return true;
+
+  // A registrable label of one or two characters in a string carrying a capital ("B.ms", "C.MS",
+  // "Cr.nr", "91.UA"). The lowercase forms "t.co", "x.com", "vk.com", and "qq.com" are untouched,
+  // and a domain referenced by a URL is extracted as a `url` and never reaches this check.
+  if (registrable.length <= 2 && /[A-Z]/.test(value)) return true;
+
+  // A three-character label mixing a digit with a capital ("7-M.gi"). Requiring both spares
+  // "Bit.ly" and "Goo.gl".
+  if (registrable.length <= 3 && /\d/.test(registrable) && /[A-Z]/.test(registrable)) return true;
+
+  return false;
+}
+
 /** Options for noise filtering */
 export interface NoiseFilterOptions {
   /** Include private/internal IP addresses (default: false) */
@@ -107,6 +154,9 @@ export function isNoise(value: string, type: string, options?: NoiseFilterOption
   }
 
   if (type === "domain") {
+    // Shape checks run on the ORIGINAL casing, before any lowercasing below.
+    if (isImplausibleDomainShape(value)) return true;
+
     const lower = value.toLowerCase();
     // Reject domains shorter than 4 chars (e.g., "j.Ph", "32.be")
     if (lower.length < 4) return true;

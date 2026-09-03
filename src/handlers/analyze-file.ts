@@ -12,8 +12,8 @@ import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
 import { extractIOCs } from "../ioc/extractor.js";
+import { sanitizeToolOutputForIOCScan } from "../utils/metadata-filter.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
-import { filterMetadataLines } from "../utils/metadata-filter.js";
 import { resolveSamplePath } from "../utils/resolve-sample-path.js";
 import { checkFileExists } from "../utils/check-file-exists.js";
 import { getPreprocessors } from "../tools/preprocessors.js";
@@ -440,6 +440,8 @@ export async function handleAnalyzeFile(
   // indicator that sits past a tool's display budget (e.g. a C2 URL deep in
   // webcrack's deobfuscated output) is still extracted, not just saved to file.
   const fullOutputs: string[] = [];
+  // Per-tool copies with the tool's own provenance stripped; the IOC corpus is built from these.
+  const iocScanOutputs: string[] = [];
   let totalOutputSize = 0;
 
   // Step 3: Run each tool
@@ -605,6 +607,12 @@ export async function handleAnalyzeFile(
       }
 
       fullOutputs.push(fullOutput.length > IOC_SCAN_CAP ? fullOutput.slice(0, IOC_SCAN_CAP) : fullOutput);
+      // Strip the tool's own provenance BEFORE the size cap. capa emits one JSON document, so
+      // truncating first would leave unparseable JSON and the provenance would flow through.
+      const scanOutput = sanitizeToolOutputForIOCScan(tool.name, fullOutput);
+      iocScanOutputs.push(
+        scanOutput.length > IOC_SCAN_CAP ? scanOutput.slice(0, IOC_SCAN_CAP) : scanOutput,
+      );
       toolsRun.push({
         name: tool.name,
         command: cmd,
@@ -627,17 +635,11 @@ export async function handleAnalyzeFile(
     }
   }
 
-  const combinedOutput = fullOutputs.join("\n\n")
+  const combinedOutput = iocScanOutputs.join("\n\n")
     .replace(/^\s*"command":\s*".*"$/gm, "");
-  // Filter metadata lines (author, reference, namespace, etc.) to prevent false IOC extraction
-  // from tool/rule metadata (e.g., capa authors, YARA rule references)
-  const filteredOutput = filterMetadataLines(combinedOutput);
-  const iocResult = extractIOCs(filteredOutput);
-
-  // Filter out the analyzed file's own hashes from IOC results
-  if (ownHashes.size > 0) {
-    iocResult.iocs = iocResult.iocs.filter((ioc) => !ownHashes.has(ioc.value.toLowerCase()));
-  }
+  // The file's own hashes are excluded during extraction rather than after it, so an excluded
+  // hash cannot take a slot under the per-type cap and hide a real indicator behind it.
+  const iocResult = extractIOCs(combinedOutput, ownHashes.size > 0 ? { exclude: ownHashes } : undefined);
 
   // Generate triage summary and next steps
   const triageSummary = generateTriageSummary(category.name, toolsRun, iocResult.iocs.length);

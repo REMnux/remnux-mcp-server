@@ -254,3 +254,52 @@ describe("generateNextSteps report pointer", () => {
     expect(steps[steps.length - 1].startsWith(POINTER)).toBe(true);
   });
 });
+
+describe("handleAnalyzeFile IOC summary integrity", () => {
+  const OWN_MD5 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  const OWN_SHA1 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  const OWN_SHA256 = "c".repeat(64);
+
+  /** file(1) first, then the md5sum/sha1sum/sha256sum probe, then every tool invocation. */
+  function depsEmitting(toolOutput: string) {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockImplementation(async (argv: string[]) => {
+      if (argv.includes("-c")) {
+        return ok(`${OWN_MD5}  /samples/test.exe\n${OWN_SHA1}  /samples/test.exe\n${OWN_SHA256}  /samples/test.exe`);
+      }
+      return ok("/samples/test.exe: PE32 executable");
+    });
+    vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(toolOutput));
+    return deps;
+  }
+
+  it("does not report the analyzed file's own hashes as indicators", async () => {
+    const deps = depsEmitting(`${OWN_MD5}\n${OWN_SHA256}\nd1b2c3d4e5f60718293a4b5c6d7e8f90`);
+    const env = parseEnvelope(await handleAnalyzeFile(deps, { file: "test.exe" }));
+    const values = env.data.iocs.map((i: { value: string }) => i.value.toLowerCase());
+    expect(values).not.toContain(OWN_MD5);
+    expect(values).not.toContain(OWN_SHA256);
+    // Anti-vacuity control: a hash that is not the file's own still comes through.
+    expect(values).toContain("d1b2c3d4e5f60718293a4b5c6d7e8f90");
+  });
+
+  it("keeps the summary consistent with the returned list after that filter", async () => {
+    // The pre-fix build reported `md5: 25` above a list of 24, because the summary was computed
+    // before the own-hash filter ran and never recomputed.
+    const deps = depsEmitting(`${OWN_MD5}\n${OWN_SHA1}\n${OWN_SHA256}\nd1b2c3d4e5f60718293a4b5c6d7e8f90`);
+    const env = parseEnvelope(await handleAnalyzeFile(deps, { file: "test.exe" }));
+
+    const counted: Record<string, number> = {};
+    for (const ioc of env.data.iocs) counted[ioc.type] = (counted[ioc.type] ?? 0) + 1;
+
+    expect(env.data.ioc_summary.by_type).toEqual(counted);
+    expect(env.data.ioc_summary.total).toBe(env.data.iocs.length);
+  });
+
+  it("reports what the noise filter rejected, so a dropped indicator is not invisible", async () => {
+    const deps = depsEmitting("callback to 0dpC.Nf and C.MS\nreal host evil-c2-host.net");
+    const env = parseEnvelope(await handleAnalyzeFile(deps, { file: "test.exe" }));
+    expect(env.data.ioc_summary.noise_by_type.domain).toBeGreaterThan(0);
+    expect(env.data.iocs.map((i: { value: string }) => i.value)).toContain("evil-c2-host.net");
+  });
+});

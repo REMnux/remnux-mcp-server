@@ -1,0 +1,56 @@
+md5                     803217cb97dc6d38c339bc53650f2c90                        
+sha1                    3f749e5c07f6b31f950bf690d9b19fdda0d6787e                
+sha256                  b7d8806ed05abb71b0b8838da94722cc46c1209e3f6bb88b63b0f5c…
+path                    /var/lib/inetsim/http/fakefiles/sample_gui.exe          
+timestamp               2026-09-03 00:48:07.354216                              
+capa version            9.3.1                                                   
+os                      windows                                                 
+format                  pe                                                      
+arch                    i386                                                    
+analysis                static                                                  
+extractor               VivisectFeatureExtractor                                
+base address            0x400000                                                
+rules                   /tmp/_MEIJLeQSV/rules                                   
+function count          50                                                      
+library function count  0                                                       
+total feature count     1641                                                    
+
+allocate or change RW memory (library rule)
+author  0x534a@mailbox.org, @mr-tz     
+scope   basic block                    
+mbc     Memory::Allocate Memory [C0007]
+basic block @ 0x4019A0 in function 0x4018E0
+  and:
+    or:
+      match: change memory protection @ 0x4019A0
+        or:
+          api: VirtualProtect @ 0x4019D3
+    or:
+      number: 0x4 = PAGE_READWRITE @ 0x4019A8
+
+change memory protection (2 matches, only showing first match of library rule)
+author  @mr-tz                                  
+scope   basic block                             
+mbc     Memory::Change Memory Protection [C0008]
+basic block @ 0x4019A0 in function 0x4018E0
+  or:
+    api: VirtualProtect @ 0x4019D3
+
+contain loop (10 matches, only showing first match of library rule)
+author  moritz.raabe@mandiant.com
+scope   function                 
+function @ 0x4014C0
+  or:
+    characteristic: loop @ 0x4014C0
+    characteristic: tight loop @ 0x401320
+
+delay execution (library rule)
+author      michael.hunhoff@mandiant.com, @ramen0x3f                            
+scope       basic block                                                         
+mbc         Anti-Behavioral Analysis::Dynamic Analysis Evasion::Delayed         
+            Execution [B0003.003]                                               
+references  https://docs.microsoft.com/en-us/windows/win32/sync/wait-functions, 
+            https://github.com/LordNoteworthy/al-khaser/blob/master/al-khaser/T…
+basic block @ 0x4011C0 in function 0x4014C0
+  or:
+    and:

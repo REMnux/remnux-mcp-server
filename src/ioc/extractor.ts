@@ -10,7 +10,15 @@ import { isNoise, type NoiseFilterOptions } from "./noise.js";
 import { scoreIOC } from "./scoring.js";
 
 /** Options for IOC extraction */
-export type ExtractOptions = NoiseFilterOptions;
+export interface ExtractOptions extends NoiseFilterOptions {
+  /**
+   * Values to drop before scoring and capping — in practice the analyzed file's own hashes,
+   * which are not indicators OF the sample. Compared lower-cased. Applied here rather than to
+   * the returned list so an excluded value cannot occupy a slot under the per-type cap and hide
+   * a real indicator behind it.
+   */
+  exclude?: Set<string>;
+}
 
 export interface IOCEntry {
   value: string;
@@ -25,6 +33,13 @@ export interface IOCResult {
     total: number;
     noise_filtered: number;
     by_type: Record<string, number>;
+    /**
+     * What the noise filter rejected, per type. `analyze_file` returns `iocs` but not `noise`, so
+     * without this a filtered indicator disappears with no trace — and the domain rules in
+     * particular reject plausible-looking values. This says how many of each type were dropped,
+     * so the omission is visible; `extract_iocs` with `include_noise` returns the values.
+     */
+    noise_by_type?: Record<string, number>;
     truncated?: string[];
   };
 }
@@ -52,7 +67,8 @@ const TYPE_MAP: Record<string, string> = {
 const NOISE_THRESHOLD = 0.3;
 
 export function extractIOCs(text: string, options?: ExtractOptions): IOCResult {
-  // 1. Standard extraction
+  // 1. Standard extraction. The text is scanned exactly as given; callers that pass tool output
+  //    sanitize it first with sanitizeToolOutputForIOCScan().
   const libResult = extractIOC(text);
 
   // 2. Collect all entries (value, type) avoiding duplicates
@@ -96,6 +112,7 @@ export function extractIOCs(text: string, options?: ExtractOptions): IOCResult {
   const noise: IOCEntry[] = [];
 
   for (const entry of allEntries) {
+    if (options?.exclude?.has(entry.value.toLowerCase())) continue;
     if (isNoise(entry.value, entry.type, options) || entry.confidence <= NOISE_THRESHOLD) {
       noise.push(entry);
     } else {
@@ -129,6 +146,11 @@ export function extractIOCs(text: string, options?: ExtractOptions): IOCResult {
     byType[entry.type] = (byType[entry.type] || 0) + 1;
   }
 
+  const noiseByType: Record<string, number> = {};
+  for (const entry of noise) {
+    noiseByType[entry.type] = (noiseByType[entry.type] || 0) + 1;
+  }
+
   return {
     iocs: cappedIocs,
     noise,
@@ -136,6 +158,7 @@ export function extractIOCs(text: string, options?: ExtractOptions): IOCResult {
       total: cappedIocs.length,
       noise_filtered: noise.length,
       by_type: byType,
+      ...(noise.length > 0 && { noise_by_type: noiseByType }),
       ...(truncatedTypes.length > 0 && { truncated: truncatedTypes }),
     },
   };
