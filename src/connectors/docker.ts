@@ -3,6 +3,7 @@ import { writeFileSync, unlinkSync, mkdtempSync } from "fs";
 import { tmpdir } from "os";
 import { join, basename } from "path";
 import type { Connector, ExecOptions, ExecResult } from "./index.js";
+import { resolveExecutable } from "./resolve-executable.js";
 
 // Output size limit (10MB)
 const MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
@@ -99,11 +100,70 @@ export class DockerConnector implements Connector {
     ];
   }
 
+  // Build the `docker cp` argv that copies a host file INTO the container. Pure and
+  // testable. Each operand is a single argv element, so no character in a path is
+  // ever parsed as SHELL syntax. (Docker still parses its own options and the
+  // `container:path` notation — callers pass absolute host paths, and the
+  // container-side operand is always `name:`-prefixed, so no operand reads as a flag.)
+  buildCopyToContainerArgv(hostPath: string, remotePath: string): string[] {
+    return ["cp", hostPath, `${this.containerName}:${remotePath}`];
+  }
+
+  // Build the `docker cp` argv that copies a container file OUT to the host. Same
+  // guarantee as above, and the direction that reaches the analyst's workstation.
+  buildCopyFromContainerArgv(remotePath: string, hostPath: string): string[] {
+    return ["cp", `${this.containerName}:${remotePath}`, hostPath];
+  }
+
+  // Fully qualified path to the docker CLI, resolved from PATH on first use and
+  // cached for the life of this connector. Lazy rather than eager so constructing
+  // a connector never requires Docker to be installed.
+  private dockerBinary: string | null = null;
+
+  // Resolve `docker` to an absolute path, deliberately NOT letting the platform
+  // do it. A bare name handed to execFileSync is resolved by libuv, which on
+  // Windows searches the process's current directory BEFORE PATH (and tries
+  // `.com` before `.exe`) — so a sample unpacked into the analyst's working
+  // directory could plant a `docker.com` that this server would then run on the
+  // host. See resolve-executable.ts for the libuv citation.
+  //
+  // Never falls back to the bare name: that would restore the very search this
+  // avoids. A missing docker is a startup-shaped problem and says so.
+  private resolveDockerBinary(): string {
+    if (this.dockerBinary) return this.dockerBinary;
+
+    const resolved = resolveExecutable("docker", {
+      pathEnv: process.env.PATH ?? process.env.Path,
+      platform: process.platform,
+    });
+
+    if (!resolved) {
+      throw new Error(
+        "Could not find the 'docker' executable in PATH. Install Docker, or add " +
+          "its directory to PATH using a fully qualified path. Note that the " +
+          "current working directory is intentionally not searched.",
+      );
+    }
+
+    this.dockerBinary = resolved;
+    return resolved;
+  }
+
   // Run `docker <argv>` via execFileSync — no shell, so values cannot inject commands.
-  // Best-effort: callers swallow failures so ownership repair never blocks analysis.
+  // This is the security boundary for every host-side docker invocation, not a
+  // defense-in-depth nicety: the MCP server process runs on the analyst's workstation,
+  // outside the container isolation the threat model relies on, and it handles paths
+  // derived from container-side data. A shell here (cmd.exe on Windows, where POSIX
+  // single-quote escaping is inert) turns a filename into host command execution —
+  // GHSA-qp43-2vqh-w88w. `shell: false` is execFileSync's default and is passed
+  // explicitly so the invariant is visible and testable.
+  //
+  // Throws on failure. Callers that are best-effort (ownership repair) catch for
+  // themselves; the file-transfer callers deliberately do not, so a failed copy
+  // surfaces to the analyst.
   private async runDocker(argv: string[]): Promise<void> {
     const { execFileSync } = await import("child_process");
-    execFileSync("docker", argv, { stdio: "pipe" });
+    execFileSync(this.resolveDockerBinary(), argv, { stdio: "pipe", shell: false });
   }
 
   // Idempotently make the samples/output dirs owned by the exec user. Runs once per
@@ -316,16 +376,9 @@ export class DockerConnector implements Connector {
       // Write content to temp file
       writeFileSync(tempPath, content);
 
-      // Use docker cp to copy into container
-      // docker cp tempPath containerName:remotePath
-      // Escape single quotes in paths for shell safety (defense-in-depth)
-      const escapedTempPath = tempPath.replace(/'/g, "'\\''");
-      const escapedRemotePath = remotePath.replace(/'/g, "'\\''");
-      const { execSync } = await import("child_process");
-      execSync(
-        `docker cp '${escapedTempPath}' '${this.containerName}:${escapedRemotePath}'`,
-        { stdio: "pipe" }
-      );
+      // Copy into the container as an argv — no shell, so nothing in either path
+      // can be parsed as a command (see runDocker).
+      await this.runDocker(this.buildCopyToContainerArgv(tempPath, remotePath));
 
       // docker cp preserves the host file's numeric UID/GID and mode (NOT the exec
       // user), so a file that is not world/group readable on the host would be
@@ -346,26 +399,14 @@ export class DockerConnector implements Connector {
 
   async writeFileFromPath(remotePath: string, hostPath: string): Promise<void> {
     await this.ensureBaseDirsOwned();
-    const escapedRemotePath = remotePath.replace(/'/g, "'\\''");
-    const escapedHostPath = hostPath.replace(/'/g, "'\\''");
-    const { execSync } = await import("child_process");
-    execSync(
-      `docker cp '${escapedHostPath}' '${this.containerName}:${escapedRemotePath}'`,
-      { stdio: "pipe" }
-    );
+    await this.runDocker(this.buildCopyToContainerArgv(hostPath, remotePath));
     // docker cp preserves the host uid/mode, which may not grant the non-root exec
     // user access. Chown the copied path to the exec user so tools can read it.
     await this.chownToExecUser(remotePath);
   }
 
   async readFileToPath(remotePath: string, hostPath: string): Promise<void> {
-    const escapedRemotePath = remotePath.replace(/'/g, "'\\''");
-    const escapedHostPath = hostPath.replace(/'/g, "'\\''");
-    const { execSync } = await import("child_process");
-    execSync(
-      `docker cp '${this.containerName}:${escapedRemotePath}' '${escapedHostPath}'`,
-      { stdio: "pipe" }
-    );
+    await this.runDocker(this.buildCopyFromContainerArgv(remotePath, hostPath));
   }
 
   async executeShell(command: string, options: ExecOptions = {}): Promise<ExecResult> {

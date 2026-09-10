@@ -49,3 +49,34 @@ jobs:
       # the real-sample sweep in scripts/validate-release.mjs — stay maintainer
       # gates, run locally against a real REMnux container before a release.
       - run: pnpm test
+
+  # GHSA-qp43-2vqh-w88w only fired under cmd.exe, so the platform that matters
+  # most for the connector's shell-free invariant is the one the Linux job cannot
+  # exercise. This job runs the argv-boundary regression suite on Windows.
+  #
+  # Scoped to that suite rather than the whole `pnpm test`: the build script is
+  # POSIX-only (`cp -r`, `chmod +x`), and vitest transforms TypeScript directly,
+  # so these tests need no dist/. Widen the glob once the build is cross-platform.
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - run: pnpm install --frozen-lockfile
+
+      # docker-cp-argv: the shell-free invariant.
+      # resolve-executable: PATH resolution, whose win32 branch is the one that
+      #   matters and which this runner exercises natively.
+      # binary-planting: plants a real decoy in the cwd and asserts the
+      #   resolver, using the real filesystem probe, does not select it.
+      - run: >
+          pnpm exec vitest run
+          src/__tests__/docker-cp-argv.test.ts
+          src/__tests__/resolve-executable.test.ts
+          src/__tests__/binary-planting.test.ts
