@@ -32,24 +32,41 @@ overrides:
   # (GHSA-gv7w-rqvm-qjhr was cited here previously; it was WITHDRAWN 2026-06-17
   # and is not a justification.)
   'esbuild@<0.28.1': '>=0.28.1 <0.29'
-  # bounded to the 4.x line the sdk declares (^4.11.4). One consolidated floor
-  # replaces the six overlapping rungs removed earlier: those were bad
-  # configuration, but deleting them outright left NO floor, and ^4.11.4 still
-  # permits 4.11.4 through 4.12.33 which every open hono advisory affects
-  # (GHSA-f23p-vx2j-j53r, GHSA-54fx-42gc-7vw4, GHSA-8j4g-w8fx-2239 and others,
-  # all patched at 4.12.34).
-  'hono@<4.12.34': '>=4.12.34 <5'
+  # bounded to the 4.x line the sdk declares (^4.11.4); @hono/node-server's peer
+  # range is ^4, which the same floor satisfies. One consolidated floor replaces
+  # the six overlapping rungs removed earlier: those were bad configuration, but
+  # deleting them outright left NO floor, and ^4.11.4 still permits versions
+  # every open hono advisory affects.
+  # Floor RAISED from 4.12.34: GHSA-crvj-82cr-hjcx (query parser reads past the
+  # URL fragment), GHSA-gqvv-2mrq-wpjv (incomplete fix for CVE-2026-39408,
+  # toSSG writes outside the output dir) and GHSA-g6gw-c38x-mqfc (unbounded
+  # dot-notation nesting in parseBody) all affect <4.13.5, so 4.12.34 sat inside
+  # a vulnerable range.
+  'hono@<4.13.5': '>=4.13.5 <5'
   # bounded to the 3.x line: ajv declares fast-uri ^3.0.1, and an open-ended
   # '>=3.1.4' resolves to 4.x, crossing ajv's declared range. Supersedes the
   # removed '<=3.1.0' and '<=3.1.1' rungs, whose floors sat lower still.
   # Floor RAISED from 3.1.4: GHSA-7p8r-x3mc-p8w7 (high) affects >=3.0.0 <3.1.5,
   # so 3.1.4 was itself inside a vulnerable range. Also clears
   # GHSA-v2hh-gcrm-f6hx (<=3.1.3), GHSA-4c8g-83qw-93j6 and GHSA-v39h-62p7-jpjc.
-  'fast-uri@<3.1.5': '>=3.1.5 <4'
+  # Floor RAISED AGAIN from 3.1.5, which was likewise inside a vulnerable range:
+  # GHSA-5jgf-p345-68v8 (>=3.1.3 <3.1.6), GHSA-f65p-4m7j-42xc (>=3.0.0 <3.1.6),
+  # GHSA-fph4-wmhf-6fwf (>=3.1.2 <3.1.6) and GHSA-jqff-g426-hqxp (>=3.0.0
+  # <3.1.6) are all high and all patched at 3.1.6. Checked against every
+  # published fast-uri advisory: none affects 3.1.6, so this floor is clean
+  # rather than merely higher.
+  'fast-uri@<3.1.6': '>=3.1.6 <4'
   # NOTE: no ip-address rule. express-rate-limit declares ^10.2.0 and resolves 10.5.0,
   # which is clean. The removed 'ip-address@<=10.1.0' rule was actively harmful: both
   # GHSA-22jq-vg5j-6vgg and GHSA-4xrf-jv44-h6hh affect >=10.1.1, so forcing the tree
   # off 10.1.0 moved it INTO the vulnerable window.
+  # bounded to the 4.x line @eslint/eslintrc declares (^4.3.0). Development-only
+  # (eslint), which changes the urgency but not whether an override is the right
+  # tool. GHSA-2883-xcg3-v3hh (high) affects >=4.0.0 <4.3.2: maxTotalMergeKeys
+  # does not limit CPU use for empty merge sources. The upper bound matters here
+  # as much as anywhere in this file, because js-yaml's latest is 5.4.1 and an
+  # open-ended replacement would cross a major @eslint/eslintrc never declared.
+  'js-yaml@<4.3.2': '>=4.3.2 <5'
   # bounded to the 8.x line router declares (^8.0.0). GHSA-27v5-c462-wpq7 and
   # GHSA-j3q9-mxjg-w52f both affect >=8.0.0 <8.4.0, and ^8.0.0 still permits those,
   # so unlike the deletions above this rule genuinely binds.
@@ -63,10 +80,15 @@ overrides:
   # the previous open-ended '>=7.5.8' both permitted vulnerable 7.x and crossed into
   # 8.x, where all three current advisories live and dockerode declares no support.
   'protobufjs@<7.6.5': '>=7.6.5 <8'
-  # bounded to the 6.x line express declares (^6.14.0). GHSA-q8mj-m7cp-5q26 affects
+  # bounded to the 6.x line express declares (^6.14.0); body-parser declares
+  # ^6.15.2, which the floor below also satisfies. GHSA-q8mj-m7cp-5q26 affects
   # >=6.11.1 <=6.15.1 and GHSA-w7fw-mjwx-w883 affects >=6.7.0 <=6.14.1; 6.15.2
-  # clears both, and ^6.14.0 still permits affected versions, so this rule binds.
-  'qs@<6.15.2': '>=6.15.2 <7'
+  # cleared both, and ^6.14.0 still permits affected versions, so this rule binds.
+  # Floor RAISED from 6.15.2: GHSA-x5fp-wj9c-mxmx (array-limit bypass via
+  # bracket-key comma parsing, >=6.14.2 <=6.15.3) and GHSA-4mjr-xmp4-gh2g (DoS
+  # via attacker-controlled isBuffer, >=2.2.5 <6.16.0) both reach past it, and
+  # both are patched at 6.16.0.
+  'qs@<6.16.0': '>=6.16.0 <7'
   # RESOLVED 2026-08-21: no uuid rule, and no uuid in the graph. dockerode 5.0.0
   # dropped the uuid dependency outright, so GHSA-w5hq-g745-h8pq left the tree
   # with the edge that carried it and `pnpm audit --prod` is now clean.
