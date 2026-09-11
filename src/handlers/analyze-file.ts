@@ -584,7 +584,9 @@ export async function handleAnalyzeFile(
 
       totalOutputSize += output.length;
 
-      const parsed = parseToolOutput(tool.name, output, { targetPath: analysisPath });
+      // Parse the tool's complete output, never the display copy: the cut loses every
+      // finding past the budget, and cut JSON (capa -j) does not parse at all.
+      const parsed = parseToolOutput(tool.name, result.stdout || stderr, { targetPath: analysisPath });
 
       // A YARA match list is the run's attribution evidence and too small to reach
       // the truncation spill, so save it explicitly: summary mode shows only key lines.
