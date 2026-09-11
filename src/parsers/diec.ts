@@ -73,7 +73,8 @@ export function parseDiecOutput(rawOutput: string): ParsedToolOutput {
       result.metadata.filetype = data.filetype ?? typed?.filetype;
     }
   } catch {
-    // JSON parse failed — return unparsed
+    // No diec JSON in the output, so nothing was read.
+    result.metadata.parse_error = true;
   }
 
   return result;

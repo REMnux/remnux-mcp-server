@@ -6,6 +6,7 @@
  */
 
 import type { Finding } from "../parsers/types.js";
+import { hasParser } from "../parsers/index.js";
 
 interface ToolRun {
   name: string;
@@ -18,6 +19,8 @@ interface ToolRun {
   metadata?: Record<string, unknown>;
   /** Output file the server saved for this tool. */
   saved_output_file?: string;
+  /** The tool's parser could not read its output. */
+  parse_failed?: boolean;
 }
 
 interface IOC {
@@ -54,9 +57,17 @@ interface PreprocessResult {
   error?: string;
 }
 
+/**
+ * `clean` means the tool's parser read its output and resolved nothing.
+ * `not_assessed` means no parser reads this tool's output, so nothing interpreted it.
+ */
+export type ToolStatus = "findings" | "clean" | "not_assessed" | "error" | "timeout";
+
 export interface ToolSummary {
   name: string;
-  status: "findings" | "clean" | "error" | "timeout";
+  status: ToolStatus;
+  /** Present when the tool's parser could not read its output; status is then "error". */
+  parse_failed?: true;
   key_lines: string[];
   finding_count?: number;
   output_size: number;
@@ -270,7 +281,7 @@ export function deriveKeyLines(tool: ToolRun): string[] {
 /**
  * Determine the status of a tool run.
  */
-function getToolStatus(tool: ToolRun): "findings" | "clean" | "error" | "timeout" {
+function getToolStatus(tool: ToolRun): ToolStatus {
   if (tool.exit_code !== 0) {
     if (tool.output?.toLowerCase().includes("timeout")) return "timeout";
     // Some tools exit non-zero but still produce findings
@@ -278,6 +289,9 @@ function getToolStatus(tool: ToolRun): "findings" | "clean" | "error" | "timeout
     return "error";
   }
   if (tool.findings && tool.findings.length > 0) return "findings";
+  if (tool.parse_failed) return "error";
+  // "clean" would claim a reading of output that nothing interpreted.
+  if (!hasParser(tool.name)) return "not_assessed";
   return "clean";
 }
 
@@ -316,6 +330,7 @@ export function generateSummary(
     toolSummaries.push({
       name: tool.name,
       status,
+      ...(tool.parse_failed && { parse_failed: true as const }),
       key_lines: keyLines,
       ...(tool.findings && tool.findings.length > 0 && { finding_count: tool.findings.length }),
       output_size: tool.output?.length || 0,

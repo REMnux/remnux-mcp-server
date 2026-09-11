@@ -209,7 +209,8 @@ export function parseCapaOutput(rawOutput: string): ParsedToolOutput {
         "unpacking the sample, or using complementary tools like strings/floss.";
     }
   } catch {
-    // JSON parse failed — return unparsed
+    // Not capa's JSON (cut short, or something else printed instead), so nothing was read.
+    result.metadata.parse_error = true;
   }
 
   return result;

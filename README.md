@@ -284,6 +284,18 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 
 **Auto-summarization:** When total tool output exceeds ~32KB, `analyze_file` automatically switches to summary mode to prevent LLM context overflow — key findings per tool, full IOC extraction, and paths to saved full outputs for drill-down via `download_file`.
 
+**Tool status (summary mode):** each tool entry in the summary has a `status`.
+
+| Status | Meaning |
+|---|---|
+| `findings` | The tool's parser resolved at least one finding |
+| `clean` | The tool's parser read the output and resolved nothing. A benign verdict needs other evidence |
+| `not_assessed` | No parser reads this tool's output, so the server did not interpret it. Its `key_lines` are raw excerpts |
+| `error` | The tool exited non-zero, or its parser could not read the output (`parse_failed: true`) |
+| `timeout` | The tool exited non-zero and its output mentions a timeout |
+
+*Compatibility note:* `not_assessed` is new. Tools without a parser used to report `clean`. A client that switches exhaustively over the status values needs a branch for it.
+
 **Preprocessing:** Before analysis, `analyze_file` checks for conditions that prevent effective analysis (encrypted Office docs, bloated PEs, PyInstaller bundles) and applies automatic fixes. Results appear in the `preprocessing` field.
 
 ### Example: run_tool

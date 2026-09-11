@@ -35,6 +35,8 @@ interface ToolRun {
   metadata?: Record<string, unknown>;
   /** Output file the server saved for this tool. */
   saved_output_file?: string;
+  /** The tool's parser could not read its output. */
+  parse_failed?: boolean;
 }
 interface ToolFailed { name: string; command: string; error: string }
 interface ToolSkipped {
@@ -634,6 +636,7 @@ export async function handleAnalyzeFile(
         exit_code: result.exitCode,
         ...(outputTruncated && { truncated: true, full_output_length: fullLen }),
         ...(savedOutputFile && { saved_output_file: savedOutputFile }),
+        ...(parsed.metadata?.parse_error === true && { parse_failed: true }),
         ...(parsed.parsed && {
           findings: parsed.findings,
           metadata: { ...parsed.metadata, ...extraMetadata },
@@ -712,6 +715,10 @@ export async function handleAnalyzeFile(
     "explainable as normal development practices? " +
     "(3) What concrete evidence distinguishes this from a benign program? " +
     "State your confidence level (low/medium/high) and what evidence supports or contradicts a malicious verdict. " +
+    "TOOL STATUS (summary mode): 'clean' means the tool's parser read its output and found nothing " +
+    "notable. A benign verdict needs other evidence. 'not_assessed' means no parser reads that tool's output, " +
+    "so the server did not interpret it. Its key_lines are raw excerpts. 'error' with parse_failed " +
+    "means the parser could not read the output. " +
     "ATTRIBUTION AND CLASSIFICATION: " +
     "YARA family signatures (yara-forge) indicate resemblance to known families, not confirmed identity — " +
     "signatures can match shared code, libraries, or techniques reused across unrelated families. " +
