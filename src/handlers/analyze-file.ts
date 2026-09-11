@@ -48,6 +48,17 @@ interface ToolSkipped {
 
 const YARA_TOOLS = new Set(["yara-forge", "yara-rules"]);
 
+/** diec detections (its "type: name" findings) that earn a container or packer label. */
+const CONTAINER_LABELS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/^sfx:.*Microsoft Cabinet/i, "Microsoft Cabinet SFX"],
+  [/Nullsoft|NSIS/i, "NSIS installer"],
+  [/Inno Setup/i, "Inno Setup"],
+  [/PyInstaller/i, "PyInstaller"],
+  [/AutoIt/i, "AutoIt compiled"],
+  [/Themida|VMProtect|Enigma/i, "protected"],
+  [/\bUPX\b/i, "UPX packed"],
+];
+
 /**
  * Name for a tool-output file the server writes into the output directory.
  * Sanitizing the sample name is lossy (every non-Latin letter becomes "_"), so a
@@ -215,29 +226,14 @@ function generateTriageSummary(
   // Build summary
   findings.push(`File type: ${category}`);
 
-  // Surface key container/packer detections from ALL tool outputs
-  const allOutput = toolsRun.map(t => t.output || "").join(" ");
-
-  if (/IExpress|WEXTRACT|Cabinet Self-Extractor/i.test(allOutput)) {
-    findings.push("IExpress SFX");
-  }
-  if (/NSIS|Nullsoft/i.test(allOutput)) {
-    findings.push("NSIS installer");
-  }
-  if (/Inno\s*Setup/i.test(allOutput)) {
-    findings.push("Inno Setup");
-  }
-  if (/PyInstaller/i.test(allOutput)) {
-    findings.push("PyInstaller");
-  }
-  if (/AutoIt|AU3!/i.test(allOutput)) {
-    findings.push("AutoIt compiled");
-  }
-  if (/Themida|VMProtect|Enigma/i.test(allOutput)) {
-    findings.push("protected");
-  }
-  if (/\bUPX\b/i.test(allOutput)) {
-    findings.push("UPX packed");
+  // Container and packer labels come from diec, the tool whose job is identifying
+  // them. Matching every tool's text instead picked up unpackers' own failure
+  // messages ("not packed by UPX") and echoes of the sample's name.
+  const diecDetections = toolsRun
+    .filter(t => t.name === "diec")
+    .flatMap(t => (t.findings ?? []).map(f => f.description));
+  for (const [pattern, label] of CONTAINER_LABELS) {
+    if (diecDetections.some(d => pattern.test(d))) findings.push(label);
   }
 
   if (isShellcodeLoaderPattern) findings.push("⚠️ Shellcode loader pattern (no imports + W+X section + low entropy)");
