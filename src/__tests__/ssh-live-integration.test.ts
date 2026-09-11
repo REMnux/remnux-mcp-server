@@ -2,7 +2,7 @@
  * SSH live integration tests — runs MCP tools against a real REMnux VM via SSH.
  *
  * Skipped by default. Run with:
- *   SSH_LIVE_TEST=1 SSH_LIVE_HOST=172.16.118.195 SSH_LIVE_USER=remnux SSH_LIVE_PASSWORD=malware \
+ *   SSH_LIVE_TEST=1 SSH_LIVE_HOST=YOUR_VM_IP SSH_LIVE_USER=remnux SSH_LIVE_PASSWORD=YOUR_PASSWORD \
  *     pnpm exec vitest run src/__tests__/ssh-live-integration.test.ts
  *
  * Prerequisites:
