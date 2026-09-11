@@ -49,6 +49,12 @@ export interface ToolDefinition {
   /** Human-readable hints for specific non-zero exit codes */
   exitCodeHints?: Record<number, string>;
   /**
+   * Exit codes that mean the tool failed, for a tool that reports a result through its
+   * exit code. Any other non-zero exit is then a result, not a failure. When unset, every
+   * non-zero exit is a failure.
+   */
+  failureExitCodes?: number[];
+  /**
    * Override how get_tool_help fetches help. By default the help handler tries
    * `<command> --help` then `<command> -h`. Some tools expose help through a
    * plugin subcommand instead (e.g. radare2 plugins decai/r2ai, whose help is
@@ -113,3 +119,10 @@ class ToolRegistry {
 
 /** Singleton registry instance. */
 export const toolRegistry = new ToolRegistry(TOOL_DEFINITIONS);
+
+/** Whether a tool's exit code means it failed, per the tool's failureExitCodes. */
+export function exitCodeIsFailure(toolName: string, exitCode: number): boolean {
+  if (exitCode === 0) return false;
+  const codes = toolRegistry.get(toolName)?.failureExitCodes;
+  return codes ? codes.includes(exitCode) : true;
+}

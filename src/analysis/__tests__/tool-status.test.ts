@@ -37,6 +37,12 @@ describe("summary tool status", () => {
     expect(statusOf({ name: "pestr", exit_code: 1 }).status).toBe("error");
     expect(statusOf({ name: "capa", exit_code: 1 }).status).toBe("error");
   });
+
+  it("reads a result exit code as a result and a failure exit code as an error", () => {
+    // xorsearch exits with its score, and with 255 when it fails.
+    expect(statusOf({ name: "xorsearch", exit_code: 10 }).status).toBe("not_assessed");
+    expect(statusOf({ name: "xorsearch", exit_code: 255 }).status).toBe("error");
+  });
 });
 
 describe("capa and diec mark output they cannot read", () => {

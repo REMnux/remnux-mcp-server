@@ -7,6 +7,7 @@
 
 import type { Finding } from "../parsers/types.js";
 import { hasParser } from "../parsers/index.js";
+import { exitCodeIsFailure } from "../tools/registry.js";
 
 interface ToolRun {
   name: string;
@@ -289,7 +290,7 @@ export function deriveKeyLines(tool: ToolRun): string[] {
  * Determine the status of a tool run.
  */
 function getToolStatus(tool: ToolRun): ToolStatus {
-  if (tool.exit_code !== 0) {
+  if (exitCodeIsFailure(tool.name, tool.exit_code)) {
     if (tool.output?.toLowerCase().includes("timeout")) return "timeout";
     // Some tools exit non-zero but still produce findings
     if (tool.findings && tool.findings.length > 0) return "findings";

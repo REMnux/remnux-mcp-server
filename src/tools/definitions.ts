@@ -1401,6 +1401,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 60,
     tags: ["fallback", "data-exe"],
     tier: "standard",
+    // Exits with its score (modulo 256), and with 255 when it cannot read the file or its arguments.
+    failureExitCodes: [255],
   },
   {
     name: "xorsearch.py",
