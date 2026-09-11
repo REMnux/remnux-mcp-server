@@ -85,6 +85,8 @@ export function generateNextSteps(
   iocCount: number
 ): string[] {
   const steps: string[] = [];
+  // A generic step that repeats a command this run already executed adds nothing.
+  const ran = (name: string) => toolsRun.some(t => t.name === name);
 
   // Depth-based suggestions
   if (depth === "quick") {
@@ -97,11 +99,11 @@ export function generateNextSteps(
   switch (category) {
     case "PE":
     case "DOTNET":
-      if (!toolsRun.some(t => t.name === "capa" && t.findings && t.findings.length > 0)) {
+      if (!ran("upx-decompress") && !toolsRun.some(t => t.name === "capa" && t.findings && t.findings.length > 0)) {
         steps.push("File may be packed — try unpacking with 'upx -d' or specialized unpackers before re-analysis");
       }
-      steps.push("For dynamic analysis: use run_tool with 'speakeasy -t <file>' to emulate execution");
-      steps.push("Extract strings: run_tool command='pestr <file>' (extracts both ASCII and Unicode with section info)");
+      if (!ran("speakeasy")) steps.push("For dynamic analysis: use run_tool with 'speakeasy -t <file>' to emulate execution");
+      if (!ran("pestr")) steps.push("Extract strings: run_tool command='pestr <file>' (extracts both ASCII and Unicode with section info)");
       steps.push("If this is a self-extracting archive (SFX/dropper): run_tool command='7z l <file>' to list embedded contents, then 'run_tool command=7z x <file> -o%OUTPUT%/sfx -y' to unpack them");
       break;
     case "PDF":
@@ -111,15 +113,15 @@ export function generateNextSteps(
     case "OLE2":
     case "OOXML":
       steps.push("Extract specific macro streams: run_tool command='oledump.py -s <stream_num> -v <file>'");
-      steps.push("Decode VBA p-code for stomped macros: run_tool command='pcodedmp <file>'");
+      if (!ran("pcodedmp")) steps.push("Decode VBA p-code for stomped macros: run_tool command='pcodedmp <file>'");
       break;
     case "Shellcode":
-      steps.push("Emulate 32-bit shellcode: run_tool command='speakeasy -t <file> -r -a x86'");
-      steps.push("Emulate 64-bit shellcode: run_tool command='speakeasy -t <file> -r -a amd64'");
+      if (!ran("speakeasy-sc-x86")) steps.push("Emulate 32-bit shellcode: run_tool command='speakeasy -t <file> -r -a x86'");
+      if (!ran("speakeasy-sc-x64")) steps.push("Emulate 64-bit shellcode: run_tool command='speakeasy -t <file> -r -a amd64'");
       break;
     case "DataWithPEExtension":
-      steps.push("Emulate as shellcode: run_tool command='speakeasy -t <file> -r -a x86' (try amd64 if no output)");
-      steps.push("Check for Cobalt Strike beacon: run_tool command='1768.py <file>'");
+      if (!ran("speakeasy-sc-x86")) steps.push("Emulate as shellcode: run_tool command='speakeasy -t <file> -r -a x86' (try amd64 if no output)");
+      if (!ran("1768")) steps.push("Check for Cobalt Strike beacon: run_tool command='1768.py <file>'");
       steps.push("Extract encoded content: run_tool command='base64dump.py -n 20 <file>'");
       break;
     case "PCAP":
