@@ -6,6 +6,8 @@ const HASH_TYPES = new Set(["md5", "sha1", "sha256", "sha512", "ssdeep"]);
 const text = [
   "MD5     hash: 0f343b0931126a20f133d67c2b018a3b",
   "SHA-256 hash: 7d2a9e61c0b84f35a1e6d9c2b7f04e8a3c5d1b9e6f2a7c4d8e0b3f5a1c6d9e2b",
+  // The MD5 of an empty file, which the noise filter always rejects.
+  "empty: d41d8cd98f00b204e9800998ecf8427e",
   "Fetched http://evil-updates.net/stage2.bin",
 ].join("\n");
 
@@ -17,9 +19,10 @@ describe("extractIOCs excludeTypes", () => {
     const all = extractIOCs(text);
     const kept = extractIOCs(text, { excludeTypes: HASH_TYPES });
 
-    // Control: without the option the hashes are reported.
+    // Controls: without the option, hashes reach both the list and the noise list.
     expect(all.iocs.some((i) => i.type === "md5")).toBe(true);
     expect(all.iocs.some((i) => i.type === "sha256")).toBe(true);
+    expect(all.noise.some((i) => i.type === "md5")).toBe(true);
 
     expect(kept.iocs.some((i) => HASH_TYPES.has(i.type))).toBe(false);
     expect(kept.summary.by_type.md5).toBeUndefined();
