@@ -5,7 +5,7 @@ import type { AnalyzeFileArgs } from "../schemas/tools.js";
 import { validateFilePath } from "../security/blocklist.js";
 import { matchFileType, CATEGORY_TAG_MAP } from "../file-type-mappings.js";
 import type { DepthTier } from "../file-type-mappings.js";
-import { toolRegistry } from "../tools/registry.js";
+import { toolRegistry, exitCodeIsFailure } from "../tools/registry.js";
 import { buildCommandFromDefinition, resolveOutputPath, buildInvocationTemplate } from "../tools/invoker.js";
 import { parseToolOutput } from "../parsers/index.js";
 import type { Finding } from "../parsers/types.js";
@@ -534,8 +534,9 @@ export async function handleAnalyzeFile(
       }
 
       // Detect missing tools — only match shell "command not found" or exit code 127,
-      // not tool output that happens to contain "not found" (e.g., pescan "section not found")
-      const isNotInstalled = result.exitCode === 127 ||
+      // not tool output that happens to contain "not found" (e.g., pescan "section not found").
+      // A tool whose exit code carries a result can exit 127 by chance, so ask its definition.
+      const isNotInstalled = (result.exitCode === 127 && exitCodeIsFailure(tool.name, 127)) ||
         /command not found/i.test(stderr) ||
         (result.exitCode !== 0 && /^.*: No such file or directory$/m.test(stderr) && stderr.includes(tool.command));
       if (isNotInstalled) {

@@ -90,6 +90,28 @@ describe("analyze_file — %OUTPUT% resolution", () => {
       .find((c) => c.startsWith("pecheck.py"));
     expect(pecheck).toMatch(/^pecheck\.py -d \/usr\/share\/pev\/userdb\.txt /);
   });
+
+  it("keeps a xorsearch run whose score exits 127, and still marks a missing tool", async () => {
+    const run = async (xorsearch: { stdout: string; stderr: string; exitCode: number }) => {
+      const deps = createMockDeps();
+      vi.mocked(deps.connector.execute).mockResolvedValue(ok("/samples/x.exe: data"));
+      vi.mocked(deps.connector.executeShell).mockImplementation(async (cmd: string) =>
+        cmd.startsWith("xorsearch ") ? xorsearch : ok("output"),
+      );
+      return parseEnvelope(await handleAnalyzeFile(deps, { file: "x.exe", depth: "standard" })).data;
+    };
+    const named = (list: Array<{ name: string }>) => list.some((t) => t.name === "xorsearch");
+
+    // A score of 383 exits 383 % 256 = 127.
+    const scored = await run({ stdout: "Found XOR 00 position 00000019\nScore: 383", stderr: "", exitCode: 127 });
+    expect(named(scored.tools ?? scored.tools_run)).toBe(true);
+    expect(named(scored.tools_skipped)).toBe(false);
+
+    const missing = await run({ stdout: "", stderr: "bash: line 1: xorsearch: command not found", exitCode: 127 });
+    expect(missing.tools_skipped).toContainEqual(
+      expect.objectContaining({ name: "xorsearch", skip_type: "not_installed" }),
+    );
+  });
 });
 
 describe("analyze_file — capability_evidence (artifact vs behavior)", () => {
