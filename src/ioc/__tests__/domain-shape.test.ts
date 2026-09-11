@@ -3,7 +3,7 @@ import { isNoise } from "../noise.js";
 
 /**
  * Regression suite for the second half of the 0.1.71 defect: 25 of the 102 "domains"
- * analyze_file reported for cherome.exe were high-entropy fragments from binary data
+ * analyze_file reported for one sample were high-entropy fragments from binary data
  * ("0dpC.Nf", "A.Ad", "C.MS"), which crowded the one genuine domain out of the per-type cap.
  *
  * These are the exact 25 values from that report, verbatim.

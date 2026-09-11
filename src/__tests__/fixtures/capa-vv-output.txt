@@ -1,6 +1,6 @@
-md5                     803217cb97dc6d38c339bc53650f2c90                        
-sha1                    3f749e5c07f6b31f950bf690d9b19fdda0d6787e                
-sha256                  b7d8806ed05abb71b0b8838da94722cc46c1209e3f6bb88b63b0f5c…
+md5                     0123456789abcdef0123456789abcdef                        
+sha1                    0123456789abcdef0123456789abcdef01234567                
+sha256                  0123456789abcdef0123456789abcdef0123456789abcdef0123456…
 path                    /var/lib/inetsim/http/fakefiles/sample_gui.exe          
 timestamp               2026-09-03 00:48:07.354216                              
 capa version            9.3.1                                                   

@@ -55,8 +55,8 @@ describe("capa metadata is not mistaken for sample-derived IOCs", () => {
     });
 
     it("removes capa's own run metadata (argv, sample path, timestamp)", () => {
-      expect(filtered).not.toContain("/home/remnux/files/samples/cherome.exe");
-      expect(filtered).not.toContain("803217cb97dc6d38c339bc53650f2c90");
+      expect(filtered).not.toContain("/home/remnux/files/samples/sample.exe");
+      expect(filtered).not.toContain("0123456789abcdef0123456789abcdef");
     });
 
     it("drops a rule cross-reference entirely, hash and all", () => {
@@ -136,7 +136,7 @@ describe("capa metadata is not mistaken for sample-derived IOCs", () => {
 
   describe("unmatched capa branches are not evidence", () => {
     // capa emits its whole feature tree, including the alternatives it looked for and did NOT
-    // find. On the real cherome.exe run this listed supportxmr.com and dwarfpool.com for a
+    // find. On a real run this listed supportxmr.com and dwarfpool.com for a
     // sample containing neither string — the strongest false positive of the whole defect,
     // because it inverts the meaning of capa's own result.
     const withUnmatched = JSON.stringify({

@@ -430,7 +430,7 @@ describe("handleRunTool", () => {
  * %OUTPUT% recipe, and it warns (non-blocking) when the agent's own pipeline
  * ends in head/tail, because that stage discards output the server would
  * otherwise have returned whole. Background: an agent ran
- * `pestr sprd.exe 2>/dev/null | head -200` on ~1,800 lines and lost the C2
+ * `pestr sample.exe 2>/dev/null | head -200` on ~1,800 lines and lost the C2
  * URLs at lines 1363-1365 with exit 0 and no signal of any kind.
  */
 describe("oversized-output contract", () => {
@@ -445,7 +445,7 @@ describe("oversized-output contract", () => {
       vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(lines(200)));
 
       const result = await handleRunTool(deps, {
-        command: "pestr sprd.exe 2>/dev/null | head -200",
+        command: "pestr sample.exe 2>/dev/null | head -200",
       });
 
       const env = parseEnvelope(result);
