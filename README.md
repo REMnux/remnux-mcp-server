@@ -284,6 +284,8 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 
 **Auto-summarization:** When total tool output exceeds ~32KB, `analyze_file` automatically switches to summary mode to prevent LLM context overflow — key findings per tool, full IOC extraction, and paths to saved full outputs for drill-down via `download_file`.
 
+**IOC list:** Hash-shaped values in tool output (MD5, SHA-1, SHA-256, SHA-512, ssdeep) are not counted in `analyze_file`'s `iocs` list. A hash in tool output is almost always one a tool computed, such as a section hash or an imphash. Those hashes stay in each tool's output, and `extract_iocs` still reports hashes in the text it is given.
+
 **Tool status (summary mode):** each tool entry in the summary has a `status`.
 
 | Status | Meaning |

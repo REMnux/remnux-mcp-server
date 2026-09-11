@@ -18,6 +18,12 @@ export interface ExtractOptions extends NoiseFilterOptions {
    * a real indicator behind it.
    */
   exclude?: Set<string>;
+  /**
+   * IOC types to leave out entirely. analyze_file passes the hash types, because a hash in tool
+   * output is almost always one the tool computed (a section hash, an imphash, a decoded chunk's
+   * MD5) rather than an indicator found in the sample.
+   */
+  excludeTypes?: Set<string>;
 }
 
 export interface IOCEntry {
@@ -112,6 +118,7 @@ export function extractIOCs(text: string, options?: ExtractOptions): IOCResult {
   const noise: IOCEntry[] = [];
 
   for (const entry of allEntries) {
+    if (options?.excludeTypes?.has(entry.type)) continue;
     if (options?.exclude?.has(entry.value.toLowerCase())) continue;
     if (isNoise(entry.value, entry.type, options) || entry.confidence <= NOISE_THRESHOLD) {
       noise.push(entry);

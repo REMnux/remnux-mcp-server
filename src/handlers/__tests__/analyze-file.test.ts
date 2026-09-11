@@ -273,25 +273,29 @@ describe("handleAnalyzeFile IOC summary integrity", () => {
     return deps;
   }
 
-  it("does not report the analyzed file's own hashes as indicators", async () => {
-    const deps = depsEmitting(`${OWN_MD5}\n${OWN_SHA256}\nd1b2c3d4e5f60718293a4b5c6d7e8f90`);
+  it("reports no hash from tool output, the file's own or any other", async () => {
+    // A hash in tool output is almost always one a tool computed, not an indicator in the sample.
+    const deps = depsEmitting(
+      `${OWN_MD5}\n${OWN_SHA256}\nd1b2c3d4e5f60718293a4b5c6d7e8f90\nreal host evil-c2-host.net`,
+    );
     const env = parseEnvelope(await handleAnalyzeFile(deps, { file: "test.exe" }));
-    const values = env.data.iocs.map((i: { value: string }) => i.value.toLowerCase());
-    expect(values).not.toContain(OWN_MD5);
-    expect(values).not.toContain(OWN_SHA256);
-    // Anti-vacuity control: a hash that is not the file's own still comes through.
-    expect(values).toContain("d1b2c3d4e5f60718293a4b5c6d7e8f90");
+    const types: string[] = env.data.iocs.map((i: { type: string }) => i.type);
+    expect(types.filter((t) => ["md5", "sha1", "sha256", "sha512", "ssdeep"].includes(t))).toEqual([]);
+    // Anti-vacuity control: a non-hash indicator in the same output still comes through.
+    expect(env.data.iocs.map((i: { value: string }) => i.value)).toContain("evil-c2-host.net");
   });
 
-  it("keeps the summary consistent with the returned list after that filter", async () => {
-    // The pre-fix build reported `md5: 25` above a list of 24, because the summary was computed
-    // before the own-hash filter ran and never recomputed.
-    const deps = depsEmitting(`${OWN_MD5}\n${OWN_SHA1}\n${OWN_SHA256}\nd1b2c3d4e5f60718293a4b5c6d7e8f90`);
+  it("keeps the summary consistent with the returned list after filtering", async () => {
+    // The summary is computed after every filter, so its counts match the list it describes.
+    const deps = depsEmitting(
+      `${OWN_MD5}\n${OWN_SHA1}\n${OWN_SHA256}\nd1b2c3d4e5f60718293a4b5c6d7e8f90\nreal host evil-c2-host.net`,
+    );
     const env = parseEnvelope(await handleAnalyzeFile(deps, { file: "test.exe" }));
 
     const counted: Record<string, number> = {};
     for (const ioc of env.data.iocs) counted[ioc.type] = (counted[ioc.type] ?? 0) + 1;
 
+    expect(env.data.iocs.length).toBeGreaterThan(0);
     expect(env.data.ioc_summary.by_type).toEqual(counted);
     expect(env.data.ioc_summary.total).toBe(env.data.iocs.length);
   });

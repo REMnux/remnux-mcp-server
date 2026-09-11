@@ -668,9 +668,14 @@ export async function handleAnalyzeFile(
 
   const combinedOutput = iocScanOutputs.join("\n\n")
     .replace(/^\s*"command":\s*".*"$/gm, "");
-  // The file's own hashes are excluded during extraction rather than after it, so an excluded
-  // hash cannot take a slot under the per-type cap and hide a real indicator behind it.
-  const iocResult = extractIOCs(combinedOutput, ownHashes.size > 0 ? { exclude: ownHashes } : undefined);
+  // A hash-shaped value in tool output is almost always one a tool computed (a section hash, the
+  // imphash, the file's ssdeep, a decoder's per-chunk MD5), not an indicator found in the sample.
+  // Those hashes stay visible in each tool's output, and extract_iocs still reports hashes in text.
+  // The type exclusion also covers the file's own hashes, which the exclude set was added for.
+  const iocResult = extractIOCs(combinedOutput, {
+    excludeTypes: new Set(["md5", "sha1", "sha256", "sha512", "ssdeep"]),
+    ...(ownHashes.size > 0 && { exclude: ownHashes }),
+  });
 
   // Generate triage summary and next steps
   const triageSummary = generateTriageSummary(category.name, toolsRun, iocResult.iocs.length);
