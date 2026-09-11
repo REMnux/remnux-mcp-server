@@ -55,7 +55,9 @@ export function parseFlossOutput(
     const lower = trimmed.toLowerCase();
     // Match "─── FLOSS DECODED STRINGS ───" or "FLOSS DECODED STRINGS" or just "DECODED STRINGS"
     const stripped = lower.replace(/[─━═\-]/g, "").trim();
-    if (SECTION_HEADERS[stripped]) {
+    // Own properties only: these lines are the sample's strings, and a string such as
+    // "constructor" would otherwise match an inherited property.
+    if (Object.hasOwn(SECTION_HEADERS, stripped)) {
       currentSection = SECTION_HEADERS[stripped];
       continue;
     }

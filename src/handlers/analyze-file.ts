@@ -143,35 +143,31 @@ export function generateNextSteps(
   // are now handled by the advisory framework (see advisories.ts).
   // This keeps generateNextSteps focused on category/depth suggestions.
 
-  // IOC-based suggestions
+  // Pointers to this run's own results come after the cap on generic suggestions,
+  // so a full generic list cannot evict them.
+  const runSpecific: string[] = [];
   if (iocCount > 0) {
-    steps.push("Extracted IOCs are in the 'iocs' field — consider threat intel lookup for network indicators");
+    runSpecific.push("Extracted IOCs are in the 'iocs' field — consider threat intel lookup for network indicators");
   }
-
-  // Tool-not-installed suggestions
   const notInstalled = toolsSkipped.filter(t => t.skip_type === "not_installed");
   if (notInstalled.length > 0) {
-    steps.push(`${notInstalled.length} tool(s) not installed — run check_tools to see installation status`);
+    runSpecific.push(`${notInstalled.length} tool(s) not installed — run check_tools to see installation status`);
   }
-
-  // Report-drafting pointer — only when the analysis produced something worth reporting,
-  // so empty triage runs stay quiet. Cap the base steps to 5 FIRST, then append the
-  // pointer, so it can never be truncated away in the very case it's meant to fire
-  // (a busy PE run can otherwise accumulate 6 base steps and evict the pointer).
+  // Report-drafting pointer, only when the analysis produced something worth reporting.
   const hasSubstantiveResults =
     iocCount > 0 || toolsRun.some(t => t.findings && t.findings.length > 0);
   if (hasSubstantiveResults) {
-    const reportPointer =
+    runSpecific.push(
       "Draft a report: get_report_template and get_report_guidance provide a bundled report template and writing " +
-      "guidelines (offline); treat (Optional) section markers as conditional, not literal headings.";
-    return [...steps.slice(0, 5), reportPointer];
+      "guidelines (offline); treat (Optional) section markers as conditional, not literal headings."
+    );
   }
 
-  return steps.slice(0, 5); // Limit to 5 most relevant suggestions
+  return [...steps.slice(0, 5), ...runSpecific];
 }
 
 /** Generate a brief triage summary from analysis results */
-function generateTriageSummary(
+export function generateTriageSummary(
   category: string,
   toolsRun: ToolRun[],
   iocCount: number
@@ -179,12 +175,14 @@ function generateTriageSummary(
   const findings: string[] = [];
 
   // Count findings by severity
+  let criticalCount = 0;
   let highCount = 0;
   let mediumCount = 0;
   for (const tool of toolsRun) {
     if (tool.findings) {
       for (const f of tool.findings) {
-        if (f.severity === "high") highCount++;
+        if (f.severity === "critical") criticalCount++;
+        else if (f.severity === "high") highCount++;
         else if (f.severity === "medium") mediumCount++;
       }
     }
@@ -244,13 +242,14 @@ function generateTriageSummary(
   if (hasFamilyDetection) findings.push("YARA family signature matched");
   if (hasYaraMatches) findings.push("YARA rules matched");
 
-  if (highCount > 0) findings.push(`${highCount} high-severity finding(s)`);
+  if (criticalCount > 0) findings.push(`${criticalCount} critical-severity finding(s)`);
+  else if (highCount > 0) findings.push(`${highCount} high-severity finding(s)`);
   else if (mediumCount > 0) findings.push(`${mediumCount} medium-severity finding(s)`);
 
   if (iocCount > 0) findings.push(`${iocCount} IOC(s) extracted`);
 
-  const toolsSucceeded = toolsRun.length;
-  findings.push(`${toolsSucceeded} tool(s) completed`);
+  // Every tool that returned, including those that failed, so "ran" rather than "completed".
+  findings.push(`${toolsRun.length} tool(s) ran`);
 
   return findings.join(" | ");
 }
