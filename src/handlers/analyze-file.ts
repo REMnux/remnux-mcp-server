@@ -37,6 +37,8 @@ interface ToolRun {
   saved_output_file?: string;
   /** The tool's parser could not read its output. */
   parse_failed?: boolean;
+  /** The tool exited 0 but reported a failure of its own. */
+  tool_reported_error?: boolean;
 }
 interface ToolFailed { name: string; command: string; error: string }
 interface ToolSkipped {
@@ -209,6 +211,10 @@ export function generateTriageSummary(
     toolsRun.some(t => t.name === name && (t.findings?.length ?? 0) > 0);
   const hasYaraMatches = yaraMatched("yara-rules");
   const hasFamilyDetection = yaraMatched("yara-forge");
+  // Only a configuration that passed 1768's own sanity check earns the token.
+  const hasCobaltStrikeConfig = toolsRun.some(t =>
+    t.name === "1768" && (t.findings ?? []).some(f => f.category === "cobalt-strike-config" && f.severity === "high")
+  );
 
   // Detect shellcode loader/stub pattern: no imports + W+X section + low entropy
   const hasNoImports = toolsRun.some(t =>
@@ -241,6 +247,7 @@ export function generateTriageSummary(
   if (hasAnomaly) findings.push("PE anomalies detected");
   if (hasCapabilities) findings.push("Notable capabilities identified");
   if (hasMacros) findings.push("VBA macros present");
+  if (hasCobaltStrikeConfig) findings.push("Cobalt Strike configuration recovered (1768)");
   if (hasFamilyDetection) findings.push("YARA family signature matched");
   if (hasYaraMatches) findings.push("YARA rules matched");
 
@@ -583,7 +590,7 @@ export async function handleAnalyzeFile(
 
       // Parse the tool's complete output, never the display copy: the cut loses every
       // finding past the budget, and cut JSON (capa -j) does not parse at all.
-      const parsed = parseToolOutput(tool.name, result.stdout || stderr, { targetPath: analysisPath });
+      const parsed = parseToolOutput(tool.name, result.stdout || stderr, { targetPath: analysisPath, stderr });
 
       // A YARA match list is the run's attribution evidence and too small to reach
       // the truncation spill, so save it explicitly: summary mode shows only key lines.
@@ -636,7 +643,9 @@ export async function handleAnalyzeFile(
         exit_code: result.exitCode,
         ...(outputTruncated && { truncated: true, full_output_length: fullLen }),
         ...(savedOutputFile && { saved_output_file: savedOutputFile }),
-        ...(parsed.metadata?.parse_error === true && { parse_failed: true }),
+        // Only at exit 0: a tool that exited non-zero refused the file, which is not a parser failure.
+        ...(parsed.metadata?.parse_error === true && result.exitCode === 0 && { parse_failed: true }),
+        ...(parsed.metadata?.tool_reported_error === true && { tool_reported_error: true }),
         ...(parsed.parsed && {
           findings: parsed.findings,
           metadata: { ...parsed.metadata, ...extraMetadata },
@@ -717,8 +726,10 @@ export async function handleAnalyzeFile(
     "State your confidence level (low/medium/high) and what evidence supports or contradicts a malicious verdict. " +
     "TOOL STATUS (summary mode): 'clean' means the tool's parser read its output and found nothing " +
     "notable. A benign verdict needs other evidence. 'not_assessed' means no parser reads that tool's output, " +
-    "so the server did not interpret it. Its key_lines are raw excerpts. 'error' with parse_failed " +
-    "means the parser could not read the output. " +
+    "so the server did not interpret it. Its key_lines are raw excerpts. 'error' without either flag " +
+    "below means the tool exited non-zero. 'error' with parse_failed " +
+    "means the parser could not read the output. 'error' with tool_reported_error means the tool " +
+    "exited 0 but reported a failure of its own. " +
     "ATTRIBUTION AND CLASSIFICATION: " +
     "YARA family signatures (yara-forge) indicate resemblance to known families, not confirmed identity — " +
     "signatures can match shared code, libraries, or techniques reused across unrelated families. " +

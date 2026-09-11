@@ -68,4 +68,21 @@ describe("analyze_file status end to end", () => {
     expect(byName("capa")).toMatchObject({ status: "error", parse_failed: true });
     expect(byName("pestr").status).toBe("not_assessed");
   });
+
+  it("reports a tool that refused the file as an error, not as a parser failure", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/sample.exe: PE32 executable (GUI) Intel 80386, for MS Windows"),
+    );
+    const bulk = "section .text loaded at 0x401000\n".repeat(1100);
+    vi.mocked(deps.connector.executeShell).mockImplementation(async (cmd: string) =>
+      cmd.startsWith("capa")
+        ? { stdout: "", stderr: "ERROR capa: input file does not appear to be a supported file", exitCode: 16 }
+        : cmd.startsWith("pestr") ? ok(bulk) : ok("done"),
+    );
+    const env = parseEnvelope(await handleAnalyzeFile(deps, { file: "sample.exe", depth: "standard" }));
+    const capa = env.data.tools.find((t: { name: string }) => t.name === "capa");
+    expect(capa.status).toBe("error");
+    expect(capa.parse_failed).toBeUndefined();
+  });
 });

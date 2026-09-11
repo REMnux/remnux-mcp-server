@@ -16,6 +16,7 @@ import { parseReadelfOutput } from "./readelf.js";
 import { parsePdfParserOutput } from "./pdf-parser.js";
 import { parseFlossOutput } from "./floss.js";
 import { parseYaraOutput, parseYaraForgeOutput } from "./yara.js";
+import { parse1768Output } from "./1768.js";
 
 /** Map of tool name → parser function. */
 const PARSERS: Record<string, ToolOutputParser> = {
@@ -31,6 +32,7 @@ const PARSERS: Record<string, ToolOutputParser> = {
   "floss": (rawOutput) => parseFlossOutput(rawOutput),
   "yara-rules": parseYaraOutput,
   "yara-forge": parseYaraForgeOutput,
+  "1768": parse1768Output,
 };
 
 /**

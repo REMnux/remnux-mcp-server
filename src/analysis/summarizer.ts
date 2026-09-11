@@ -21,6 +21,8 @@ interface ToolRun {
   saved_output_file?: string;
   /** The tool's parser could not read its output. */
   parse_failed?: boolean;
+  /** The tool exited 0 but reported a failure of its own. */
+  tool_reported_error?: boolean;
 }
 
 interface IOC {
@@ -68,6 +70,11 @@ export interface ToolSummary {
   status: ToolStatus;
   /** Present when the tool's parser could not read its output; status is then "error". */
   parse_failed?: true;
+  /**
+   * Present when the tool exited 0 but reported a failure of its own. Status is
+   * "error", or "findings" when the tool also recovered something.
+   */
+  tool_reported_error?: true;
   key_lines: string[];
   finding_count?: number;
   output_size: number;
@@ -289,7 +296,7 @@ function getToolStatus(tool: ToolRun): ToolStatus {
     return "error";
   }
   if (tool.findings && tool.findings.length > 0) return "findings";
-  if (tool.parse_failed) return "error";
+  if (tool.parse_failed || tool.tool_reported_error) return "error";
   // "clean" would claim a reading of output that nothing interpreted.
   if (!hasParser(tool.name)) return "not_assessed";
   return "clean";
@@ -331,6 +338,7 @@ export function generateSummary(
       name: tool.name,
       status,
       ...(tool.parse_failed && { parse_failed: true as const }),
+      ...(tool.tool_reported_error && { tool_reported_error: true as const }),
       key_lines: keyLines,
       ...(tool.findings && tool.findings.length > 0 && { finding_count: tool.findings.length }),
       output_size: tool.output?.length || 0,

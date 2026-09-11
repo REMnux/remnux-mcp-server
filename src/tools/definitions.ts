@@ -225,6 +225,10 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     name: "1768",
     description: "Analyze Cobalt Strike beacons and extract configuration details.",
     command: "1768.py",
+    // Otherwise 1768 expands wildcards in its file argument and opens a name ending in
+    // .zip as an archive, so a file named like a browser download ("x[1].exe") was
+    // never analyzed.
+    fixedArgs: ["--literalfilenames", "-n"],
     inputStyle: "positional",
     outputFormat: "text",
     timeout: 60,

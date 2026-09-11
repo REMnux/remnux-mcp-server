@@ -52,6 +52,8 @@ export interface ParsedToolOutput {
 export interface ParseContext {
   /** Absolute path the tool was pointed at, when the server built the command. */
   targetPath?: string;
+  /** The tool's stderr, for a tool that reports failures there while exiting 0. */
+  stderr?: string;
 }
 
 /** A parser function: takes raw output, returns structured data. */
