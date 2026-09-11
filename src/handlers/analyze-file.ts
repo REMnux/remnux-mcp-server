@@ -390,23 +390,6 @@ export async function handleAnalyzeFile(
     ), startTime);
   }
 
-  // Compute the file's own hashes so we can filter them from IOC results
-  const ownHashes = new Set<string>();
-  try {
-    const hashResult = await connector.execute(
-      ["sh", "-c", `md5sum '${filePath.replace(/'/g, "'\\''")}' && sha1sum '${filePath.replace(/'/g, "'\\''")}' && sha256sum '${filePath.replace(/'/g, "'\\''")}'`],
-      { timeout: 30000 },
-    );
-    if (hashResult.exitCode === 0) {
-      for (const line of hashResult.stdout.split("\n")) {
-        const hash = line.trim().split(/\s+/)[0];
-        if (hash && /^[a-fA-F0-9]{32,128}$/.test(hash)) {
-          ownHashes.add(hash.toLowerCase());
-        }
-      }
-    }
-  } catch { /* best effort — if hashing fails, we just skip filtering */ }
-
   // Step 2: Match to category and get tools from registry by tag + depth
   const category = matchFileType(fileOutput, normalizedFile);
   const tag = CATEGORY_TAG_MAP[category.name] ?? "fallback";
@@ -671,10 +654,9 @@ export async function handleAnalyzeFile(
   // A hash-shaped value in tool output is almost always one a tool computed (a section hash, the
   // imphash, the file's ssdeep, a decoder's per-chunk MD5), not an indicator found in the sample.
   // Those hashes stay visible in each tool's output, and extract_iocs still reports hashes in text.
-  // The type exclusion also covers the file's own hashes, which the exclude set was added for.
+  // This also covers the file's own hashes.
   const iocResult = extractIOCs(combinedOutput, {
     excludeTypes: new Set(["md5", "sha1", "sha256", "sha512", "ssdeep"]),
-    ...(ownHashes.size > 0 && { exclude: ownHashes }),
   });
 
   // Generate triage summary and next steps

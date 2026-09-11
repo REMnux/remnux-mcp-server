@@ -260,18 +260,22 @@ describe("handleAnalyzeFile IOC summary integrity", () => {
   const OWN_SHA1 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
   const OWN_SHA256 = "c".repeat(64);
 
-  /** file(1) first, then the md5sum/sha1sum/sha256sum probe, then every tool invocation. */
+  /** file(1) answers every connector call, and every tool invocation prints toolOutput. */
   function depsEmitting(toolOutput: string) {
     const deps = createMockDeps();
-    vi.mocked(deps.connector.execute).mockImplementation(async (argv: string[]) => {
-      if (argv.includes("-c")) {
-        return ok(`${OWN_MD5}  /samples/test.exe\n${OWN_SHA1}  /samples/test.exe\n${OWN_SHA256}  /samples/test.exe`);
-      }
-      return ok("/samples/test.exe: PE32 executable");
-    });
+    vi.mocked(deps.connector.execute).mockResolvedValue(ok("/samples/test.exe: PE32 executable"));
     vi.mocked(deps.connector.executeShell).mockResolvedValue(ok(toolOutput));
     return deps;
   }
+
+  it("runs no hashing command of its own", async () => {
+    const deps = depsEmitting("real host evil-c2-host.net");
+    await handleAnalyzeFile(deps, { file: "test.exe" });
+    const argvs = vi.mocked(deps.connector.execute).mock.calls.map((c) => (c[0] as string[]).join(" "));
+    // Control: the handler's own connector calls were recorded.
+    expect(argvs.length).toBeGreaterThan(0);
+    expect(argvs.some((a) => /\b(md5sum|sha1sum|sha256sum)\b/.test(a))).toBe(false);
+  });
 
   it("reports no hash from tool output, the file's own or any other", async () => {
     // A hash in tool output is almost always one a tool computed, not an indicator in the sample.

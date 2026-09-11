@@ -12,13 +12,6 @@ import { scoreIOC } from "./scoring.js";
 /** Options for IOC extraction */
 export interface ExtractOptions extends NoiseFilterOptions {
   /**
-   * Values to drop before scoring and capping — in practice the analyzed file's own hashes,
-   * which are not indicators OF the sample. Compared lower-cased. Applied here rather than to
-   * the returned list so an excluded value cannot occupy a slot under the per-type cap and hide
-   * a real indicator behind it.
-   */
-  exclude?: Set<string>;
-  /**
    * IOC types to leave out entirely. analyze_file passes the hash types, because a hash in tool
    * output is almost always one the tool computed (a section hash, an imphash, a decoded chunk's
    * MD5) rather than an indicator found in the sample.
@@ -119,7 +112,6 @@ export function extractIOCs(text: string, options?: ExtractOptions): IOCResult {
 
   for (const entry of allEntries) {
     if (options?.excludeTypes?.has(entry.type)) continue;
-    if (options?.exclude?.has(entry.value.toLowerCase())) continue;
     if (isNoise(entry.value, entry.type, options) || entry.confidence <= NOISE_THRESHOLD) {
       noise.push(entry);
     } else {
