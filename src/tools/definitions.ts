@@ -109,6 +109,9 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: "Analyze static properties of PE files.",
     command: "pecheck.py",
     inputStyle: "positional",
+    // pecheck looks for its PEiD database beside its own script. REMnux ships it with pev.
+    // Where that file is absent, pecheck prints the same error it prints without -d.
+    fixedArgs: ["-d", "/usr/share/pev/userdb.txt"],
     outputFormat: "text",
     timeout: 60,
     tags: ["pe", "dotnet"],

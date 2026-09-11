@@ -76,6 +76,20 @@ describe("analyze_file — %OUTPUT% resolution", () => {
     const skipped = env.data.tools_skipped.find((t: { name: string }) => t.name === "xorsearch.py");
     expect(skipped).toMatchObject({ skip_type: "requires_user_args" });
   });
+
+  it("runs pecheck with REMnux's PEiD signature database", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/test.exe: PE32 executable (GUI) Intel 80386, for MS Windows"),
+    );
+    vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("output"));
+
+    await handleAnalyzeFile(deps, { file: "test.exe", depth: "standard" });
+    const pecheck = vi.mocked(deps.connector.executeShell).mock.calls
+      .map((c) => c[0] as string)
+      .find((c) => c.startsWith("pecheck.py"));
+    expect(pecheck).toMatch(/^pecheck\.py -d \/usr\/share\/pev\/userdb\.txt /);
+  });
 });
 
 describe("analyze_file — capability_evidence (artifact vs behavior)", () => {
