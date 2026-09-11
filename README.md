@@ -293,8 +293,8 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `findings` | The tool's parser resolved at least one finding |
 | `clean` | The tool's parser read the output and resolved nothing. A benign verdict needs other evidence |
 | `not_assessed` | No parser reads this tool's output, so the server did not interpret it. Its `key_lines` are raw excerpts |
-| `error` | The tool exited non-zero or reported its own failure (`tool_reported_error`), or its parser could not read the output (`parse_failed`) |
-| `timeout` | The tool exited non-zero and its output mentions a timeout |
+| `error` | The tool exited with a failure code (for most tools, any non-zero exit), reported its own failure (`tool_reported_error`), or its parser could not read the output (`parse_failed`) |
+| `timeout` | The tool exited with a failure code and its output mentions a timeout |
 
 *Compatibility note:* `not_assessed` is new. Tools without a parser used to report `clean`. A client that switches exhaustively over the status values needs a branch for it.
 
