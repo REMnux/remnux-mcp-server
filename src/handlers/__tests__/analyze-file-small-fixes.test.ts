@@ -17,7 +17,8 @@ describe("suggested_next_steps", () => {
     expect(pe.some((s) => s.includes("'upx -d'"))).toBe(false);
     expect(pe.some((s) => s.includes("pestr <file>"))).toBe(false);
     const data = generateNextSteps(
-      "DataWithPEExtension", "standard", [ranTool("speakeasy-sc-x86"), ranTool("1768")], [], 0,
+      "DataWithPEExtension", "standard",
+      [ranTool("speakeasy-sc-x86"), ranTool("speakeasy-sc-x64"), ranTool("1768")], [], 0,
     );
     expect(data.some((s) => s.includes("speakeasy"))).toBe(false);
     expect(data.some((s) => s.includes("1768.py"))).toBe(false);
@@ -25,15 +26,18 @@ describe("suggested_next_steps", () => {
     expect(ole.some((s) => s.includes("pcodedmp"))).toBe(false);
   });
 
-  it("keeps a generic step whose tool did not run", () => {
+  it("keeps a generic step whose command the run did not execute", () => {
     const pe = generateNextSteps("PE", "standard", [], [], 0);
     expect(pe.some((s) => s.includes("'upx -d'"))).toBe(true);
     expect(pe.some((s) => s.includes("pestr <file>"))).toBe(true);
     expect(pe.some((s) => s.includes("speakeasy -t <file>"))).toBe(true);
-    const data = generateNextSteps("DataWithPEExtension", "standard", [], [], 0);
+    // base64dump ran, but the step asks for arguments the chain never passes, so it stays.
+    const data = generateNextSteps("DataWithPEExtension", "standard", [ranTool("base64dump")], [], 0);
     expect(data.some((s) => s.includes("1768.py"))).toBe(true);
-    // A step that needs arguments the chain never passes stays.
     expect(data.some((s) => s.includes("base64dump.py -n 20"))).toBe(true);
+    // The emulation step covers both architectures, so the x86 run alone leaves it in place.
+    const x86Only = generateNextSteps("DataWithPEExtension", "standard", [ranTool("speakeasy-sc-x86")], [], 0);
+    expect(x86Only.some((s) => s.includes("speakeasy"))).toBe(true);
   });
 });
 

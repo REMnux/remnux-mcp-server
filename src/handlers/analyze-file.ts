@@ -120,7 +120,8 @@ export function generateNextSteps(
       if (!ran("speakeasy-sc-x64")) steps.push("Emulate 64-bit shellcode: run_tool command='speakeasy -t <file> -r -a amd64'");
       break;
     case "DataWithPEExtension":
-      if (!ran("speakeasy-sc-x86")) steps.push("Emulate as shellcode: run_tool command='speakeasy -t <file> -r -a x86' (try amd64 if no output)");
+      // The step covers both architectures, so it is stale only when both ran.
+      if (!(ran("speakeasy-sc-x86") && ran("speakeasy-sc-x64"))) steps.push("Emulate as shellcode: run_tool command='speakeasy -t <file> -r -a x86' (try amd64 if no output)");
       if (!ran("1768")) steps.push("Check for Cobalt Strike beacon: run_tool command='1768.py <file>'");
       steps.push("Extract encoded content: run_tool command='base64dump.py -n 20 <file>'");
       break;
