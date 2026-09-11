@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { evaluateAdvisories, type AdvisoryContext } from "../advisories.js";
 
+/** What yara-forge's parser resolves for one matched rule (synthetic rule name). */
+const FAMILY_FINDING = {
+  description: "YARA family signature: VENDORA_Win_Family",
+  category: "yara-family",
+  severity: "medium" as const,
+  evidence: "VENDORA_Win_Family",
+};
+
 describe("advisories", () => {
   describe("evaluateAdvisories", () => {
     it("returns empty array when no conditions match", () => {
@@ -91,7 +99,7 @@ describe("advisories", () => {
           { name: "diec", exit_code: 0, output: "AutoIt v3" },
           { name: "autoit-ripper", exit_code: 1, output: "Failed" },
           { name: "capa", exit_code: 14, output: "Packed" },
-          { name: "yara-forge", exit_code: 0, output: "MALWARE_Win_Qulab" },
+          { name: "yara-forge", exit_code: 0, output: "VENDORA_Win_Family /samples/s.exe", findings: [FAMILY_FINDING] },
         ],
         category: "PE",
       };
@@ -104,10 +112,10 @@ describe("advisories", () => {
       expect(advisories[2].name).toBe("yara-family-attribution");
     });
 
-    it("detects yara-family-attribution when yara-forge has match lines", () => {
+    it("detects yara-family-attribution when yara-forge's parser resolved rules", () => {
       const context: AdvisoryContext = {
         toolsRun: [
-          { name: "yara-forge", exit_code: 0, output: "MALWARE_Win_Qulab sample.exe\nMALWARE_Win_AgentTesla sample.exe" },
+          { name: "yara-forge", exit_code: 0, output: "VENDORA_Win_Family /samples/s.exe", findings: [FAMILY_FINDING] },
         ],
         category: "PE",
       };
@@ -129,6 +137,15 @@ describe("advisories", () => {
 
       const advisories = evaluateAdvisories(context);
       expect(advisories).toEqual([]);
+    });
+
+    it("does not trigger yara-family-attribution on the server's no-output placeholder", () => {
+      // An unmatched scan writes nothing, so analyze_file records "(no output)".
+      const context: AdvisoryContext = {
+        toolsRun: [{ name: "yara-forge", exit_code: 0, output: "(no output)" }],
+        category: "PE",
+      };
+      expect(evaluateAdvisories(context)).toEqual([]);
     });
 
     it("does not trigger yara-family-attribution when yara-forge has no output", () => {

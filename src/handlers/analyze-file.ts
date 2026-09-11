@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { HandlerDeps } from "./types.js";
 import { saveOversizedOutput } from "./output-spill.js";
 import type { AnalyzeFileArgs } from "../schemas/tools.js";
@@ -32,6 +33,8 @@ interface ToolRun {
   full_output_length?: number;
   findings?: Finding[];
   metadata?: Record<string, unknown>;
+  /** Output file the server saved for this tool. */
+  saved_output_file?: string;
 }
 interface ToolFailed { name: string; command: string; error: string }
 interface ToolSkipped {
@@ -41,6 +44,21 @@ interface ToolSkipped {
   reason: string;
   /** Categorizes why the tool was skipped for clearer UX */
   skip_type: "not_installed" | "not_applicable" | "requires_user_args";
+}
+
+const YARA_TOOLS = new Set(["yara-forge", "yara-rules"]);
+
+/**
+ * Name for a tool-output file the server writes into the output directory.
+ * Sanitizing the sample name is lossy (every non-Latin letter becomes "_"), so a
+ * short hash of the original name keeps two samples from overwriting each other's
+ * output. The whole name stays within one 255-byte path component.
+ */
+export function spillFilename(toolName: string, sampleName: string): string {
+  const suffix = createHash("sha256").update(sampleName).digest("hex").slice(0, 8);
+  const room = 255 - toolName.length - suffix.length - "--.txt".length;
+  const safe = sampleName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, Math.max(1, room));
+  return `${toolName}-${safe}-${suffix}.txt`;
 }
 
 /** Generate suggested next steps based on file category and analysis results */
@@ -174,20 +192,12 @@ function generateTriageSummary(
   const hasAnomaly = toolsRun.some(t =>
     (t.name === "portex" || t.name === "pescan") && t.findings && t.findings.length > 0
   );
-  const hasYaraMatches = toolsRun.some(t =>
-    t.name === "yara-rules" && t.output && t.output.trim().length > 0 && !t.output.includes("No matches")
-  );
-  const hasFamilyDetection = toolsRun.some(t => {
-    if (t.name !== "yara-forge" || !t.output) return false;
-    // Check for actual YARA matches: lines that aren't warnings/errors
-    const lines = t.output.trim().split("\n");
-    return lines.some(line => {
-      const trimmed = line.trim();
-      return trimmed.length > 0 &&
-             !trimmed.startsWith("warning:") &&
-             !trimmed.startsWith("error:");
-    });
-  });
+  // Read the rules each YARA parser resolved. Testing the output text instead read
+  // the server's own "(no output)" placeholder as a match on every unmatched scan.
+  const yaraMatched = (name: string) =>
+    toolsRun.some(t => t.name === name && (t.findings?.length ?? 0) > 0);
+  const hasYaraMatches = yaraMatched("yara-rules");
+  const hasFamilyDetection = yaraMatched("yara-forge");
 
   // Detect shellcode loader/stub pattern: no imports + W+X section + low entropy
   const hasNoImports = toolsRun.some(t =>
@@ -549,8 +559,7 @@ export async function handleAnalyzeFile(
       let savedOutputFile: string | undefined;
       if (outputTruncated) {
         // Save full output to output dir for later retrieval (if under size limit)
-        const safeFile = args.file.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const outFilename = `${tool.name}-${safeFile}.txt`;
+        const outFilename = spillFilename(tool.name, args.file);
 
         // Non-fatal: on any failure the truncation hint simply carries no file reference
         const spill = await saveOversizedOutput(connector, config.outputDir, outFilename, output);
@@ -575,7 +584,15 @@ export async function handleAnalyzeFile(
 
       totalOutputSize += output.length;
 
-      const parsed = parseToolOutput(tool.name, output);
+      const parsed = parseToolOutput(tool.name, output, { targetPath: analysisPath });
+
+      // A YARA match list is the run's attribution evidence and too small to reach
+      // the truncation spill, so save it explicitly: summary mode shows only key lines.
+      if (!savedOutputFile && YARA_TOOLS.has(tool.name) && parsed.findings.length > 0) {
+        const outFilename = spillFilename(tool.name, args.file);
+        const spill = await saveOversizedOutput(connector, config.outputDir, outFilename, fullOutput);
+        if (spill.saved) savedOutputFile = outFilename;
+      }
 
       // Check for tool-specific exit code hints
       const extraMetadata: Record<string, unknown> = {};
@@ -619,6 +636,7 @@ export async function handleAnalyzeFile(
         output,
         exit_code: result.exitCode,
         ...(outputTruncated && { truncated: true, full_output_length: fullLen }),
+        ...(savedOutputFile && { saved_output_file: savedOutputFile }),
         ...(parsed.parsed && {
           findings: parsed.findings,
           metadata: { ...parsed.metadata, ...extraMetadata },
@@ -668,6 +686,7 @@ export async function handleAnalyzeFile(
       name: t.name,
       exit_code: t.exit_code,
       output: fullOutputs[i] ?? t.output,
+      ...(t.findings && { findings: t.findings }),
     })),
     toolsFailed: toolsFailed.map((t) => ({
       name: t.name,

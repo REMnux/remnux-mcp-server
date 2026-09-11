@@ -16,6 +16,8 @@ interface ToolRun {
   full_output_length?: number;
   findings?: Finding[];
   metadata?: Record<string, unknown>;
+  /** Output file the server saved for this tool. */
+  saved_output_file?: string;
 }
 
 interface IOC {
@@ -236,6 +238,35 @@ export function extractKeyLines(output: string, limit: number = MAX_KEY_LINES_PE
   return scored.slice(0, limit).map((s) => s.line);
 }
 
+/** Findings shown as key lines for a parsed tool. Overflow is counted, never silent. */
+const MAX_FINDING_KEY_LINES = 20;
+
+/** Per-line cap, since a finding description can quote sample text. */
+const MAX_KEY_LINE_CHARS = 300;
+
+const capLine = (line: string) =>
+  line.length > MAX_KEY_LINE_CHARS ? `${line.slice(0, MAX_KEY_LINE_CHARS)}…` : line;
+
+/**
+ * The lines that represent a tool in summary mode. A parsed tool's findings come
+ * first, because the generic scorer can miss them (a YARA match line scores zero),
+ * followed by the scorer's picks from the raw output.
+ */
+export function deriveKeyLines(tool: ToolRun): string[] {
+  const findings = tool.findings ?? [];
+  if (findings.length === 0) return extractKeyLines(tool.output);
+  const lines = findings.slice(0, MAX_FINDING_KEY_LINES).map((f) => capLine(f.description));
+  if (findings.length > MAX_FINDING_KEY_LINES) {
+    lines.push(`… and ${findings.length - MAX_FINDING_KEY_LINES} more finding(s)`);
+  }
+  const seen = new Set(lines.map((l) => l.toLowerCase()));
+  for (const line of extractKeyLines(tool.output)) {
+    const capped = capLine(line);
+    if (!seen.has(capped.toLowerCase())) lines.push(capped);
+  }
+  return lines;
+}
+
 /**
  * Determine the status of a tool run.
  */
@@ -275,18 +306,11 @@ export function generateSummary(
 
   for (const tool of toolsRun) {
     const status = getToolStatus(tool);
-    const keyLines = extractKeyLines(tool.output);
+    const keyLines = deriveKeyLines(tool);
 
-    // Track which files were saved for full output retrieval. The marker is
-    // written by analyze_file's truncation path as
-    // "Saved in full as %OUTPUT%/<file> (...)" (legacy form: "Full output: output/<file>").
-    // Only trust the marker when the server actually truncated this tool's
-    // output: sample-derived text could otherwise forge a saved_to entry.
-    const savedMatch = tool.truncated
-      ? (tool.output?.match(/Saved in full as %OUTPUT%\/([^\s\](]+)/) ??
-        tool.output?.match(/Full output: output\/([^\s\]]+)/))
-      : null;
-    const savedTo = savedMatch ? savedMatch[1] : undefined;
+    // Set by analyze_file whenever it saved this tool's output, never read from
+    // tool text, so sample content cannot forge it.
+    const savedTo = tool.saved_output_file;
     if (savedTo) savedFiles.push(savedTo);
 
     toolSummaries.push({

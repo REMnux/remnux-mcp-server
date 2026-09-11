@@ -48,5 +48,11 @@ export interface ParsedToolOutput {
   raw: string;
 }
 
+/** What the server knows about the run that produced the output. Optional throughout. */
+export interface ParseContext {
+  /** Absolute path the tool was pointed at, when the server built the command. */
+  targetPath?: string;
+}
+
 /** A parser function: takes raw output, returns structured data. */
-export type ToolOutputParser = (rawOutput: string) => ParsedToolOutput;
+export type ToolOutputParser = (rawOutput: string, ctx?: ParseContext) => ParsedToolOutput;

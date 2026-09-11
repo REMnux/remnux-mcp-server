@@ -5,6 +5,8 @@
  * actionable guidance that individual tools can't provide alone.
  */
 
+import type { Finding } from "../parsers/types.js";
+
 export interface PostAnalysisAdvisory {
   name: string;
   priority: number; // Higher = more important
@@ -14,7 +16,8 @@ export interface PostAnalysisAdvisory {
 }
 
 export interface AdvisoryContext {
-  toolsRun: Array<{ name: string; exit_code?: number; output?: string }>;
+  /** `findings` are what the tool's parser resolved, when it has one. */
+  toolsRun: Array<{ name: string; exit_code?: number; output?: string; findings?: Finding[] }>;
   toolsFailed?: Array<{ name: string; error?: string }>;
   category: string;
 }
@@ -111,17 +114,10 @@ export const POST_ANALYSIS_ADVISORIES: PostAnalysisAdvisory[] = [
   {
     name: "yara-family-attribution",
     priority: 7,
-    shouldApply: (ctx) => {
-      const forge = ctx.toolsRun.find((t) => t.name === "yara-forge");
-      if (!forge?.output) return false;
-      const lines = forge.output.trim().split("\n");
-      return lines.some((line) => {
-        const trimmed = line.trim();
-        return trimmed.length > 0 &&
-               !trimmed.startsWith("warning:") &&
-               !trimmed.startsWith("error:");
-      });
-    },
+    // Reads the rules yara-forge's parser resolved, so this cannot disagree with the
+    // tool's summary entry or the triage token.
+    shouldApply: (ctx) =>
+      (ctx.toolsRun.find((t) => t.name === "yara-forge")?.findings?.length ?? 0) > 0,
     issue:
       "YARA family signatures matched. These indicate resemblance to known malware families " +
       "based on static patterns, not confirmed attribution. Signatures can match shared code, " +

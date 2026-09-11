@@ -4,7 +4,7 @@
  * Falls back to passthrough for tools without a dedicated parser.
  */
 
-import type { ParsedToolOutput, ToolOutputParser } from "./types.js";
+import type { ParsedToolOutput, ToolOutputParser, ParseContext } from "./types.js";
 import { passthroughParser } from "./passthrough.js";
 import { parseCapaOutput } from "./capa.js";
 import { parseDiecOutput } from "./diec.js";
@@ -15,7 +15,7 @@ import { parseOleidOutput } from "./oleid.js";
 import { parseReadelfOutput } from "./readelf.js";
 import { parsePdfParserOutput } from "./pdf-parser.js";
 import { parseFlossOutput } from "./floss.js";
-import { parseYaraOutput } from "./yara.js";
+import { parseYaraOutput, parseYaraForgeOutput } from "./yara.js";
 
 /** Map of tool name → parser function. */
 const PARSERS: Record<string, ToolOutputParser> = {
@@ -27,17 +27,23 @@ const PARSERS: Record<string, ToolOutputParser> = {
   "peframe": parsePeframeOutput,
   "oleid": parseOleidOutput,
   "readelf-header": parseReadelfOutput,
-  "floss": parseFlossOutput,
+  // parseFlossOutput's second parameter is its own options object, not a ParseContext.
+  "floss": (rawOutput) => parseFlossOutput(rawOutput),
   "yara-rules": parseYaraOutput,
+  "yara-forge": parseYaraForgeOutput,
 };
 
 /**
  * Parse tool output using a registered parser, or passthrough if none exists.
  */
-export function parseToolOutput(toolName: string, rawOutput: string): ParsedToolOutput {
+export function parseToolOutput(
+  toolName: string,
+  rawOutput: string,
+  ctx?: ParseContext,
+): ParsedToolOutput {
   const parser = PARSERS[toolName];
   if (parser) {
-    return parser(rawOutput);
+    return parser(rawOutput, ctx);
   }
   return passthroughParser(toolName, rawOutput);
 }
@@ -49,4 +55,4 @@ export function hasParser(toolName: string): boolean {
   return toolName in PARSERS;
 }
 
-export type { ParsedToolOutput, ToolOutputParser, Finding } from "./types.js";
+export type { ParsedToolOutput, ToolOutputParser, ParseContext, Finding } from "./types.js";

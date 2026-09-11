@@ -175,10 +175,15 @@ describe("analyze_file — truncation hints are runnable", () => {
     const strings = env.data.tools_run.find((t: { name: string }) => t.name === "strings");
     expect(strings).toBeDefined();
     expect(strings.truncated).toBe(true);
-    expect(strings.output).toContain("%OUTPUT%/strings-a.js.txt");
+    // Spill names end in an 8-hex hash of the original sample name.
+    const SPILL = /strings-a\.js-[0-9a-f]{8}\.txt/;
+    expect(strings.output).toMatch(new RegExp(`%OUTPUT%/${SPILL.source}`));
     expect(strings.output).toContain("[Query with:");
-    expect(strings.output).not.toMatch(/[^%]output\/strings-a\.js\.txt/);
-    expect(deps.connector.writeFile).toHaveBeenCalledWith("/output/strings-a.js.txt", expect.anything());
+    expect(strings.output).not.toMatch(new RegExp(`[^%]output/${SPILL.source}`));
+    expect(deps.connector.writeFile).toHaveBeenCalledWith(
+      expect.stringMatching(new RegExp(`^/output/${SPILL.source}$`)),
+      expect.anything(),
+    );
   });
 
   it("oversized pestr output in summary mode still reports saved_to from the new marker", async () => {
@@ -196,9 +201,9 @@ describe("analyze_file — truncation hints are runnable", () => {
     expect(env.data.mode).toBe("summary");
     const pestr = env.data.tools.find((t: { name: string }) => t.name === "pestr");
     expect(pestr).toBeDefined();
-    expect(pestr.saved_to).toBe("pestr-test.exe.txt");
-    expect(env.data.full_output_hint).toContain("pestr-test.exe.txt");
-    expect(deps.connector.writeFile).toHaveBeenCalledWith("/output/pestr-test.exe.txt", expect.anything());
+    expect(pestr.saved_to).toMatch(/^pestr-test\.exe-[0-9a-f]{8}\.txt$/);
+    expect(env.data.full_output_hint).toContain(pestr.saved_to);
+    expect(deps.connector.writeFile).toHaveBeenCalledWith(`/output/${pestr.saved_to}`, expect.anything());
   });
 });
 
