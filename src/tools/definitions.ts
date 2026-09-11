@@ -1414,5 +1414,9 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 60,
     tags: ["fallback", "data-exe"],
     tier: "standard",
+    // Not literally "needs user args": -J writes one JSON record per decoding, tens of MB on an
+    // ordinary executable, which is a stream to filter (jq) rather than a result to display.
+    // It runs on demand via run_tool.
+    requiresUserArgs: true,
   },
 ];

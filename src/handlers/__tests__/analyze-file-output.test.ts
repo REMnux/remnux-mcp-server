@@ -62,6 +62,20 @@ describe("analyze_file — %OUTPUT% resolution", () => {
     expect(skipped.invocation).toBeTruthy();
     expect(skipped.invocation).toContain("<file>");
   });
+
+  it("leaves xorsearch.py -J to run_tool on a data file instead of running it", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(ok("/samples/x.exe: data"));
+    vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("output"));
+
+    const env = parseEnvelope(await handleAnalyzeFile(deps, { file: "x.exe", depth: "standard" }));
+    const cmds = vi.mocked(deps.connector.executeShell).mock.calls.map((c) => c[0] as string);
+    // The data-file chain was selected: xorsearch itself still runs.
+    expect(cmds.some((c) => c.startsWith("xorsearch "))).toBe(true);
+    expect(cmds.some((c) => c.startsWith("xorsearch.py"))).toBe(false);
+    const skipped = env.data.tools_skipped.find((t: { name: string }) => t.name === "xorsearch.py");
+    expect(skipped).toMatchObject({ skip_type: "requires_user_args" });
+  });
 });
 
 describe("analyze_file — capability_evidence (artifact vs behavior)", () => {
