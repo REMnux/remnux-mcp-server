@@ -19,12 +19,16 @@ overrides:
   # bounded to the 1.x line: minimatch@3 declares brace-expansion ^1.1.7, and the
   # previous open-ended '>=1.1.13' crossed into 5.x, where a later rule could no
   # longer reach it (first matching override wins on the declared spec)
-  brace-expansion@<1.1.18: '>=1.1.18 <2'
+  # Floor RAISED from 1.1.18: GHSA-q2hr-2g5m-vwhr affects <1.1.21, so 1.1.18 was
+  # itself vulnerable. Patched at 1.1.21.
+  brace-expansion@<1.1.21: '>=1.1.21 <2'
   # GHSA-rgw5-rvv9-x895 (also GHSA-mh99-v99m-4gvg, GHSA-3jxr-9vmj-r5cp): the 4.x/5.x
   # line is affected >=4.0.0 <5.0.9, patched at 5.0.9. Bounded to the 5.x line, same
   # reason as fast-uri below. Supersedes the removed '>=4.0.0 <5.0.5' and
   # '>=5.0.0 <5.0.6' rungs, whose floors sat below 5.0.9.
-  brace-expansion@>=4.0.0 <5.0.9: '>=5.0.9 <6'
+  # Floor RAISED from 5.0.9: GHSA-q2hr-2g5m-vwhr affects >=4.0.0 <5.0.12, so 5.0.9
+  # was itself vulnerable. Patched at 5.0.12.
+  brace-expansion@>=4.0.0 <5.0.12: '>=5.0.12 <6'
   # bounded to the 0.28 line both parents declare (tsx ~0.28.0, vite
   # ^0.27.0 || ^0.28.0). The floor is 0.28.1, NOT 0.25.0: besides
   # GHSA-67mh-4wv8-2f99 (<=0.24.2), GHSA-g7r4-m6w7-qqqr affects >=0.27.3 <0.28.1
