@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-08-21",
+  "updated": "2026-10-07",
   "tools": [
     {
       "command": "1768",
@@ -29,6 +29,13 @@
       "category": "Perform Memory Forensics",
       "description": "Find 128-bit and 256-bit AES keys in a memory image.",
       "website": "https://citp.princeton.edu/our-work/memory/"
+    },
+    {
+      "command": "aidebug",
+      "name": "AIDebug",
+      "category": "Statically Analyze Code: General",
+      "description": "AI-assisted malware reverse-engineering debugger with ATT&CK, YARA, IOC, JSON, and analyst report output.",
+      "website": "https://github.com/anpa1200/AIDebug"
     },
     {
       "command": "androguard",
