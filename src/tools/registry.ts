@@ -55,6 +55,12 @@ export interface ToolDefinition {
    */
   failureExitCodes?: number[];
   /**
+   * A non-zero exit that is a result, not a failure, when `isResult` accepts the tool's
+   * complete stdout and stderr. For a tool that uses one exit code both for "nothing
+   * here" and for a real failure, so failureExitCodes cannot tell the two apart.
+   */
+  resultExitOutput?: { exitCode: number; isResult: (output: string) => boolean };
+  /**
    * Override how get_tool_help fetches help. By default the help handler tries
    * `<command> --help` then `<command> -h`. Some tools expose help through a
    * plugin subcommand instead (e.g. radare2 plugins decai/r2ai, whose help is
@@ -120,9 +126,17 @@ class ToolRegistry {
 /** Singleton registry instance. */
 export const toolRegistry = new ToolRegistry(TOOL_DEFINITIONS);
 
-/** Whether a tool's exit code means it failed, per the tool's failureExitCodes. */
-export function exitCodeIsFailure(toolName: string, exitCode: number): boolean {
+/**
+ * Whether a tool's exit code means it failed, per the tool's failureExitCodes and, when
+ * the complete stdout and stderr are given, its resultExitOutput.
+ */
+export function exitCodeIsFailure(toolName: string, exitCode: number, output?: string): boolean {
   if (exitCode === 0) return false;
-  const codes = toolRegistry.get(toolName)?.failureExitCodes;
+  const def = toolRegistry.get(toolName);
+  const result = def?.resultExitOutput;
+  if (result && output !== undefined && exitCode === result.exitCode && result.isResult(output)) {
+    return false;
+  }
+  const codes = def?.failureExitCodes;
   return codes ? codes.includes(exitCode) : true;
 }

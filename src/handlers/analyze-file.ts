@@ -39,6 +39,8 @@ interface ToolRun {
   parse_failed?: boolean;
   /** The tool exited 0 but reported a failure of its own. */
   tool_reported_error?: boolean;
+  /** The tool exited non-zero to report a result, judged from its complete output. */
+  exit_is_result?: boolean;
 }
 interface ToolFailed { name: string; command: string; error: string }
 interface ToolSkipped {
@@ -633,6 +635,12 @@ export async function handleAnalyzeFile(
         // Only at exit 0: a tool that exited non-zero refused the file, which is not a parser failure.
         ...(parsed.metadata?.parse_error === true && result.exitCode === 0 && { parse_failed: true }),
         ...(parsed.metadata?.tool_reported_error === true && { tool_reported_error: true }),
+        // Judged here from the complete, unfiltered stdout and stderr. The stored output is
+        // cut to the budget and keeps stderr only when stdout is empty, and the noise filter
+        // drops whole lines by content, so neither can answer this.
+        ...(result.exitCode !== 0 &&
+          !exitCodeIsFailure(tool.name, result.exitCode, `${result.stdout ?? ""}\n${result.stderr ?? ""}`) &&
+          { exit_is_result: true }),
         ...(parsed.parsed && {
           findings: parsed.findings,
           metadata: { ...parsed.metadata, ...extraMetadata },
@@ -718,7 +726,7 @@ export async function handleAnalyzeFile(
     "TOOL STATUS (summary mode): 'clean' means the tool's parser read its output and found nothing " +
     "notable. A benign verdict needs other evidence. 'not_assessed' means no parser reads that tool's output, " +
     "so the server did not interpret it. Its key_lines are raw excerpts. 'error' without either flag " +
-    "below means the tool exited non-zero. 'error' with parse_failed " +
+    "below means the tool exited with a failure code. 'error' with parse_failed " +
     "means the parser could not read the output. 'error' with tool_reported_error means the tool " +
     "exited 0 but reported a failure of its own. " +
     "ATTRIBUTION AND CLASSIFICATION: " +

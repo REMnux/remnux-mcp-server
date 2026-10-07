@@ -198,6 +198,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
          "If diec detected 'AutoIt', the script may be nested inside a wrapper (IExpress, CAB). " +
          "Extract inner executables first with 7z or cabextract, then re-run autoit-ripper on extracted .exe files.",
     },
+    // Exit 1 covers both "no AutoIt script here" and a real failure. It is a result only
+    // when every line printed is one of the messages autoit_unpack.py logs when the file
+    // holds no script. Any other line (a CRC or decode error from a format attempt, a
+    // traceback) means it failed.
+    resultExitOutput: {
+      exitCode: 1,
+      isResult: (output) => {
+        const lines = output.split("\n").map((l) => l.trim()).filter(Boolean);
+        return lines.length > 0 && lines.every((l) =>
+          /^ERROR:autoit_ripper\.autoit_unpack:(?:Couldn't find the EA05 location chunk in binary|Couldn't find any appropiate PE resource directory|Couldn't find the script resource|Couldn't find the JB01 location chunk in binary|The input file has no resources)$/.test(l));
+      },
+    },
   },
 
   {
@@ -210,6 +222,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 60,
     tags: ["pe", "unpacking"],
     tier: "standard",
+    // upx exits 1 on an error (such as a missing file) and 2 on a warning. Exit 2 is a
+    // result only when NotPackedException is the one exception or error it printed: the
+    // file is not UPX-packed. Every other non-zero exit, a crash included, stays a failure.
+    resultExitOutput: {
+      exitCode: 2,
+      isResult: (output) => {
+        const notPacked = /: NotPackedException: not packed by UPX\s*$/;
+        const lines = output.split("\n");
+        return lines.some((l) => notPacked.test(l)) &&
+          !lines.some((l) => /exception|error/i.test(l) && !notPacked.test(l));
+      },
+    },
   },
 
   {
