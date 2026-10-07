@@ -5,8 +5,9 @@
  *   LIVE_TEST=1 pnpm exec vitest run src/__tests__/live-integration.test.ts
  *
  * Prerequisites:
- *   - Docker container named "remnux" running from remnux/remnux-distro:noble
- *   - demos/samples/client.7z mounted or copied into the container
+ *   - Docker container named "remnux" (or $CONTAINER) running from remnux/remnux-distro:noble
+ *   - A Windows PE sample in the container's samples directory, either as
+ *     client.exe or inside client.7z (password "malware"). The repo ships no sample.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -26,12 +27,18 @@ describe.skipIf(!runLive)("live integration", () => {
   let client: Client;
   let closeTransports: () => Promise<void>;
 
-  // Helper to call a tool and parse the response envelope
+  // Helper to call a tool and parse the response envelope. The SDK client
+  // aborts any request after 60s unless given a timeout, which silently capped
+  // every test below at 60s regardless of its own budget (analyze_file on a
+  // multi-MB PE runs close to that). Match the server's 300s command timeout so
+  // each test's vitest budget is the limit that actually applies.
   async function callTool(
     name: string,
     args: Record<string, unknown>,
   ): Promise<{ envelope: ToolResponse; isError?: boolean }> {
-    const result = await client.callTool({ name, arguments: args });
+    const result = await client.callTool({ name, arguments: args }, undefined, {
+      timeout: 300_000,
+    });
     const textContent = (result.content as Array<{ type: string; text: string }>)[0];
     const envelope = JSON.parse(textContent.text) as ToolResponse;
     return { envelope, isError: result.isError as boolean | undefined };
@@ -218,8 +225,13 @@ describe.skipIf(!runLive)("live integration", () => {
     expect(category.toUpperCase()).toMatch(/^(PE|DOTNET)$/);
     expect(category).toMatch(/PE|DotNET|\.NET/i);
 
-    // Should have run at least peframe
-    const toolsRun = envelope.data.tools_run as Array<{ name: string }>;
+    // Should have run at least peframe. Once total tool output passes ~32KB the
+    // response is the summary shape (mode: "summary"), which lists tools under
+    // `tools` instead of `tools_run`. Most real PE samples land there.
+    const toolsRun = (
+      envelope.data.mode === "summary" ? envelope.data.tools : envelope.data.tools_run
+    ) as Array<{ name: string }>;
+    expect(Array.isArray(toolsRun)).toBe(true);
     expect(toolsRun.length).toBeGreaterThan(0);
     const toolNames = toolsRun.map((t) => t.name);
     expect(toolNames).toContain("peframe");
