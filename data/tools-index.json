@@ -1,1665 +1,2644 @@
 {
-  "version": "1.0.0",
-  "updated": "2026-10-07",
+  "version": "1.1.0",
+  "updated": "2026-10-08",
   "tools": [
     {
       "command": "1768",
       "name": "1768.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Analyze Cobalt Strike beacons.",
-      "website": "https://blog.didierstevens.com/2021/05/22/update-1768-py-version-0-0-6/"
+      "website": "https://blog.didierstevens.com/2021/05/22/update-1768-py-version-0-0-6/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "7-zip",
       "name": "7-Zip",
       "category": "General Utilities",
       "description": "Compress and decompress files using a variety of algorithms.",
-      "website": "https://www.7-zip.org"
+      "website": "https://www.7-zip.org",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "accept-all-ips",
       "name": "accept-all-ips",
       "category": "Explore Network Interactions: Services",
       "description": "Accept connections to all IPv4 and IPv6 addresses and redirect it to the corresponding local port.",
-      "website": "https://github.com/REMnux/distro/blob/master/files/accept-all-ips"
+      "website": "https://github.com/REMnux/distro/blob/master/files/accept-all-ips",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "aeskeyfinder",
       "name": "AESKeyFinder",
       "category": "Perform Memory Forensics",
       "description": "Find 128-bit and 256-bit AES keys in a memory image.",
-      "website": "https://citp.princeton.edu/our-work/memory/"
+      "website": "https://citp.princeton.edu/our-work/memory/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "aidebug",
       "name": "AIDebug",
       "category": "Statically Analyze Code: General",
       "description": "AI-assisted malware reverse-engineering debugger with ATT&CK, YARA, IOC, JSON, and analyst report output.",
-      "website": "https://github.com/anpa1200/AIDebug"
+      "website": "https://github.com/anpa1200/AIDebug",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "androguard",
       "name": "androguard",
       "category": "Statically Analyze Code: Android",
       "description": "Examine Android files.",
-      "website": "https://github.com/androguard/androguard"
+      "website": "https://github.com/androguard/androguard",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "androidprojectcreator",
       "name": "AndroidProjectCreator",
       "category": "Statically Analyze Code: Android",
       "description": "Convert an Android APK application file into an Android Studio project for easier analysis.",
-      "website": "https://maxkersten.nl/projects/androidprojectcreator"
+      "website": "https://maxkersten.nl/projects/androidprojectcreator",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "anomy",
       "name": "Anomy",
       "category": "Explore Network Interactions: Connecting",
       "description": "A wrapper around wget, ssh, sftp, ftp, and telnet to route these connections through Tor to anonymize your traffic.",
-      "website": "https://github.com/izm1chael/Anomy"
+      "website": "https://github.com/izm1chael/Anomy",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "apkid",
       "name": "APKiD",
       "category": "Statically Analyze Code: Android",
       "description": "Identify compilers, packers, and obfuscators used to protect Android APK and DEX files.",
-      "website": "https://github.com/rednaga/APKiD"
+      "website": "https://github.com/rednaga/APKiD",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "apktool",
       "name": "apktool",
       "category": "Statically Analyze Code: Android",
       "description": "Reverse-engineer Android APK files.",
-      "website": "https://ibotpeaches.github.io/Apktool/"
+      "website": "https://ibotpeaches.github.io/Apktool/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "autoit-ripper",
       "name": "AutoIt-Ripper",
       "category": "Statically Analyze Code: Scripts",
       "description": "Extract AutoIt scripts embedded in PE binaries.",
-      "website": "https://github.com/nazywam/AutoIt-Ripper"
+      "website": "https://github.com/nazywam/AutoIt-Ripper",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "baksmali",
       "name": "baksmali",
       "category": "Statically Analyze Code: Android",
       "description": "Disassembler for the dex format used by Dalvik, Android's Java VM implementation.",
-      "website": "https://bitbucket.org/JesusFreke/smali"
+      "website": "https://bitbucket.org/JesusFreke/smali",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "balbuzard",
       "name": "Balbuzard",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Extract and deobfuscate patterns from suspicious files.",
-      "website": "https://github.com/digitalsleuth/balbuzard"
+      "website": "https://github.com/digitalsleuth/balbuzard",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "base64dump",
       "name": "base64dump.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Locate and decode strings encoded in Base64 and other common encodings.",
-      "website": "https://blog.didierstevens.com/2020/07/03/update-base64dump-py-version-0-0-12/"
+      "website": "https://blog.didierstevens.com/2020/07/03/update-base64dump-py-version-0-0-12/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "bearparser",
       "name": "bearparser",
       "category": "Examine Static Properties: PE Files",
       "description": "Parse PE file contents.",
-      "website": "https://github.com/hasherezade/bearparser/wiki"
+      "website": "https://github.com/hasherezade/bearparser/wiki",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "binee-binary-emulation-environment",
       "name": "binee (Binary Emulation Environment)",
       "category": "Statically Analyze Code: PE Files",
       "description": "Analyze I/O operations of a suspicious PE file by emulating its execution.",
-      "website": "https://github.com/carbonblack/binee"
+      "website": "https://github.com/carbonblack/binee",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "Use speakeasy or qiling instead."
+      }
     },
     {
       "command": "binwalk",
       "name": "binwalk",
       "category": "Examine Static Properties: General",
       "description": "Extract and analyze firmware images.",
-      "website": "https://github.com/ReFirmLabs/binwalk"
+      "website": "https://github.com/ReFirmLabs/binwalk",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "box-js",
       "name": "box-js",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Analyze suspicious JavaScript scripts.",
-      "website": "https://github.com/CapacitorSet/box-js"
+      "website": "https://github.com/CapacitorSet/box-js",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "brxorpy",
       "name": "brxor.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Bruteforce XOR'ed strings to find those that are English words.",
-      "website": "https://github.com/REMnux/distro/blob/master/files/brxor.py"
+      "website": "https://github.com/REMnux/distro/blob/master/files/brxor.py",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "bulkextractor",
       "name": "bulk_extractor",
       "category": "Examine Static Properties: General",
       "description": "Extract interesting strings from binary files.",
-      "website": "https://github.com/simsong/bulk_extractor/"
+      "website": "https://github.com/simsong/bulk_extractor/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "burp-suite-community-edition",
       "name": "Burp Suite Community Edition",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Investigate website interactions using this web proxy.",
-      "website": "https://portswigger.net"
+      "website": "https://portswigger.net",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ],
+      "arch_notes": {
+        "arm64": "The built-in browser doesn't run."
+      }
     },
     {
       "command": "bytehist",
       "name": "Bytehist",
       "category": "Statically Analyze Code: Unpacking",
       "description": "Generate byte-usage-histograms for all types of files with a focus on PE files.",
-      "website": "https://www.cert.at/downloads/software/bytehist_en.html"
+      "website": "https://www.cert.at/downloads/software/bytehist_en.html",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "No alternative identified."
+      }
     },
     {
       "command": "cabextract",
       "name": "cabextract",
       "category": "General Utilities",
       "description": "Extract Microsoft cabinet (cab) files.",
-      "website": "https://www.cabextract.org.uk"
+      "website": "https://www.cabextract.org.uk",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "capa",
       "name": "capa",
       "category": "Statically Analyze Code: PE Files",
       "description": "Detect suspicious capabilities in PE files.",
-      "website": "https://github.com/mandiant/capa"
+      "website": "https://github.com/mandiant/capa",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "cfr",
       "name": "cfr",
       "category": "Statically Analyze Code: Java",
       "description": "Java decompiler.",
-      "website": "https://www.benf.org/other/cfr/"
+      "website": "https://www.benf.org/other/cfr/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "chepy",
       "name": "Chepy",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Decode and otherwise analyze data using this command-line tool and Python library.",
-      "website": "https://github.com/securisec/chepy"
+      "website": "https://github.com/securisec/chepy",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "clamav",
       "name": "ClamAV",
       "category": "Examine Static Properties: General",
       "description": "Scan files for malware signatures.",
-      "website": "https://www.clamav.net"
+      "website": "https://www.clamav.net",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "cobalt-strike-configuration-extractor-csce-and-parser",
       "name": "Cobalt Strike Configuration Extractor (CSCE) and Parser",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Analyze Cobalt Strike beacons.",
-      "website": "https://github.com/strozfriedberg/cobaltstrike-config-extractor"
+      "website": "https://github.com/strozfriedberg/cobaltstrike-config-extractor",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "cs-analyze-processdump",
       "name": "cs-analyze-processdump.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Analyze Cobalt Strike beacon process dumps to detect sleep mask encoding.",
-      "website": "https://blog.didierstevens.com/2021/11/25/new-tool-cs-analyze-processdump-py/"
+      "website": "https://blog.didierstevens.com/2021/11/25/new-tool-cs-analyze-processdump-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "cs-decrypt-metadata",
       "name": "cs-decrypt-metadata.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Decrypt Cobalt Strike metadata.",
-      "website": "https://blog.didierstevens.com/2021/11/12/update-cs-decrypt-metadata-py-version-0-0-2/"
+      "website": "https://blog.didierstevens.com/2021/11/12/update-cs-decrypt-metadata-py-version-0-0-2/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "cs-extract-key",
       "name": "cs-extract-key.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Extract AES and HMAC keys from Cobalt Strike beacon process memory.",
-      "website": "https://blog.didierstevens.com/2021/11/03/new-tool-cs-extract-key-py/"
+      "website": "https://blog.didierstevens.com/2021/11/03/new-tool-cs-extract-key-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "cs-parse-traffic",
       "name": "cs-parse-traffic.py",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Decrypt and parse Cobalt Strike beacon network traffic.",
-      "website": "https://blog.didierstevens.com/2021/11/29/new-tool-cs-parse-traffic-py/"
+      "website": "https://blog.didierstevens.com/2021/11/29/new-tool-cs-parse-traffic-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "curl",
       "name": "cURL",
       "category": "General Utilities",
       "description": "Interact with servers via supported protocols, including HTTP, HTTPS, FTP, IMAP, etc. using this command-line tool.",
-      "website": "https://curl.se"
+      "website": "https://curl.se",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "cut-bytes",
       "name": "cut-bytes.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Cut out a part of a data stream.",
-      "website": "https://blog.didierstevens.com/2015/10/14/cut-bytes-py/"
+      "website": "https://blog.didierstevens.com/2015/10/14/cut-bytes-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "cutter",
       "name": "Cutter",
       "category": "Statically Analyze Code: General",
       "description": "Reverse engineering platform powered by Rizin.",
-      "website": "https://cutter.re"
+      "website": "https://cutter.re",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "cyberchef",
       "name": "CyberChef",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Decode and otherwise analyze data using this browser app.",
-      "website": "https://github.com/gchq/CyberChef/"
+      "website": "https://github.com/gchq/CyberChef/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "dc3-mwcp",
       "name": "DC3-MWCP",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Parsing configuration information from malware.",
-      "website": "https://github.com/Defense-Cyber-Crime-Center/DC3-mwcp"
+      "website": "https://github.com/Defense-Cyber-Crime-Center/DC3-mwcp",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "debloat",
       "name": "debloat",
       "category": "Examine Static Properties: PE Files",
       "description": "Remove junk contents from bloated Windows executables.",
-      "website": "https://github.com/Squiblydoo/debloat"
+      "website": "https://github.com/Squiblydoo/debloat",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "decode-vbe",
       "name": "decode-vbe.py",
       "category": "Statically Analyze Code: Scripts",
       "description": "Decode encoded VBS scripts (VBE).",
-      "website": "https://blog.didierstevens.com/2016/03/29/decoding-vbe/"
+      "website": "https://blog.didierstevens.com/2016/03/29/decoding-vbe/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "decompyle",
       "name": "Decompyle++",
       "category": "Statically Analyze Code: Python",
       "description": "Python bytecode disassembler and decompiler.",
-      "website": "https://github.com/zrax/pycdc"
+      "website": "https://github.com/zrax/pycdc",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "detect-it-easy",
       "name": "Detect-It-Easy",
       "category": "Examine Static Properties: General",
       "description": "Determine types of files and examine file properties.",
-      "website": "https://github.com/horsicq/Detect-It-Easy"
+      "website": "https://github.com/horsicq/Detect-It-Easy",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "dex2jar",
       "name": "dex2jar",
       "category": "Statically Analyze Code: Android",
       "description": "Examine Dalvik Executable (dex) files.",
-      "website": "https://github.com/pxb1988/dex2jar"
+      "website": "https://github.com/pxb1988/dex2jar",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "dexray",
       "name": "DeXRAY",
       "category": "Gather and Analyze Data",
       "description": "Extract and decode data from antivirus quarantine files.",
-      "website": "https://www.hexacorn.com/blog/category/software-releases/dexray/"
+      "website": "https://www.hexacorn.com/blog/category/software-releases/dexray/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "didier-stevens-scripts",
       "name": "Didier Stevens Scripts",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "A collection of Python scripts for analyzing suspicious files and data from Didier Stevens.",
-      "website": "https://blog.didierstevens.com"
+      "website": "https://blog.didierstevens.com",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "disitool",
       "name": "disitool.py",
       "category": "Examine Static Properties: PE Files",
       "description": "Extract, delete, copy, and inject digital signatures in PE files.",
-      "website": "https://blog.didierstevens.com/programs/disitool/"
+      "website": "https://blog.didierstevens.com/programs/disitool/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "dissect",
       "name": "dissect",
       "category": "Gather and Analyze Data",
       "description": "Perform a variety of forensics and incident response tasks using this DFIR framework and toolset.",
-      "website": "https://github.com/fox-it/dissect"
+      "website": "https://github.com/fox-it/dissect",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "dllcharacteristicspy",
       "name": "dllcharacteristics.py",
       "category": "Examine Static Properties: PE Files",
       "description": "Read and set DLL characteristics of a PE file.",
-      "website": "https://github.com/accidentalrebel/dllcharacteristics.py"
+      "website": "https://github.com/accidentalrebel/dllcharacteristics.py",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "dnfile",
       "name": "dnfile",
       "category": "Examine Static Properties: .NET",
       "description": "Analyze static properties of .NET files.",
-      "website": "https://github.com/malwarefrank/dnfile"
+      "website": "https://github.com/malwarefrank/dnfile",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "dnslib",
       "name": "dnslib",
       "category": "Gather and Analyze Data",
       "description": "Python library to encode/decode DNS wire-format packets.",
-      "website": "https://github.com/paulc/dnslib"
+      "website": "https://github.com/paulc/dnslib",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "dnsresolver",
       "name": "dnsresolver.py",
       "category": "Explore Network Interactions: Services",
       "description": "DNS resolver tool for dynamic analysis with wildcard and tracking support.",
-      "website": "https://blog.didierstevens.com/2021/07/15/new-tool-dnsresolver-py/"
+      "website": "https://blog.didierstevens.com/2021/07/15/new-tool-dnsresolver-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "docker",
       "name": "Docker",
       "category": "General Utilities",
       "description": "Run and manage containers.",
-      "website": "https://www.docker.com"
+      "website": "https://www.docker.com",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "dos2unix",
       "name": "dos2unix",
       "category": "View or Edit Files",
       "description": "Convert text files with Windows or macOS line breaks to Unix line breaks and vice versa.",
-      "website": "https://waterlan.home.xs4all.nl/dos2unix.html"
+      "website": "https://waterlan.home.xs4all.nl/dos2unix.html",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "dotnetfile",
       "name": "dotnetfile",
       "category": "Examine Static Properties: .NET",
       "description": "Analyze static properties of .NET files.",
-      "website": "https://github.com/pan-unit42/dotnetfile"
+      "website": "https://github.com/pan-unit42/dotnetfile",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "droidlysis",
       "name": "DroidLysis",
       "category": "Statically Analyze Code: Android",
       "description": "Perform static analysis of Android applications.",
-      "website": "https://github.com/cryptax/droidlysis"
+      "website": "https://github.com/cryptax/droidlysis",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "edb",
       "name": "edb",
       "category": "Dynamically Reverse-Engineer Code: ELF Files",
       "description": "An AArch32/x86/x86-64 debugger, well suited for debugging ELF files.",
-      "website": "https://github.com/eteran/edb-debugger"
+      "website": "https://github.com/eteran/edb-debugger",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "Use gdb or radare2 instead."
+      }
     },
     {
       "command": "emldump",
       "name": "emldump.py",
       "category": "Analyze Documents: Email Messages",
       "description": "Parse and analyze EML files.",
-      "website": "https://blog.didierstevens.com/2020/11/29/update-emldump-py-version-0-0-11/"
+      "website": "https://blog.didierstevens.com/2020/11/29/update-emldump-py-version-0-0-11/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "epic-irc-client",
       "name": "EPIC IRC Client",
       "category": "Explore Network Interactions: Connecting",
       "description": "Examine IRC activities with this IRC client.",
-      "website": "https://www.epicsol.org/"
+      "website": "https://www.epicsol.org/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "etl-parser",
       "name": "etl-parser",
       "category": "Gather and Analyze Data",
       "description": "Parse Windows Event Trace Log (ETL) files.",
-      "website": "https://github.com/airbus-cert/etl-parser"
+      "website": "https://github.com/airbus-cert/etl-parser",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "evilclippy",
       "name": "EvilClippy",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Modify aspects of Microsoft Office documents.",
-      "website": "https://github.com/outflanknl/EvilClippy"
+      "website": "https://github.com/outflanknl/EvilClippy",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "evince",
       "name": "Evince",
       "category": "View or Edit Files",
       "description": "View documents in a variety of formats, including PDF.",
-      "website": "https://wiki.gnome.org/Apps/Evince"
+      "website": "https://wiki.gnome.org/Apps/Evince",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "exiftool",
       "name": "ExifTool",
       "category": "Examine Static Properties: General",
       "description": "Tool to read from, write to, and edit EXIF metadata of various file types.",
-      "website": "https://exiftool.org/"
+      "website": "https://exiftool.org/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "expexorpy",
       "name": "ex_pe_xor.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Search an XOR'ed file for indications of executable binaries.",
-      "website": "https://hooked-on-mnemonics.blogspot.com/2014/04/expexorpy.html"
+      "website": "https://hooked-on-mnemonics.blogspot.com/2014/04/expexorpy.html",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "fakedns",
       "name": "fakedns",
       "category": "Explore Network Interactions: Services",
       "description": "Respond to DNS queries with the specified IP address.",
-      "website": "https://github.com/SocialExploits/fakedns/blob/main/fakedns.py"
+      "website": "https://github.com/SocialExploits/fakedns/blob/main/fakedns.py",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "fakemail",
       "name": "fakemail",
       "category": "Explore Network Interactions: Services",
       "description": "Intercept and examine SMTP email activity with this fake SMTP server.",
-      "website": "https://hg.sr.ht/~olly/fakemail"
+      "website": "https://hg.sr.ht/~olly/fakemail",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "fakenet-ng",
       "name": "FakeNet-NG",
       "category": "Explore Network Interactions: Services",
       "description": "Emulate common network services and interact with malware.",
-      "website": "https://github.com/mandiant/flare-fakenet-ng"
+      "website": "https://github.com/mandiant/flare-fakenet-ng",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "feh",
       "name": "feh",
       "category": "View or Edit Files",
       "description": "View images.",
-      "website": "https://feh.finalrewind.org"
+      "website": "https://feh.finalrewind.org",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "file",
       "name": "file",
       "category": "Examine Static Properties: General",
       "description": "Identify file type using \"magic\" numbers.",
-      "website": "https://github.com/file/file"
+      "website": "https://github.com/file/file",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "file-magic",
       "name": "file-magic.py",
       "category": "Examine Static Properties: General",
       "description": "Identify file types using the Python magic module.",
-      "website": "https://blog.didierstevens.com/2018/07/11/new-tool-file-magic-py/"
+      "website": "https://blog.didierstevens.com/2018/07/11/new-tool-file-magic-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "firefox",
       "name": "Firefox",
       "category": "General Utilities",
       "description": "Web browser.",
-      "website": "https://www.mozilla.org/firefox/"
+      "website": "https://www.mozilla.org/firefox/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "floss",
       "name": "FLOSS",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Extract and deobfuscate strings from PE executables.",
-      "website": "https://github.com/mandiant/flare-floss"
+      "website": "https://github.com/mandiant/flare-floss",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "format-bytes",
       "name": "format-bytes.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Decompose structured binary data with format strings.",
-      "website": "https://blog.didierstevens.com/2020/02/17/update-format-bytes-py-version-0-0-13/"
+      "website": "https://blog.didierstevens.com/2020/02/17/update-format-bytes-py-version-0-0-13/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "frida",
       "name": "Frida",
       "category": "Dynamically Reverse-Engineer Code: General",
       "description": "Trace the execution of a process to analyze its behavior.",
-      "website": "https://frida.re"
+      "website": "https://frida.re",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "ghidra",
       "name": "Ghidra",
       "category": "Statically Analyze Code: General",
       "description": "Software reverse engineering tool suite.",
-      "website": "https://ghidra-sre.org"
+      "website": "https://ghidra-sre.org",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ],
+      "arch_notes": {
+        "arm64": "Ghidra can't open 7-Zip archives."
+      }
     },
     {
       "command": "ghidrassistmcp",
       "name": "GhidrAssistMCP",
       "category": "Use Artificial Intelligence",
       "description": "MCP server for AI-assisted reverse engineering in Ghidra.",
-      "website": "https://github.com/jtang613/GhidrAssistMCP"
+      "website": "https://github.com/jtang613/GhidrAssistMCP",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "gnome-calculator",
       "name": "GNOME Calculator",
       "category": "General Utilities",
       "description": "Calculator.",
-      "website": "https://wiki.gnome.org/Apps/Calculator"
+      "website": "https://wiki.gnome.org/Apps/Calculator",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "gnu-project-debugger",
       "name": "GNU Project Debugger",
       "category": "Dynamically Reverse-Engineer Code: ELF Files",
       "description": "Multi-language debugger.",
-      "website": "https://www.sourceware.org/gdb/"
+      "website": "https://www.sourceware.org/gdb/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "gnu-wget",
       "name": "GNU Wget",
       "category": "Explore Network Interactions: Connecting",
       "description": "Interact with servers via HTTP, HTTPS, FTP, and FTPS using this command-line tool.",
-      "website": "https://www.gnu.org/software/wget/"
+      "website": "https://www.gnu.org/software/wget/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "gootloader-decode",
       "name": "GootLoaderAutoJsDecode.py",
       "category": "Statically Analyze Code: Scripts",
       "description": "Statically deobfuscate GootLoader (GOOTLOADER) malicious JScript to recover the payload and extract C2 domains.",
-      "website": "https://github.com/mandiant/gootloader"
+      "website": "https://github.com/mandiant/gootloader",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "goresym",
       "name": "GoReSym",
       "category": "Examine Static Properties: Go",
       "description": "Extract metadata and symbols from Go binaries, including stripped ones.",
-      "website": "https://github.com/mandiant/GoReSym"
+      "website": "https://github.com/mandiant/GoReSym",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "hachoir",
       "name": "Hachoir",
       "category": "Examine Static Properties: General",
       "description": "View, edit, and carve contents of various binary file types.",
-      "website": "https://github.com/vstinner/hachoir"
+      "website": "https://github.com/vstinner/hachoir",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "hex-to-bin",
       "name": "hex-to-bin.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Convert hexadecimal text dumps to binary data.",
-      "website": "https://blog.didierstevens.com/2020/04/19/update-hex-to-bin-py-version-0-0-5/"
+      "website": "https://blog.didierstevens.com/2020/04/19/update-hex-to-bin-py-version-0-0-5/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "ibus",
       "name": "IBus",
       "category": "General Utilities",
       "description": "Adjust input methods for the GUI.",
-      "website": "https://github.com/ibus/ibus"
+      "website": "https://github.com/ibus/ibus",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "ilspy",
       "name": "ILSpy",
       "category": "Statically Analyze Code: .NET",
       "description": "Examine and decompile .NET programs.",
-      "website": "https://github.com/icsharpcode/ILSpy"
+      "website": "https://github.com/icsharpcode/ILSpy",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "imagemagick",
       "name": "ImageMagick",
       "category": "View or Edit Files",
       "description": "View and manipulate image and related files.",
-      "website": "https://imagemagick.org/"
+      "website": "https://imagemagick.org/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "inetsim",
       "name": "INetSim",
       "category": "Explore Network Interactions: Services",
       "description": "Emulate common network services and interact with malware.",
-      "website": "https://www.inetsim.org/"
+      "website": "https://www.inetsim.org/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "info-zip",
       "name": "Info-ZIP",
       "category": "General Utilities",
       "description": "Compress and decompress files using the zip algorithm.",
-      "website": "http://infozip.sourceforge.net"
+      "website": "http://infozip.sourceforge.net",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "inspircd-3",
       "name": "inspircd 3",
       "category": "Explore Network Interactions: Services",
       "description": "Examine IRC activity with this IRC server.",
-      "website": "https://www.inspircd.org/"
+      "website": "https://www.inspircd.org/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "iocparser",
       "name": "ioc_parser",
       "category": "Gather and Analyze Data",
       "description": "Extract IOCs from security report PDFs.",
-      "website": "https://github.com/buffer/ioc_parser"
+      "website": "https://github.com/buffer/ioc_parser",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "ipwhois",
       "name": "ipwhois",
       "category": "Gather and Analyze Data",
       "description": "Retrieve and parse whois data for IP addresses.",
-      "website": "https://github.com/secynic/ipwhois"
+      "website": "https://github.com/secynic/ipwhois",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "jadx",
       "name": "JADX",
       "category": "Statically Analyze Code: Android",
       "description": "Generate Java source code from Dalvik Executable (dex) and Android APK files.",
-      "website": "https://github.com/skylot/jadx"
+      "website": "https://github.com/skylot/jadx",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "java-idx-parser",
       "name": "Java IDX Parser",
       "category": "Statically Analyze Code: Java",
       "description": "Analyze Java IDX files.",
-      "website": "https://github.com/digitalsleuth/Java_IDX_Parser"
+      "website": "https://github.com/digitalsleuth/Java_IDX_Parser",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "javassist",
       "name": "Javassist",
       "category": "Statically Analyze Code: Java",
       "description": "Java bytecode engineering toolkit/library.",
-      "website": "https://www.javassist.org/"
+      "website": "https://www.javassist.org/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "jd-gui-java-decompiler",
       "name": "JD-GUI Java Decompiler",
       "category": "Statically Analyze Code: Java",
       "description": "Java decompiler with GUI.",
-      "website": "https://java-decompiler.github.io/"
+      "website": "https://java-decompiler.github.io/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "js-beautifier",
       "name": "JS Beautifier",
       "category": "Statically Analyze Code: Scripts",
       "description": "Reformat JavaScript scripts for easier analysis.",
-      "website": "https://beautifier.io/"
+      "website": "https://beautifier.io/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "js-deobfuscator",
       "name": "JavaScript Deobfuscator",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Deobfuscate JavaScript by removing common obfuscation techniques such as string arrays and proxy functions.",
-      "website": "https://github.com/ben-sb/javascript-deobfuscator"
+      "website": "https://github.com/ben-sb/javascript-deobfuscator",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "js_unshroud",
       "name": "js_unshroud",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Monitor and deobfuscate JavaScript behavior in a headless browser to analyze malicious web pages.",
-      "website": "https://github.com/edygert/js_unshroud"
+      "website": "https://github.com/edygert/js_unshroud",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "No alternative identified."
+      }
     },
     {
       "command": "jstillery",
       "name": "JStillery",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Deobfuscate JavaScript scripts using AST and Partial Evaluation techniques.",
-      "website": "https://github.com/mindedsecurity/jstillery"
+      "website": "https://github.com/mindedsecurity/jstillery",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "libemu",
       "name": "libemu",
       "category": "Dynamically Reverse-Engineer Code: Shellcode",
       "description": "A library for x86 code emulation and shellcode detection.",
-      "website": "https://github.com/buffer/libemu"
+      "website": "https://github.com/buffer/libemu",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "libolecf",
       "name": "libolecf",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Microsoft Office OLE2 compound documents.",
-      "website": "https://github.com/libyal/libolecf"
+      "website": "https://github.com/libyal/libolecf",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "lief",
       "name": "LIEF",
       "category": "Examine Static Properties: General",
       "description": "Parse and analyze PE, ELF, MachO, DEX, OAT, VDEX, ART, and DWARF executable formats.",
-      "website": "https://lief.re"
+      "website": "https://lief.re",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "ltrace",
       "name": "ltrace",
       "category": "Dynamically Reverse-Engineer Code: ELF Files",
       "description": "Trace library calls and signals.",
-      "website": "https://ltrace.org"
+      "website": "https://ltrace.org",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "magika",
       "name": "Magika",
       "category": "Examine Static Properties: General",
       "description": "Identify file type using signatures.",
-      "website": "https://google.github.io/magika"
+      "website": "https://google.github.io/magika",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "mail-parser",
       "name": "mail-parser",
       "category": "Analyze Documents: Email Messages",
       "description": "Parse raw SMTP and .MSG email messages and generate a parsed object from them.",
-      "website": "https://github.com/SpamScope/mail-parser"
+      "website": "https://github.com/SpamScope/mail-parser",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "malcat-lite",
       "name": "Malcat Lite",
       "category": "Examine Static Properties: General",
       "description": "Analyze binary files using a hex editor, disassembler, and file dissector.",
-      "website": "https://malcat.fr"
+      "website": "https://malcat.fr",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "Use Ghidra or radare2 instead."
+      }
     },
     {
       "command": "malchive",
       "name": "Malchive",
       "category": "Statically Analyze Code: PE Files",
       "description": "Perform static analysis of various aspects of malicious code.",
-      "website": "https://github.com/MITRECND/malchive"
+      "website": "https://github.com/MITRECND/malchive",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "malwoverview",
       "name": "malwoverview",
       "category": "Gather and Analyze Data",
       "description": "Query public repositories of malware data (e.g., VirusTotal, HybridAnalysis).",
-      "website": "https://github.com/alexandreborges/malwoverview"
+      "website": "https://github.com/alexandreborges/malwoverview",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "manalyze",
       "name": "Manalyze",
       "category": "Examine Static Properties: PE Files",
       "description": "Perform static analysis of suspicious PE files.",
-      "website": "https://github.com/JusticeRage/Manalyze"
-    },
-    {
-      "command": "manalyze",
-      "name": "Manalyze",
-      "category": "Examine Static Properties: PE Files",
-      "description": "Perform static analysis of suspicious PE files.",
-      "website": "https://github.com/JusticeRage/Manalyze"
+      "website": "https://github.com/JusticeRage/Manalyze",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "mermaid-view",
       "name": "Mermaid Viewer",
       "category": "View or Edit Files",
       "description": "View Mermaid diagrams, such as AI-generated code-analysis workflow diagrams, in a local browser.",
-      "website": "https://mermaid.js.org/"
+      "website": "https://mermaid.js.org/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "mitmproxy",
       "name": "mitmproxy",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Investigate website interactions using this web proxy.",
-      "website": "https://mitmproxy.org/"
+      "website": "https://mitmproxy.org/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "monitor-network",
       "name": "monitor-network",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Monitor traffic on the first active network interface using tshark, printing a live summary to the screen or saving it to a pcapng file.",
-      "website": "https://github.com/REMnux/distro/blob/master/files/monitor-network"
+      "website": "https://github.com/REMnux/distro/blob/master/files/monitor-network",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "monodis",
       "name": "monodis",
       "category": "Examine Static Properties: .NET",
       "description": "Disassemble and extract resources from .NET assemblies.",
-      "website": "https://www.mono-project.com/docs/tools+libraries/tools/monodis/"
+      "website": "https://www.mono-project.com/docs/tools+libraries/tools/monodis/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "msg-extractor",
       "name": "msg-extractor",
       "category": "Analyze Documents: Email Messages",
       "description": "Extract emails and attachments from MSG files.",
-      "website": "https://github.com/TeamMsgExtractor/msg-extractor"
+      "website": "https://github.com/TeamMsgExtractor/msg-extractor",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "msgconvert",
       "name": "msgconvert",
       "category": "Analyze Documents: Email Messages",
       "description": "Convert MSG files to MBOX files.",
-      "website": "https://www.matijs.net/software/msgconv/"
+      "website": "https://www.matijs.net/software/msgconv/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "msitools",
       "name": "msitools",
       "category": "Examine Static Properties: General",
       "description": "Create, inspect and extract Windows Installer (.msi) files.",
-      "website": "https://wiki.gnome.org/msitools"
+      "website": "https://wiki.gnome.org/msitools",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "msoffcrypto-crack",
       "name": "msoffcrypto-crack.py",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Recover the password of an encrypted Microsoft Office document.",
-      "website": "https://blog.didierstevens.com/2018/12/31/new-tool-msoffcrypto-crack-py/"
+      "website": "https://blog.didierstevens.com/2018/12/31/new-tool-msoffcrypto-crack-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "msoffcrypto-tool",
       "name": "msoffcrypto-tool",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Decrypt a Microsoft Office file with password, intermediate key, or private key which generated its escrow key.",
-      "website": "https://github.com/nolze/msoffcrypto-tool"
+      "website": "https://github.com/nolze/msoffcrypto-tool",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "msoffice-crypt",
       "name": "msoffice-crypt",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Encrypt and decrypt OOXML Microsoft Office documents.",
-      "website": "https://github.com/herumi/msoffice"
+      "website": "https://github.com/herumi/msoffice",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "mutool",
       "name": "mutool",
       "category": "Analyze Documents: PDF",
       "description": "Examine, convert, and manipulate PDF files, including extracting embedded streams and repairing malformed documents.",
-      "website": "https://mupdf.com"
+      "website": "https://mupdf.com",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "myip",
       "name": "myip",
       "category": "General Utilities",
       "description": "Determine the IP address of the default network interface.",
-      "website": "https://github.com/REMnux/distro/blob/master/files/myip"
+      "website": "https://github.com/REMnux/distro/blob/master/files/myip",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "name-that-hash",
       "name": "Name-That-Hash",
       "category": "Examine Static Properties: General",
       "description": "Identify dfferent types of hashes.",
-      "website": "https://github.com/HashPals/Name-That-Hash"
+      "website": "https://github.com/HashPals/Name-That-Hash",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "nasm",
       "name": "nasm",
       "category": "General Utilities",
       "description": "An x86-64 assembler.",
-      "website": "https://www.nasm.us"
+      "website": "https://www.nasm.us",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "nautilus",
       "name": "Nautilus",
       "category": "General Utilities",
       "description": "Graphical file manager.",
-      "website": "https://gitlab.gnome.org/GNOME/nautilus"
+      "website": "https://gitlab.gnome.org/GNOME/nautilus",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "netcat",
       "name": "netcat",
       "category": "Explore Network Interactions: Services",
       "description": "Read and write data across network connections.",
-      "website": "https://nc110.sourceforge.io/"
+      "website": "https://nc110.sourceforge.io/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "network-miner-free-edition",
       "name": "Network Miner Free Edition",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Examine network traffic and carve PCAP capture files.",
-      "website": "https://www.netresec.com/"
+      "website": "https://www.netresec.com/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "nginx",
       "name": "Nginx",
       "category": "Explore Network Interactions: Services",
       "description": "Web server.",
-      "website": "https://nginx.org"
+      "website": "https://nginx.org",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "ngrep",
       "name": "ngrep",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Look for patterns in network traffic.",
-      "website": "https://github.com/jpr5/ngrep/"
+      "website": "https://github.com/jpr5/ngrep/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "nomorexorpy",
       "name": "NoMoreXOR.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Help guess a file's 256-byte XOR by using frequency analysis.",
-      "website": "https://github.com/digitalsleuth/NoMoreXOR"
+      "website": "https://github.com/digitalsleuth/NoMoreXOR",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "numbers-to-string",
       "name": "numbers-to-string.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Translate number sequences into ASCII characters.",
-      "website": "https://blog.didierstevens.com/2020/12/12/update-numbers-to-string-py-version-0-0-11/"
+      "website": "https://blog.didierstevens.com/2020/12/12/update-numbers-to-string-py-version-0-0-11/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "objdump",
       "name": "objdump",
       "category": "Statically Analyze Code: General",
       "description": "Disassemble binary files.",
-      "website": "https://en.wikipedia.org/wiki/Objdump"
+      "website": "https://en.wikipedia.org/wiki/Objdump",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "oledump",
       "name": "oledump.py",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Analyze OLE2 Structured Storage files.",
-      "website": "https://blog.didierstevens.com/programs/oledump-py/"
+      "website": "https://blog.didierstevens.com/programs/oledump-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "olefile",
       "name": "olefile",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Python package to parse, read and write MS OLE2 files.",
-      "website": "https://github.com/decalage2/olefile"
+      "website": "https://github.com/decalage2/olefile",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "oletools",
       "name": "oletools",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Microsoft Office OLE2 compound documents.",
-      "website": "https://www.decalage.info/python/oletools"
+      "website": "https://www.decalage.info/python/oletools",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "onedump",
       "name": "onedump.py",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Extract and analyze embedded files from OneNote documents.",
-      "website": "https://blog.didierstevens.com/2023/01/22/new-tool-onedump-py/"
+      "website": "https://blog.didierstevens.com/2023/01/22/new-tool-onedump-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "opencode",
       "name": "OpenCode",
       "category": "Use Artificial Intelligence",
       "description": "Open-source AI coding agent for the terminal.",
-      "website": "https://opencode.ai"
+      "website": "https://opencode.ai",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "openssh",
       "name": "OpenSSH",
       "category": "General Utilities",
       "description": "Initiate and receive SSH and SFTP connections.",
-      "website": "https://www.openssh.com"
+      "website": "https://www.openssh.com",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "origamindee",
       "name": "Origamindee",
       "category": "Analyze Documents: PDF",
       "description": "Parse, modify, generate PDF files.",
-      "website": "https://github.com/mindee/origamindee"
+      "website": "https://github.com/mindee/origamindee",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pcode2code",
       "name": "pcode2code",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Decompile VBA macro p-code from Microsoft Office documents.",
-      "website": "https://github.com/Big5-sec/pcode2code"
+      "website": "https://github.com/Big5-sec/pcode2code",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pcodedmp",
       "name": "pcodedmp",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Disassemble VBA p-code.",
-      "website": "https://github.com/bontchev/pcodedmp"
+      "website": "https://github.com/bontchev/pcodedmp",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pdf-parser",
       "name": "pdf-parser.py",
       "category": "Analyze Documents: PDF",
       "description": "Examine elements of the PDF file.",
-      "website": "https://blog.didierstevens.com/programs/pdf-tools/"
+      "website": "https://blog.didierstevens.com/programs/pdf-tools/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pdfid",
       "name": "pdfid.py",
       "category": "Analyze Documents: PDF",
       "description": "Identify suspicious elements of the PDF file.",
-      "website": "https://blog.didierstevens.com/programs/pdf-tools/"
+      "website": "https://blog.didierstevens.com/programs/pdf-tools/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pdfresurrect",
       "name": "pdfresurrect",
       "category": "Analyze Documents: PDF",
       "description": "Extract previous versions of content from PDF files.",
-      "website": "https://github.com/enferex/pdfresurrect"
+      "website": "https://github.com/enferex/pdfresurrect",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pdftk-java",
       "name": "pdftk-java",
       "category": "Analyze Documents: PDF",
       "description": "Edit, create, and examine PDF files.",
-      "website": "https://gitlab.com/pdftk-java/pdftk"
+      "website": "https://gitlab.com/pdftk-java/pdftk",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pdftool",
       "name": "pdftool.py",
       "category": "Analyze Documents: PDF",
       "description": "Analyze PDF files to identify incremental updates to the document.",
-      "website": "https://blog.didierstevens.com/2021/01/31/new-tool-pdftool-py/"
+      "website": "https://blog.didierstevens.com/2021/01/31/new-tool-pdftool-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pdnstool",
       "name": "pdnstool",
       "category": "Gather and Analyze Data",
       "description": "Query passive DNS databases for DNS data.",
-      "website": "https://github.com/chrislee35/passivedns-client"
+      "website": "https://github.com/chrislee35/passivedns-client",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pe-tree",
       "name": "PE Tree",
       "category": "Examine Static Properties: PE Files",
       "description": "Examine contents and structure of PE files.",
-      "website": "https://github.com/blackberry/pe_tree"
+      "website": "https://github.com/blackberry/pe_tree",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pecheck",
       "name": "pecheck.py",
       "category": "Examine Static Properties: PE Files",
       "description": "Analyze static properties of PE files.",
-      "website": "https://blog.didierstevens.com/2020/03/15/pecheck-py-version-0-7-10/"
+      "website": "https://blog.didierstevens.com/2020/03/15/pecheck-py-version-0-7-10/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pedump",
       "name": "pedump",
       "category": "Examine Static Properties: PE Files",
       "description": "Statically analyze PE files and extract their components (e.g., resources).",
-      "website": "https://github.com/zed-0xff/pedump"
+      "website": "https://github.com/zed-0xff/pedump",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "peepdf-3",
       "name": "peepdf-3",
       "category": "Analyze Documents: PDF",
       "description": "Examine elements of the PDF file.",
-      "website": "https://github.com/digitalsleuth/peepdf-3"
+      "website": "https://github.com/digitalsleuth/peepdf-3",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ],
+      "arch_notes": {
+        "arm64": "JavaScript emulation is unavailable."
+      }
     },
     {
       "command": "peframe",
       "name": "PEframe",
       "category": "Examine Static Properties: PE Files",
       "description": "Statically analyze PE and Microsoft Office files.",
-      "website": "https://github.com/digitalsleuth/peframe"
+      "website": "https://github.com/digitalsleuth/peframe",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "polarproxy",
       "name": "PolarProxy",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Intercept and decrypt TLS traffic.",
-      "website": "https://www.netresec.com/"
+      "website": "https://www.netresec.com/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "portex",
       "name": "PortEx",
       "category": "Examine Static Properties: PE Files",
       "description": "Statically analyze PE files.",
-      "website": "https://github.com/katjahahn/PortEx"
+      "website": "https://github.com/katjahahn/PortEx",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "powershell-core",
       "name": "PowerShell Core",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Run PowerShell scripts and commands.",
-      "website": "https://github.com/powershell/powershell"
+      "website": "https://github.com/powershell/powershell",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "procmon-mcp",
       "name": "ProcmonMCP",
       "category": "Use Artificial Intelligence",
       "description": "MCP server that lets AI assistants analyze Process Monitor (Procmon) XML captures.",
-      "website": "https://github.com/JameZUK/ProcmonMCP"
+      "website": "https://github.com/JameZUK/ProcmonMCP",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "procyon",
       "name": "Procyon",
       "category": "Statically Analyze Code: Java",
       "description": "Java decompiler.",
-      "website": "https://github.com/mstrobel/procyon"
+      "website": "https://github.com/mstrobel/procyon",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pyelftools",
       "name": "pyelftools",
       "category": "Examine Static Properties: ELF Files",
       "description": "Python library for parsing and analyzing ELF files and DWARF debugging information.",
-      "website": "https://github.com/eliben/pyelftools"
+      "website": "https://github.com/eliben/pyelftools",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pyinstaller-extractor",
       "name": "PyInstaller Extractor",
       "category": "Statically Analyze Code: Python",
       "description": "Extract contents of a PyInstaller-generated PE files.",
-      "website": "https://github.com/extremecoders-re/pyinstxtractor"
+      "website": "https://github.com/extremecoders-re/pyinstxtractor",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "pyinstxtractor-ng",
       "name": "pyinstxtractor-ng",
       "category": "Statically Analyze Code: Python",
       "description": "Extract contents of PyInstaller-generated executables without requiring a matching Python version.",
-      "website": "https://github.com/pyinstxtractor/pyinstxtractor-ng"
+      "website": "https://github.com/pyinstxtractor/pyinstxtractor-ng",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "qiling",
       "name": "Qiling",
       "category": "Statically Analyze Code: General",
       "description": "Emulate code execution of PE files, shellcode, etc. for a variety of OS and hardware platforms.",
-      "website": "https://www.qiling.io"
+      "website": "https://www.qiling.io",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "qpdf",
       "name": "qpdf",
       "category": "Analyze Documents: PDF",
       "description": "Manipulate (merge, convert, transform) PDF files.",
-      "website": "http://qpdf.sourceforge.net/"
+      "website": "http://qpdf.sourceforge.net/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "r2decomp",
       "name": "r2decomp",
       "category": "Statically Analyze Code: General",
       "description": "Decompile the function behind a capa match using radare2 and the Ghidra decompiler.",
-      "website": "https://github.com/lennyzeltser/r2decomp"
+      "website": "https://github.com/lennyzeltser/r2decomp",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "r2pipe",
       "name": "r2pipe",
       "category": "Dynamically Reverse-Engineer Code: General",
       "description": "Examine binary files, including disassembling and debugging.",
-      "website": "https://rada.re/n/r2pipe.html"
+      "website": "https://rada.re/n/r2pipe.html",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "radare2",
       "name": "radare2",
       "category": "Dynamically Reverse-Engineer Code: General",
       "description": "Examine binary files, including disassembling and debugging. Includes r2ai and decai plugins for LLM-powered analysis (API key or local Ollama required), plus the r2ghidra plugin for Ghidra decompilation via the pdg command.",
-      "website": "https://www.radare.org/n/radare2.html"
+      "website": "https://www.radare.org/n/radare2.html",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "rar",
       "name": "RAR",
       "category": "General Utilities",
       "description": "Compress and decompress files using a variety of algorithms.",
-      "website": "https://www.rarlab.com"
+      "website": "https://www.rarlab.com",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "To extract RAR archives, use unrar or 7zz instead."
+      }
     },
     {
       "command": "re-search",
       "name": "re-search.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Search files using regular expressions from a built-in library or custom patterns.",
-      "website": "https://blog.didierstevens.com/2023/04/03/update-re-search-py-version-0-0-22/"
+      "website": "https://blog.didierstevens.com/2023/04/03/update-re-search-py-version-0-0-22/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "readpe-formerly-pev",
       "name": "readpe (formerly pev)",
       "category": "Examine Static Properties: PE Files",
       "description": "Analyze PE files and extract strings from them.",
-      "website": "https://github.com/mentebinaria/readpe"
+      "website": "https://github.com/mentebinaria/readpe",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "redress",
       "name": "Redress",
       "category": "Examine Static Properties: Go",
       "description": "Analyze stripped Go binaries to recover symbols, types, source structure, and integrate with Radare2.",
-      "website": "https://github.com/goretk/redress"
+      "website": "https://github.com/goretk/redress",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "remnux-installer",
       "name": "REMnux Installer",
       "category": "General Utilities",
       "description": "Install and update the REMnux distro.",
-      "website": "https://github.com/REMnux/distro/blob/master/files/remnux-installer.sh"
+      "website": "https://github.com/REMnux/distro/blob/master/files/remnux-installer.sh",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "remnux-mcp-server",
       "name": "REMnux MCP Server",
       "category": "Use Artificial Intelligence",
       "description": "MCP server for using the REMnux malware analysis toolkit via AI assistants.",
-      "website": "https://github.com/REMnux/remnux-mcp-server"
+      "website": "https://github.com/REMnux/remnux-mcp-server",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "restrict-egress",
       "name": "restrict-egress",
       "category": "General Utilities",
       "description": "Restrict outbound network access to an allowlist of domains and CIDRs using an nftables default-deny egress policy. It installs a persistent, self-refreshing lockdown on a VM or host, or enforces a one-shot lockdown inside a container with the apply command. Where dnsmasq and systemd-resolved are present, domain entries are coupled to DNS: a local dnsmasq inserts each answered IP into the allow set before the client sees it, so rotating load-balancer addresses never miss.",
-      "website": "https://github.com/REMnux/distro/blob/master/files/restrict-egress"
+      "website": "https://github.com/REMnux/distro/blob/master/files/restrict-egress",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "rhino-debugger",
       "name": "Rhino Debugger",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "GUI JavaScript debugger.",
-      "website": "https://developer.mozilla.org/en-US/docs/Mozilla/Projects/Rhino/Debugger"
+      "website": "https://developer.mozilla.org/en-US/docs/Mozilla/Projects/Rhino/Debugger",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "rsakeyfinder",
       "name": "RSAKeyFinder",
       "category": "Perform Memory Forensics",
       "description": "Find BER-encoded RSA private keys in a memory image.",
-      "website": "https://citp.princeton.edu/our-work/memory/"
+      "website": "https://citp.princeton.edu/our-work/memory/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "rtfdump",
       "name": "rtfdump.py",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Analyze a suspicious RTF file.",
-      "website": "https://blog.didierstevens.com/2018/12/10/update-rtfdump-py-version-0-0-9/"
+      "website": "https://blog.didierstevens.com/2018/12/10/update-rtfdump-py-version-0-0-9/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "runsc",
       "name": "runsc",
       "category": "Dynamically Reverse-Engineer Code: Shellcode",
       "description": "Run shellcode to trace and analyze its execution.",
-      "website": "https://github.com/edygert/runsc"
+      "website": "https://github.com/edygert/runsc",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "Use speakeasy or qiling instead."
+      }
     },
     {
       "command": "sandfly-processdecloak",
       "name": "sandfly-processdecloak",
       "category": "Investigate System Interactions",
       "description": "Find hidden processes on the local Linux system.",
-      "website": "https://github.com/sandflysecurity/sandfly-processdecloak"
+      "website": "https://github.com/sandflysecurity/sandfly-processdecloak",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "scalpel",
       "name": "Scalpel",
       "category": "Gather and Analyze Data",
       "description": "Carve contents out of binary files, such as partitions.",
-      "website": "https://github.com/sleuthkit/scalpel"
+      "website": "https://github.com/sleuthkit/scalpel",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "scdbg",
       "name": "scdbg",
       "category": "Dynamically Reverse-Engineer Code: Shellcode",
       "description": "Analyze shellcode by emulating its execution.",
-      "website": "http://sandsprite.com/blogs/index.php?uid=7&pid=152"
+      "website": "http://sandsprite.com/blogs/index.php?uid=7&pid=152",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "Use speakeasy or qiling instead."
+      }
     },
     {
       "command": "scite",
       "name": "SciTE",
       "category": "View or Edit Files",
       "description": "Edit text files.",
-      "website": "https://www.scintilla.org/SciTE.html"
+      "website": "https://www.scintilla.org/SciTE.html",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "sets",
       "name": "sets.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Perform set operations on lines or bytes in text files.",
-      "website": "https://blog.didierstevens.com/2017/03/05/new-tool-sets-py/"
+      "website": "https://blog.didierstevens.com/2017/03/05/new-tool-sets-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "shcode2exe",
       "name": "shcode2exe",
       "category": "Dynamically Reverse-Engineer Code: Shellcode",
       "description": "Convert 32 and 64-bit shellcode to a Windows executable file.",
-      "website": "https://github.com/accidentalrebel/shcode2exe"
+      "website": "https://github.com/accidentalrebel/shcode2exe",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "shellcode2exebat",
       "name": "shellcode2exe.bat",
       "category": "Dynamically Reverse-Engineer Code: Shellcode",
       "description": "Convert 32 and 64-bit shellcode to a Windows executable file.",
-      "website": "https://github.com/repnz/shellcode2exe"
+      "website": "https://github.com/repnz/shellcode2exe",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "Use speakeasy or qiling instead."
+      }
     },
     {
       "command": "signsrch",
       "name": "signsrch",
       "category": "Examine Static Properties: General",
       "description": "Find patterns of common encryption, compression, or encoding algorithms.",
-      "website": "http://aluigi.altervista.org/mytoolz.htm"
+      "website": "http://aluigi.altervista.org/mytoolz.htm",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "sleuth-kit",
       "name": "Sleuth Kit",
       "category": "Examine Static Properties: General",
       "description": "Analyze disk images and recover files from them.",
-      "website": "https://www.sleuthkit.org/sleuthkit"
+      "website": "https://www.sleuthkit.org/sleuthkit",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "speakeasy",
       "name": "Speakeasy",
       "category": "Statically Analyze Code: PE Files",
       "description": "Emulate code execution, including shellcode, Windows drivers, and Windows PE files.",
-      "website": "https://github.com/mandiant/speakeasy"
+      "website": "https://github.com/mandiant/speakeasy",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "spidermonkey",
       "name": "SpiderMonkey",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Execute and deobfuscate JavaScript using Mozilla's standalone JavaScript engine.",
-      "website": "https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey"
+      "website": "https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "spidermonkey-patched",
       "name": "SpiderMonkey (Patched)",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Execute and deobfuscate JavaScript using a patched version of Mozilla's standalone JavaScript engine.",
-      "website": "https://blog.didierstevens.com/2018/04/19/update-patched-spidermonkey/"
+      "website": "https://blog.didierstevens.com/2018/04/19/update-patched-spidermonkey/",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "Use js115 instead."
+      }
     },
     {
       "command": "sqlite",
       "name": "SQLite",
       "category": "General Utilities",
       "description": "Manage and interact with SQL database files.",
-      "website": "http://www.sqlite.org"
+      "website": "http://www.sqlite.org",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "ssdeep",
       "name": "ssdeep",
       "category": "Examine Static Properties: General",
       "description": "Compute Context Triggered Piecewise Hashes (CTPH), also known as fuzzy hashes.",
-      "website": "https://ssdeep-project.github.io/ssdeep/index.html"
+      "website": "https://ssdeep-project.github.io/ssdeep/index.html",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "sshpass",
       "name": "sshpass",
       "category": "General Utilities",
       "description": "Supply a password to SSH non-interactively for automated logins.",
-      "website": "https://sourceforge.net/projects/sshpass/"
+      "website": "https://sourceforge.net/projects/sshpass/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "ssview",
       "name": "SSView",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Analyze OLE2 Structured Storage files.",
-      "website": "https://www.mitec.cz/ssv.html"
+      "website": "https://www.mitec.cz/ssv.html",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "Use oledir or olebrowse from oletools instead."
+      }
     },
     {
       "command": "stpyv8",
       "name": "STPyV8",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Python3 and JavaScript interop engine, fork of the original PyV8 project.",
-      "website": "https://github.com/cloudflare/stpyv8"
+      "website": "https://github.com/cloudflare/stpyv8",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "No alternative identified."
+      }
     },
     {
       "command": "strace",
       "name": "strace",
       "category": "Dynamically Reverse-Engineer Code: ELF Files",
       "description": "Trace process' system calls and signals.",
-      "website": "https://strace.io"
+      "website": "https://strace.io",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "strdeobpl",
       "name": "strdeob.pl",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Locate and decode stack strings in executable files.",
-      "website": "https://github.com/REMnux/distro/blob/master/files/strdeob.pl"
+      "website": "https://github.com/REMnux/distro/blob/master/files/strdeob.pl",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "strings",
       "name": "strings.py",
       "category": "Examine Static Properties: General",
       "description": "Extract ASCII and Unicode strings from binary files with length sorting and filtering.",
-      "website": "https://blog.didierstevens.com/2020/12/19/update-strings-py-version-0-0-6/"
+      "website": "https://blog.didierstevens.com/2020/12/19/update-strings-py-version-0-0-6/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "tcpdump",
       "name": "tcpdump",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Capture and analyze network traffic with this command-line sniffer.",
-      "website": "https://www.tcpdump.org/"
+      "website": "https://www.tcpdump.org/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "tcpflow",
       "name": "tcpflow",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Analyze the flow of network traffic.",
-      "website": "https://downloads.digitalcorpora.org/downloads/tcpflow/"
+      "website": "https://downloads.digitalcorpora.org/downloads/tcpflow/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "tcpick",
       "name": "tcpick",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Capture and analyze network traffic with this command-line sniffer.",
-      "website": "http://tcpick.sourceforge.net"
+      "website": "http://tcpick.sourceforge.net",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "tcpxtract",
       "name": "tcpxtract",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Extract files from network traffic.",
-      "website": "http://tcpxtract.sourceforge.net/"
+      "website": "http://tcpxtract.sourceforge.net/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "tesseract-ocr",
       "name": "Tesseract OCR",
       "category": "Analyze Documents: General",
       "description": "Examine images to identify and extract text using optical character recognition (OCR).",
-      "website": "https://github.com/tesseract-ocr/tesseract"
+      "website": "https://github.com/tesseract-ocr/tesseract",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "thefuzz",
       "name": "thefuzz",
       "category": "Examine Static Properties: General",
       "description": "Fuzzy String Matching in Python.",
-      "website": "https://github.com/seatgeek/thefuzz"
+      "website": "https://github.com/seatgeek/thefuzz",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "thug",
       "name": "thug",
       "category": "Explore Network Interactions: Connecting",
       "description": "Examine suspicious website using this low-interaction honeyclient.",
-      "website": "https://github.com/buffer/thug"
+      "website": "https://github.com/buffer/thug",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "Run thug on an amd64 system, for example in the remnux/thug container."
+      }
     },
     {
       "command": "time-decode",
       "name": "time-decode",
       "category": "Gather and Analyze Data",
       "description": "Decode and encode date and timestamps.",
-      "website": "https://github.com/digitalsleuth/time_decode"
+      "website": "https://github.com/digitalsleuth/time_decode",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "tor",
       "name": "tor",
       "category": "Explore Network Interactions: Connecting",
       "description": "Obfuscate your origins by routing traffic through a network of anonymizing nodes.",
-      "website": "https://www.torproject.org"
+      "website": "https://www.torproject.org",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "translate",
       "name": "translate.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Translate bytes according to a Python expression.",
-      "website": "https://blog.didierstevens.com/programs/translate/"
+      "website": "https://blog.didierstevens.com/programs/translate/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "trid",
       "name": "TrID",
       "category": "Examine Static Properties: General",
       "description": "Identify file type using signatures.",
-      "website": "https://mark0.net/soft-trid-e.html"
+      "website": "https://mark0.net/soft-trid-e.html",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "Use `file` or Detect It Easy instead."
+      }
     },
     {
       "command": "tshark",
       "name": "tshark",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Capture and analyze network traffic with this console-based sniffer.",
-      "website": "https://www.wireshark.org"
+      "website": "https://www.wireshark.org",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "uncompyle6",
       "name": "uncompyle6",
       "category": "Statically Analyze Code: Python",
       "description": "Python cross-version bytecode decompiler for Python 1.0 through 3.8.",
-      "website": "https://github.com/rocky/python-uncompyle6"
+      "website": "https://github.com/rocky/python-uncompyle6",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "unfurl",
       "name": "Unfurl",
       "category": "Explore Network Interactions: Connecting",
       "description": "Deconstruct and decode data from a URL.",
-      "website": "https://github.com/obsidianforensics/unfurl"
+      "website": "https://github.com/obsidianforensics/unfurl",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "unhide",
       "name": "Unhide",
       "category": "Investigate System Interactions",
       "description": "Find hidden processes or connections on the local Linux system.",
-      "website": "http://www.unhide-forensics.info"
+      "website": "http://www.unhide-forensics.info",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "unicode",
       "name": "unicode",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Display Unicode character properties.",
-      "website": "https://github.com/garabik/unicode"
+      "website": "https://github.com/garabik/unicode",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "unrar-free",
       "name": "unrar-free",
       "category": "General Utilities",
       "description": "Decompress files using a variety of algorithms.",
-      "website": "https://www.rarlab.com"
+      "website": "https://www.rarlab.com",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "unxor",
       "name": "unXOR",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Deobfuscate XOR'ed files.",
-      "website": "https://github.com/tomchop/unxor/"
+      "website": "https://github.com/tomchop/unxor/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "upx",
       "name": "UPX",
       "category": "Statically Analyze Code: Unpacking",
       "description": "Pack and unpack PE files.",
-      "website": "https://upx.github.io"
+      "website": "https://upx.github.io",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "vbindiff",
       "name": "VBinDiff",
       "category": "View or Edit Files",
       "description": "Compare binary files.",
-      "website": "https://www.cjmweb.net/vbindiff/"
+      "website": "https://www.cjmweb.net/vbindiff/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "visual-studio-code",
       "name": "Visual Studio Code",
       "category": "View or Edit Files",
       "description": "Powerful source code editor.",
-      "website": "https://code.visualstudio.com/"
+      "website": "https://code.visualstudio.com/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "vivisect",
       "name": "Vivisect",
       "category": "Statically Analyze Code: General",
       "description": "Statically examine and emulate binary files.",
-      "website": "https://github.com/vivisect/vivisect"
+      "website": "https://github.com/vivisect/vivisect",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ],
+      "arch_notes": {
+        "arm64": "The graphical interface is unavailable."
+      }
     },
     {
       "command": "volatility-framework",
       "name": "Volatility Framework",
       "category": "Perform Memory Forensics",
       "description": "Memory forensics tool and framework.",
-      "website": "https://github.com/volatilityfoundation/volatility3"
+      "website": "https://github.com/volatilityfoundation/volatility3",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "webcrack",
       "name": "Webcrack",
       "category": "Dynamically Reverse-Engineer Code: Scripts",
       "description": "Deobfuscate, unminify, and unpack bundled JavaScript, including scripts protected with obfuscator.io.",
-      "website": "https://github.com/j4k0xb/webcrack"
+      "website": "https://github.com/j4k0xb/webcrack",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "wine",
       "name": "Wine",
       "category": "Dynamically Reverse-Engineer Code: General",
       "description": "Run Windows applications.",
-      "website": "https://www.winehq.org"
+      "website": "https://www.winehq.org",
+      "architectures": [
+        "amd64"
+      ],
+      "arch_notes": {
+        "arm64": "No alternative identified. Hangover, which combines Wine with FEX or Box64, is an experimental option outside REMnux."
+      }
     },
     {
       "command": "wireshark",
       "name": "wireshark",
       "category": "Explore Network Interactions: Monitoring",
       "description": "Capture and analyze network traffic with this sniffer.",
-      "website": "https://www.wireshark.org"
+      "website": "https://www.wireshark.org",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "wxhexeditor",
       "name": "wxHexEditor",
       "category": "View or Edit Files",
       "description": "Hex editor.",
-      "website": "https://sourceforge.net/projects/wxhexeditor/"
+      "website": "https://sourceforge.net/projects/wxhexeditor/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "x64dbg-automate-mcp",
       "name": "x64dbg Automate MCP (OpenCode skills)",
       "category": "Use Artificial Intelligence",
       "description": "Drive x64dbg on a remote Windows VM from OpenCode on REMnux, with eight AI commands for tracing, unpacking, state snapshots, decompiling, YARA scanning, and vulnerability hunting.",
-      "website": "https://github.com/REMnux/x64dbg-skills-opencode"
+      "website": "https://github.com/REMnux/x64dbg-skills-opencode",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "x64dbg-documentation",
       "name": "x64dbg Documentation",
       "category": "Dynamically Reverse-Engineer Code: General",
       "description": "Read the official x64dbg documentation offline, including the command reference and format specifiers.",
-      "website": "https://github.com/x64dbg/docs"
+      "website": "https://github.com/x64dbg/docs",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "xlmmacrodeobfuscator",
       "name": "XLMMacroDeobfuscator",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Deobfuscate XLM macros (also known as Excel 4.0 macros) from Microsoft Office files.",
-      "website": "https://github.com/DissectMalware/XLMMacroDeobfuscator"
+      "website": "https://github.com/DissectMalware/XLMMacroDeobfuscator",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "xmldump",
       "name": "xmldump.py",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Extract contents of XML files, in particular OOXML-formatted Microsoft Office documents.",
-      "website": "https://blog.didierstevens.com/2017/12/18/new-tool-xmldump-py/"
+      "website": "https://blog.didierstevens.com/2017/12/18/new-tool-xmldump-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "xor-kpa",
       "name": "xor-kpa.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Implement a XOR known plaintext attack.",
-      "website": "https://blog.didierstevens.com/2017/06/06/update-xor-kpa-py-version-0-0-5/"
+      "website": "https://blog.didierstevens.com/2017/06/06/update-xor-kpa-py-version-0-0-5/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "xorbruteforcerpy",
       "name": "xorBruteForcer.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Bruteforce an XOR-encoded file.",
-      "website": "https://eternal-todo.com/category/bruteforcer"
+      "website": "https://eternal-todo.com/category/bruteforcer",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "xorsearch",
       "name": "xorsearch.py",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Search for XOR, ROL, ROT, and SHIFT encoded strings with YARA and regex support.",
-      "website": "https://blog.didierstevens.com/2020/08/23/new-tool-xorsearch-py/"
+      "website": "https://blog.didierstevens.com/2020/08/23/new-tool-xorsearch-py/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "xorsearch",
       "name": "XORSearch",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Locate and decode strings obfuscated using common techniques.",
-      "website": "https://blog.didierstevens.com/programs/xorsearch/"
+      "website": "https://blog.didierstevens.com/programs/xorsearch/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "xorstrings",
       "name": "XORStrings",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Search for XOR encoded strings in a file.",
-      "website": "https://blog.didierstevens.com/2013/04/15/new-tool-xorstrings/"
+      "website": "https://blog.didierstevens.com/2013/04/15/new-tool-xorstrings/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "xortool",
       "name": "xortool",
       "category": "Examine Static Properties: Deobfuscation",
       "description": "Analyze XOR-encoded data.",
-      "website": "https://github.com/hellman/xortool"
+      "website": "https://github.com/hellman/xortool",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "yara",
       "name": "Yara",
       "category": "Gather and Analyze Data",
       "description": "Identify and classify malware samples using Yara rules.",
-      "website": "https://virustotal.github.io/yara/"
+      "website": "https://virustotal.github.io/yara/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "yara-forge-rules",
       "name": "YARA-Forge Rules",
       "category": "Examine Static Properties: General",
       "description": "Scan files with curated YARA rules from 45+ sources for malware family identification.",
-      "website": "https://yarahq.github.io/"
+      "website": "https://yarahq.github.io/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "yara-rules",
       "name": "Yara Rules",
       "category": "Examine Static Properties: General",
       "description": "Scan a file with YARA rules to identify capabilities and behaviors (packer detection, anti-debug, networking).",
-      "website": "https://github.com/Yara-Rules/rules"
+      "website": "https://github.com/Yara-Rules/rules",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "yara-x",
       "name": "YARA-X",
       "category": "Gather and Analyze Data",
       "description": "Scan files using YARA rules, the next generation of YARA written in Rust.",
-      "website": "https://github.com/VirusTotal/yara-x"
+      "website": "https://github.com/VirusTotal/yara-x",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "zbarimg",
       "name": "zbarimg",
       "category": "Explore Network Interactions: Connecting",
       "description": "Decode QR codes and barcodes from image files.",
-      "website": "https://github.com/mchehab/zbar"
+      "website": "https://github.com/mchehab/zbar",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "zipdump",
       "name": "zipdump.py",
       "category": "Analyze Documents: Microsoft Office",
       "description": "Analyze zip-compressed files.",
-      "website": "https://blog.didierstevens.com/2020/07/27/update-zipdump-py-version-0-0-20/"
+      "website": "https://blog.didierstevens.com/2020/07/27/update-zipdump-py-version-0-0-20/",
+      "architectures": [
+        "amd64",
+        "arm64"
+      ]
     }
   ]
 }

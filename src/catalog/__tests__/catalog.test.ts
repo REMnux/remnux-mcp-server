@@ -7,7 +7,7 @@ describe("ToolCatalog", () => {
   });
 
   it("has version and updated fields", () => {
-    expect(toolCatalog.version).toBe("1.0.0");
+    expect(toolCatalog.version).toBe("1.1.0");
     expect(toolCatalog.updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
