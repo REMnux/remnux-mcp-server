@@ -2,6 +2,8 @@ import type { HandlerDeps } from "./types.js";
 import { toolRegistry } from "../tools/registry.js";
 import { formatResponse, formatError } from "../response.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
+import { toolCatalog } from "../catalog/index.js";
+import { getTargetArch } from "../utils/target-arch.js";
 
 export async function handleCheckTools(deps: HandlerDeps) {
   const startTime = Date.now();
@@ -15,7 +17,7 @@ export async function handleCheckTools(deps: HandlerDeps) {
     toolNames.add(cmdName);
   }
 
-  const tools: Array<{ tool: string; available: boolean; path?: string }> = [];
+  const tools: Array<{ tool: string; available: boolean; path?: string; note?: string }> = [];
 
   // Verify container connectivity before checking individual tools
   try {
@@ -66,8 +68,17 @@ export async function handleCheckTools(deps: HandlerDeps) {
   const available = tools.filter(t => t.available).length;
   const missing = tools.filter(t => !t.available).length;
 
+  // Explain a missing tool that stock REMnux omits on this architecture, so it
+  // does not read as a broken install.
+  const architecture = await getTargetArch(connector);
+  for (const t of tools) {
+    if (t.available) continue;
+    const note = toolCatalog.absenceNote(t.tool, architecture);
+    if (note) t.note = note;
+  }
+
   return formatResponse("check_tools", {
-    summary: { total: tools.length, available, missing },
+    summary: { total: tools.length, available, missing, architecture },
     tools: tools.sort((a, b) => a.tool.localeCompare(b.tool)),
   }, startTime);
 }

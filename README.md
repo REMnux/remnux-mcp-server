@@ -266,8 +266,8 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `compare_files` | Structured diff of two related samples (loader vs payload): size/entropy, architecture, compiler, packer, imports, capabilities, and sections added/removed |
 | `suggest_tools` | Detect file type and return recommended tools with analysis hints (no execution) |
 | `get_tool_help` | Get usage help (`--help` output) for any installed REMnux tool |
-| `check_tools` | Check which REMnux analysis tools are installed and available |
-| `get_server_info` | Report the server version, connector mode and transport, and the REMnux distro version on the target (best-effort; `null` when the target cannot report it) |
+| `check_tools` | Check which REMnux analysis tools are installed and available, report the target's architecture, and note each missing tool that stock REMnux lacks on that architecture |
+| `get_server_info` | Report the server version, connector mode and transport, and the REMnux distro version and architecture on the target (best-effort, `null` when the target cannot report it) |
 | `get_report_template` | Return a bundled malware analysis report template (CC BY 4.0, by Lenny Zeltser) for drafting a report offline. The response also carries an `optional_section_convention` explaining that headings marked `(Optional)` are conditional markers to resolve, not literal heading text |
 | `get_report_guidance` | Return bundled report writing guidelines (sections, confidence, capabilities, IOC tiering, anti-patterns); `topic` narrows the digest, or `topic='triage_checklist'` returns the pre-claim artifact-vs-behavior triage discipline checklist |
 | `get_osint_guidance` | Return bundled, offline OSINT triage guidance for malware indicators. Enrichment tradecraft (hash-first, disclosure-aware, do-not-tip-off-the-adversary, leads-not-verdicts) plus a curated, PR-maintained catalog of free and freemium lookup services. `topic` selects the guidance slice, `ioc_type` narrows the catalog. Makes no network calls and holds no API keys |
@@ -299,6 +299,8 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 *Compatibility note:* `not_assessed` is new. Tools without a parser used to report `clean`. A client that switches exhaustively over the status values needs a branch for it.
 
 **Preprocessing:** Before analysis, `analyze_file` checks for conditions that prevent effective analysis (encrypted Office docs, bloated PEs, PyInstaller bundles) and applies automatic fixes. Results appear in the `preprocessing` field.
+
+**amd64 and arm64:** REMnux ships for both architectures, and stock arm64 REMnux lacks some tools that amd64 includes (see the [REMnux docs](https://docs.remnux.org)). The server detects a missing tool on the target and reports it as missing. When stock REMnux lacks that tool on the target's architecture, the server adds a note saying so. It appears in `analyze_file`, `check_tools`, `get_tool_help`, `suggest_tools`, and `run_tool` output, with the REMnux docs' alternative, if any. `get_server_info` reports the target's architecture. When `rar` is not installed, as on stock arm64 REMnux, `download_file` archives a file extracted from a `.rar` as `.7z`. It uses the same password and encrypts the file names. Without thug installed, `download_from_url` with `method: "thug"` reports thug as missing, not as a URL that served nothing.
 
 ### Example: run_tool
 

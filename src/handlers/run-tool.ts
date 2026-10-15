@@ -10,6 +10,7 @@ import { filterStderrNoise } from "../utils/stderr-filter.js";
 import { OUTPUT_SENTINEL } from "../tools/invoker.js";
 import { createHash } from "crypto";
 import { saveOversizedOutput } from "./output-spill.js";
+import { missingCommandNotes } from "../utils/target-arch.js";
 
 /**
  * Pre-execution warning patterns for discouraged commands.
@@ -529,12 +530,21 @@ export async function handleRunTool(
 
     // Output-conditioned advisory (tools that exit 0 on failure); scans the
     // raw output, not the truncated/filtered copy sent in the response
-    const outputAdvisory = getOutputAdvisory({
-      command: fullCommand,
-      stdout: result.stdout ?? "",
-      stderr: result.stderr ?? "",
-      exitCode: result.exitCode,
-    });
+    const outputAdvisory = [
+      getOutputAdvisory({
+        command: fullCommand,
+        stdout: result.stdout ?? "",
+        stderr: result.stderr ?? "",
+        exitCode: result.exitCode,
+      }),
+      // A missing command that stock REMnux lacks on this architecture. Stdout
+      // counts too when the command failed, since commands often end in 2>&1.
+      // A successful command's stdout is data, such as a sample's own text.
+      ...(await missingCommandNotes(
+        connector,
+        result.exitCode === 0 ? (result.stderr ?? "") : `${result.stderr ?? ""}\n${result.stdout ?? ""}`,
+      )),
+    ].filter(Boolean).join("\n") || undefined;
 
     return formatResponse("run_tool", {
       command: fullCommand,

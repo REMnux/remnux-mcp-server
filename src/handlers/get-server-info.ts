@@ -1,9 +1,11 @@
 import type { HandlerDeps } from "./types.js";
 import { formatResponse } from "../response.js";
+import { getTargetArch } from "../utils/target-arch.js";
 
 /**
  * get_server_info — report the MCP server version, how it reaches REMnux
- * (connector mode + transport), and the REMnux distro version on the target.
+ * (connector mode + transport), and the REMnux distro version and
+ * architecture on the target (each null when the target cannot report it).
  *
  * The REMnux version is best-effort. /etc/remnux-version is the authoritative
  * source (the distro's own CLI reads it); `remnux version` is only a fallback,
@@ -45,11 +47,13 @@ export async function handleGetServerInfo(deps: HandlerDeps, serverVersion: stri
   const { config } = deps;
 
   const remnuxVersion = await readRemnuxVersion(deps);
+  const architecture = await getTargetArch(deps.connector);
 
   return formatResponse("get_server_info", {
     server_version: serverVersion,
     connector_mode: config.mode,
     transport: config.transport ?? "stdio",
     remnux_version: remnuxVersion,
+    architecture,
   }, startTime);
 }

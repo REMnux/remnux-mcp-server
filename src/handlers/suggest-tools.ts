@@ -5,12 +5,13 @@ import { matchFileType, CATEGORY_TAG_MAP } from "../file-type-mappings.js";
 import type { DepthTier } from "../file-type-mappings.js";
 import { toolRegistry } from "../tools/registry.js";
 import { buildInvocationTemplate } from "../tools/invoker.js";
-import { toolCatalog } from "../catalog/index.js";
+import { toolCatalog, type CatalogTool } from "../catalog/index.js";
 import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
 import { resolveSamplePath } from "../utils/resolve-sample-path.js";
 import { checkFileExists } from "../utils/check-file-exists.js";
+import { getTargetArch } from "../utils/target-arch.js";
 
 /**
  * Maps catalog command identifiers to their corresponding registry commands.
@@ -29,6 +30,21 @@ const CATALOG_ALIASES: Record<string, string[]> = {
   "decompyle": ["pycdc"],
   "pyinstaller-extractor": ["pyinstxtractor-ng"],
 };
+
+/** Hint text about js_unshroud, a tool stock arm64 REMnux lacks (see TOOL_HINT_PASSAGES). */
+const JS_UNSHROUD_HINT =
+  "When the JavaScript lives on a live web page — or deobfuscation reveals a next-stage URL — js_unshroud " +
+  "loads the URL in an instrumented Playwright browser and records runtime behavior (executed scripts, " +
+  "deobfuscated code, network activity) as JSONL events: run_tool command=\"xvfb-run -a js_unshroud run " +
+  "--url <url> --out %OUTPUT%/js_unshroud-events.jsonl\" (current REMnux versions start a virtual display " +
+  "automatically, and the xvfb-run -a prefix is harmless there but required on older installs; the run can " +
+  "exit 0 even when the browser fails to launch, so confirm the JSONL has events). Then summarize with " +
+  "run_tool command=\"js_unshroud analyze --input %OUTPUT%/js_unshroud-events.jsonl --format stats\" and " +
+  "drill down with its query/correlate subcommands. It takes URLs, not local files, and it contacts the " +
+  "live site — weigh OPSEC (get_osint_guidance topic='tradecraft') before visiting adversary infrastructure.";
+
+/** Hint text about tracesc, a tool stock arm64 REMnux lacks (see TOOL_HINT_PASSAGES). */
+const TRACESC_HINT = " and tracesc traces execution via Wine";
 
 /**
  * Base per-category expert guidance for the AI agent.
@@ -114,15 +130,7 @@ const BASE_HINTS: Record<string, string> = {
     "For deep analysis, JStillery uses AST partial evaluation for deobfuscation, and " +
     "SpiderMonkey with -f /usr/share/remnux/objects.js emulates browser/PDF viewer objects. " +
     "To extract scripts from HTML, use ExtractScripts via run_tool. " +
-    "When the JavaScript lives on a live web page — or deobfuscation reveals a next-stage URL — js_unshroud " +
-    "loads the URL in an instrumented Playwright browser and records runtime behavior (executed scripts, " +
-    "deobfuscated code, network activity) as JSONL events: run_tool command=\"xvfb-run -a js_unshroud run " +
-    "--url <url> --out %OUTPUT%/js_unshroud-events.jsonl\" (current REMnux versions start a virtual display " +
-    "automatically, and the xvfb-run -a prefix is harmless there but required on older installs; the run can " +
-    "exit 0 even when the browser fails to launch, so confirm the JSONL has events). Then summarize with " +
-    "run_tool command=\"js_unshroud analyze --input %OUTPUT%/js_unshroud-events.jsonl --format stats\" and " +
-    "drill down with its query/correlate subcommands. It takes URLs, not local files, and it contacts the " +
-    "live site — weigh OPSEC (get_osint_guidance topic='tradecraft') before visiting adversary infrastructure.",
+    JS_UNSHROUD_HINT,
   Script:
     "base64dump finds and decodes Base64 and other encoded strings — " +
     "common in PowerShell, bash, and VBScript malware. " +
@@ -163,7 +171,7 @@ const BASE_HINTS: Record<string, string> = {
   Shellcode:
     "Raw shellcode detected. speakeasy emulates both x86 and x64 shellcode with Windows API emulation. " +
     "Look for resolved API names, network connections, file system access, and registry modifications in emulation output. " +
-    "For deep analysis, qltool (Qiling) provides multi-platform emulation and tracesc traces execution via Wine. " +
+    "For deep analysis, qltool (Qiling) provides multi-platform emulation" + TRACESC_HINT + ". " +
     "Use strings and xorsearch for static indicators before emulation.",
   ETL:
     "Windows Event Trace Log (ETL) detected. Start with etl2xml to convert the trace to XML, " +
@@ -199,6 +207,32 @@ const BASE_HINTS: Record<string, string> = {
     "1768.py and csce detect Cobalt Strike beacon configs. " +
     "If emulation produces no output, the file may be encrypted — try base64dump for encoded content.",
 };
+
+/**
+ * Hint passages about one tool. When the availability probe reports the tool
+ * missing (stock arm64 REMnux lacks both), the passage is replaced, so the
+ * server never prescribes a tool the system lacks. The passage stays for a
+ * tool the probe could not check.
+ */
+const TOOL_HINT_PASSAGES: ReadonlyArray<{
+  category: string;
+  command: string;
+  passage: string;
+  replacement: string;
+}> = [
+  {
+    category: "JavaScript",
+    command: "js_unshroud",
+    passage: JS_UNSHROUD_HINT,
+    replacement: "js_unshroud, which records JavaScript behavior on live web pages, is not installed on this REMnux system.",
+  },
+  {
+    category: "Shellcode",
+    command: "tracesc",
+    passage: TRACESC_HINT,
+    replacement: "",
+  },
+];
 
 /** Observable properties extracted from `file` command output. */
 interface FileProperties {
@@ -236,8 +270,13 @@ function extractFileProperties(fileOutput: string): FileProperties {
 }
 
 /** Generate dynamic hints by augmenting base hints with property-specific guidance. */
-function generateHints(category: string, fileOutput: string): string {
-  const base = BASE_HINTS[category] ?? BASE_HINTS.Unknown;
+function generateHints(category: string, fileOutput: string, missingCommands: ReadonlySet<string> = new Set()): string {
+  let base = BASE_HINTS[category] ?? BASE_HINTS.Unknown;
+  for (const p of TOOL_HINT_PASSAGES) {
+    if (p.category === category && missingCommands.has(p.command)) {
+      base = base.replace(p.passage, p.replacement);
+    }
+  }
   const props = extractFileProperties(fileOutput);
   const extras: string[] = [];
 
@@ -332,8 +371,11 @@ export async function handleSuggestTools(
   const primaryTag = CATEGORY_TAG_MAP[category.name] ?? "fallback";
   const tools = toolRegistry.byTagAndTier(primaryTag, depth);
 
-  // Check tool availability (batch all unique commands in one shell call)
-  const uniqueCommands = [...new Set(tools.map((t) => t.command))];
+  // Check tool availability (batch all unique commands in one shell call). The
+  // tools named by this category's hint passages are checked too.
+  const hintCommands = TOOL_HINT_PASSAGES.filter((p) => p.category === category.name).map((p) => p.command);
+  const uniqueCommands = [...new Set([...tools.map((t) => t.command), ...hintCommands])];
+  let availabilityProbed = false;
   const availableCommands = new Set<string>();
   if (uniqueCommands.length > 0) {
     try {
@@ -343,27 +385,24 @@ export async function handleSuggestTools(
         timeout: 10000,
         cwd: config.samplesDir,
       });
+      // The batch exits 0 or 1 (the last `which`). Anything else (a timeout, a
+      // shell that did not start) leaves its answers incomplete.
+      if (check.exitCode !== 0 && check.exitCode !== 1) {
+        throw new Error(`availability probe exited ${check.exitCode}`);
+      }
       for (const line of (check.stdout || "").split("\n")) {
         const cmd = line.trim();
         if (cmd) availableCommands.add(cmd);
       }
+      availabilityProbed = true;
     } catch {
       // On failure, assume all available (graceful degradation)
       for (const c of uniqueCommands) availableCommands.add(c);
     }
   }
 
-  const recommended = tools.map((t) => ({
-    name: t.name,
-    invocation: buildInvocationTemplate(t),
-    description: t.description,
-    tier: t.tier,
-    tags: t.tags ?? [],
-    ...(availableCommands.has(t.command) ? {} : { available: false as const }),
-  }));
-
   // Query catalog for additional tools not in the registry
-  let additionalTools: Array<{ name: string; description: string; website: string }> = [];
+  let additionalEntries: CatalogTool[] = [];
   try {
     const normalize = (c: string) => c.replace(/\.py$/, '');
     const registryCommands = new Set(tools.map((t) => normalize(t.command)));
@@ -381,21 +420,57 @@ export async function handleSuggestTools(
     };
 
     const seen = new Set<string>();
-    additionalTools = toolCatalog.forMcpCategory(category.name)
+    additionalEntries = toolCatalog.forMcpCategory(category.name)
       .filter((ct) => !isCovered(ct.command))
       .filter((ct) => {
         if (seen.has(ct.command)) return false;
         seen.add(ct.command);
         return true;
-      })
-      .map((ct) => ({
-        name: ct.name,
-        description: ct.description,
-        website: ct.website,
-      }));
+      });
   } catch (err) {
     console.error("WARNING: Catalog query failed for additional_tools:", err);
   }
+
+  // Read the target's architecture only when a listed tool differs by architecture.
+  const needsArch =
+    tools.some((t) => toolCatalog.isArchLimited(t.command)) ||
+    additionalEntries.some((ct) => toolCatalog.isArchLimited(ct.command));
+  const arch = needsArch ? await getTargetArch(connector) : null;
+
+  // A recommended tool's note: why the probe found it missing, or what it lacks
+  // on this architecture when present.
+  const recommended = tools.map((t) => {
+    const available = availableCommands.has(t.command);
+    const archNote = available
+      ? toolCatalog.limitationNote(t.command, arch)
+      : toolCatalog.absenceNote(t.command, arch);
+    return {
+      name: t.name,
+      invocation: buildInvocationTemplate(t),
+      description: t.description,
+      tier: t.tier,
+      tags: t.tags ?? [],
+      ...(available ? {} : { available: false as const }),
+      ...(archNote && { arch_note: archNote }),
+    };
+  });
+
+  // Catalog entries are not probed (their commands are package names), so their
+  // note describes stock REMnux on this architecture, not this system.
+  const additionalTools = additionalEntries.map((ct) => {
+    const archNote = toolCatalog.archNote(ct.command, arch);
+    return {
+      name: ct.name,
+      description: ct.description,
+      website: ct.website,
+      ...(archNote && { arch_note: archNote }),
+    };
+  });
+  const anyAdditionalArchNote = additionalTools.some((t) => t.arch_note);
+
+  const missingCommands = new Set(
+    availabilityProbed ? uniqueCommands.filter((c) => !availableCommands.has(c)) : [],
+  );
 
   return formatResponse("suggest_tools", {
     file: args.file,
@@ -410,13 +485,16 @@ export async function handleSuggestTools(
     ...(recommended.length === 0 && {
       warning: `No tools registered for category "${category.name}" at depth "${depth}". Try depth "deep" or use run_tool directly.`,
     }),
-    analysis_hints: generateHints(category.name, fileOutput),
+    analysis_hints: generateHints(category.name, fileOutput, missingCommands),
     ...(additionalTools.length > 0 && {
       additional_tools: additionalTools,
       additional_tools_note:
         "Other tools installed on REMnux for this file type, beyond those analyze_file auto-runs. " +
         "These are discovery pointers (name, purpose, docs link) — not runnable commands. " +
-        "To use one, get its exact command from the linked docs, then run_tool it.",
+        "To use one, get its exact command from the linked docs, then run_tool it." +
+        (anyAdditionalArchNote
+          ? " Tools with an arch_note are ones that stock REMnux does not include, or limits, on this system's architecture."
+          : ""),
     }),
   }, startTime);
   } catch (error) {

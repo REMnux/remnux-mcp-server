@@ -17,6 +17,8 @@ import { sanitizeToolOutputForIOCScan } from "../utils/metadata-filter.js";
 import { filterStderrNoise } from "../utils/stderr-filter.js";
 import { resolveSamplePath } from "../utils/resolve-sample-path.js";
 import { checkFileExists } from "../utils/check-file-exists.js";
+import { absenceNoteOnTarget, missingCommandNotes } from "../utils/target-arch.js";
+import { isCommandAbsent } from "../utils/missing-command.js";
 import { getPreprocessors } from "../tools/preprocessors.js";
 import { shouldSummarize, generateSummary, summarizeCapabilityEvidence } from "../analysis/index.js";
 import {
@@ -53,6 +55,21 @@ interface ToolSkipped {
 }
 
 const YARA_TOOLS = new Set(["yara-forge", "yara-rules"]);
+
+/** Join a skip reason and its architecture note, when there is one. */
+function withNote(reason: string, note: string | undefined): string {
+  return note ? `${reason}. ${note}` : reason;
+}
+
+/**
+ * Return the architecture note for a tool that analyze_file does not run
+ * itself, once `command -v` reports the tool missing. A hand-installed copy
+ * gets no note steering the agent away from it.
+ */
+async function absentToolNote(connector: HandlerDeps["connector"], command: string): Promise<string | undefined> {
+  const note = await absenceNoteOnTarget(connector, command);
+  return note && (await isCommandAbsent(connector, command)) ? note : undefined;
+}
 
 /** diec detections (its "type: name" findings) that earn a container or packer label. */
 const CONTAINER_LABELS: ReadonlyArray<readonly [RegExp, string]> = [
@@ -454,7 +471,10 @@ export async function handleAnalyzeFile(
         name: tool.name,
         command: tool.command,
         invocation: buildInvocationTemplate(tool),
-        reason: "Requires user-supplied arguments (use run_tool manually)",
+        reason: withNote(
+          "Requires user-supplied arguments (use run_tool manually)",
+          await absentToolNote(connector, tool.command),
+        ),
         skip_type: "requires_user_args",
       });
       continue;
@@ -529,7 +549,10 @@ export async function handleAnalyzeFile(
         toolsSkipped.push({
           name: tool.name,
           command: cmd,
-          reason: "Tool not installed",
+          reason: withNote(
+            "Tool not installed",
+            (await missingCommandNotes(connector, result.stderr ?? "")).join(" ") || undefined,
+          ),
           skip_type: "not_installed",
         });
         continue;

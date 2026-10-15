@@ -5,8 +5,30 @@ import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
 import { toolRegistry } from "../tools/registry.js";
 import { buildInvocationTemplate } from "../tools/invoker.js";
+import { absenceNoteOnTarget } from "../utils/target-arch.js";
+import { missingCommandsIn } from "../utils/missing-command.js";
 
 const TOOL_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
+
+/**
+ * NOT_FOUND error, explaining a tool that stock REMnux omits on the target's
+ * architecture. When the shell named a different missing command (a helper the
+ * tool calls), the tool itself is there, so it gets no note.
+ */
+async function notFoundError(deps: HandlerDeps, tool: string, resolved: string, startTime: number, output = "") {
+  const named = missingCommandsIn(output);
+  const isTheTool = named.length === 0 || named.includes(resolved) || named.includes(tool);
+  const note = isTheTool
+    ? (await absenceNoteOnTarget(deps.connector, resolved)) ??
+      (await absenceNoteOnTarget(deps.connector, tool))
+    : undefined;
+  return formatError("get_tool_help", new REMnuxError(
+    `Tool '${tool}' not found. It may not be installed on this REMnux system.${note ? ` ${note}` : ""}`,
+    "NOT_FOUND",
+    "not_found",
+    "Use check_tools to see installed tools, or install with apt/pip",
+  ), startTime);
+}
 
 export async function handleGetToolHelp(
   deps: HandlerDeps,
@@ -52,12 +74,7 @@ export async function handleGetToolHelp(
 
         // Detect tool not installed (exit code 127 is the standard shell signal)
         if (result.exitCode === 127) {
-          return formatError("get_tool_help", new REMnuxError(
-            `Tool '${tool}' not found. It may not be installed on this REMnux system.`,
-            "NOT_FOUND",
-            "not_found",
-            "Use check_tools to see installed tools, or install with apt/pip",
-          ), startTime);
+          return notFoundError(deps, tool, resolved, startTime, combined);
         }
 
         if (combined) {
@@ -75,8 +92,9 @@ export async function handleGetToolHelp(
           ), startTime);
         }
         // Docker/OCI surface a missing executable as a thrown exec error rather
-        // than the shell's exit code 127. Mark it so we return NOT_FOUND below.
-        if (/executable file not found|not found in \$?PATH|OCI runtime exec failed/i.test(msg)) {
+        // than the shell's exit code 127, and local mode as a spawn ENOENT. Mark
+        // it so we return NOT_FOUND below.
+        if (/executable file not found|not found in \$?PATH|OCI runtime exec failed|^spawn \S+ ENOENT$/i.test(msg)) {
           notFound = true;
         }
         // Continue to next help invocation
@@ -85,12 +103,7 @@ export async function handleGetToolHelp(
 
     if (!output) {
       if (notFound) {
-        return formatError("get_tool_help", new REMnuxError(
-          `Tool '${tool}' not found. It may not be installed on this REMnux system.`,
-          "NOT_FOUND",
-          "not_found",
-          "Use check_tools to see installed tools, or install with apt/pip",
-        ), startTime);
+        return notFoundError(deps, tool, resolved, startTime);
       }
       return formatError("get_tool_help", new REMnuxError(
         `No help output from '${tool}'. The tool may not be installed or may not support --help/-h.`,

@@ -5,6 +5,8 @@ import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
 import { posix } from "path";
+import { isCommandAbsent } from "../utils/missing-command.js";
+import { absenceNoteOnTarget } from "../utils/target-arch.js";
 
 /** Max download size (200MB) */
 const MAX_FILESIZE = 200 * 1024 * 1024;
@@ -231,6 +233,18 @@ async function handleThugDownload(
 ) {
   const { connector, config } = deps;
   const timeoutSecs = args.timeout ?? DEFAULT_THUG_TIMEOUT;
+
+  // Check for thug itself first, so a missing honeyclient is not reported as a URL
+  // that served nothing. Stock arm64 REMnux does not include thug.
+  if (await isCommandAbsent(connector, "thug")) {
+    const note = await absenceNoteOnTarget(connector, "thug");
+    return formatError("download_from_url", new REMnuxError(
+      `thug is not installed on this REMnux system.${note ? ` ${note}` : ""}`,
+      "NOT_FOUND",
+      "not_found",
+      "Use method 'curl' to fetch the URL as a plain download, without executing JavaScript",
+    ), startTime);
+  }
 
   // Parse supported thug flags from headers
   let userAgent: string | undefined;

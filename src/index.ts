@@ -205,7 +205,7 @@ export async function createServer(config: ServerConfig) {
     "download_from_url",
     "Download a file from a URL into the samples directory for analysis. " +
     "Returns file metadata (hashes, type, size). Supports custom HTTP headers " +
-    "and an optional thug mode for sites requiring JavaScript execution.",
+    "and an optional thug mode for sites requiring JavaScript execution (thug is not included in stock arm64 REMnux).",
     downloadFromUrlSchema.shape,
     (args) => handleDownloadFromUrl(deps, args)
   );
@@ -311,7 +311,7 @@ export async function createServer(config: ServerConfig) {
   // Tool: check_tools - Check tool availability
   server.tool(
     "check_tools",
-    "Check which REMnux analysis tools are installed and available. Returns a summary of installed vs missing tools across all file type categories.",
+    "Check which REMnux analysis tools are installed and available. Returns a summary of installed vs missing tools across all file type categories, the target's architecture, and a note on each missing tool that stock REMnux does not include on that architecture.",
     checkToolsSchema.shape,
     () => handleCheckTools(deps)
   );
@@ -320,8 +320,9 @@ export async function createServer(config: ServerConfig) {
   server.tool(
     "get_server_info",
     "Report the remnux-mcp-server version, how it reaches REMnux (connector mode and transport), " +
-    "and the REMnux distro version on the target. Use for diagnostics and when documenting which " +
-    "server/REMnux versions produced an analysis.",
+    "and the REMnux distro version and architecture (amd64 or arm64) on the target. Use for diagnostics " +
+    "and when documenting which server/REMnux versions produced an analysis. Stock arm64 REMnux lacks " +
+    "some tools. check_tools reports which ones are missing and what to use instead.",
     getServerInfoSchema.shape,
     () => handleGetServerInfo(deps, pkgVersion)
   );

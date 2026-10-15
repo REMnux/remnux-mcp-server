@@ -251,8 +251,9 @@ describe("handleDownloadFromUrl", () => {
       return { exitCode: 0, stdout: "", stderr: "" };
     });
 
-    // First executeShell = thug, second = find, third = cp
+    // First executeShell = thug presence probe, then thug, find, cp
     mockConnector.executeShell
+      .mockResolvedValueOnce({ exitCode: 0, stdout: "/usr/local/bin/thug\n", stderr: "" }) // command -v thug
       .mockResolvedValueOnce({ exitCode: 0, stdout: "", stderr: "" }) // thug
       .mockResolvedValueOnce({ exitCode: 0, stdout: "/output/thug-123/application/x-dosexec/sample.exe\n", stderr: "" }) // find
       .mockResolvedValueOnce({ exitCode: 0, stdout: "", stderr: "" }); // cp
@@ -265,7 +266,8 @@ describe("handleDownloadFromUrl", () => {
     });
 
     // Check thug command
-    const thugCall = mockConnector.executeShell.mock.calls[0][0] as string;
+    expect(mockConnector.executeShell.mock.calls[0][0]).toBe("command -v thug");
+    const thugCall = mockConnector.executeShell.mock.calls[1][0] as string;
     expect(thugCall).toContain("thug");
     expect(thugCall).toContain("-u 'Mozilla/5.0'");
     expect(thugCall).toContain("'https://malicious-site.com/landing'");

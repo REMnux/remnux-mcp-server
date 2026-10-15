@@ -88,7 +88,7 @@ export const downloadFromUrlSchema = z.object({
   ),
   method: z.enum(["curl", "thug"]).optional().default("curl").describe(
     "Download method. 'curl' (default) for direct HTTP download. " +
-    "'thug' for sites requiring JavaScript execution (uses thug honeyclient)."
+    "'thug' for sites requiring JavaScript execution (uses the thug honeyclient, which stock arm64 REMnux does not include)."
   ),
   overwrite: z.boolean().optional().default(false).describe(
     "Whether to overwrite if file exists. Default: false"

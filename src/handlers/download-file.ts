@@ -8,6 +8,12 @@ import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
 import { DEFAULT_ARCHIVE_PASSWORD, DEFAULT_ARCHIVE_FORMAT } from "../state/session.js";
+import { isCommandAbsent } from "../utils/missing-command.js";
+
+// Raw transfer is a choice for harmless files only. Never steer a sample there.
+const ARCHIVE_REMEDY =
+  "If the file is a sample, keep it archived and retry after resolving the error. " +
+  "Pass archive: false only for harmless files such as text reports";
 
 const MAX_DOWNLOAD_SIZE = 200 * 1024 * 1024; // 200MB
 
@@ -107,7 +113,7 @@ export async function handleDownloadFile(
     if (shouldArchive) {
       // Determine archive format and password from session state
       const archiveMeta = deps.sessionState.getArchiveInfo(filename);
-      const archiveFormat = archiveMeta?.format ?? DEFAULT_ARCHIVE_FORMAT;
+      let archiveFormat = archiveMeta?.format ?? DEFAULT_ARCHIVE_FORMAT;
       const archivePassword = archiveMeta?.password ?? DEFAULT_ARCHIVE_PASSWORD;
 
       // Defense-in-depth: reject passwords with shell metacharacters
@@ -116,8 +122,20 @@ export async function handleDownloadFile(
           "Archive password contains unsafe characters",
           "INVALID_PASSWORD",
           "validation",
-          "Try downloading with archive: false",
+          ARCHIVE_REMEDY,
         ), startTime);
+      }
+
+      // A file extracted from a .rar is re-archived as .rar, but rar is not on every
+      // REMnux system (stock arm64 REMnux omits it). When the target positively
+      // reports it missing, use 7z with encrypted file names and the same password.
+      // With an unknown probe result the code keeps rar, so a failure stays visible.
+      let formatNote: string | undefined;
+      if (archiveFormat === "rar" && await isCommandAbsent(connector, "rar")) {
+        archiveFormat = "7z";
+        formatNote =
+          "rar is not installed on this REMnux system, so the file was archived as 7z " +
+          "with the same password and encrypted file names.";
       }
 
       // Create temp archive path inside REMnux
@@ -136,7 +154,7 @@ export async function handleDownloadFile(
           `Failed to create archive: ${archiveResult.stderr || archiveResult.stdout}`,
           "ARCHIVE_FAILED",
           "tool_failure",
-          "Try downloading with archive: false",
+          ARCHIVE_REMEDY,
         ), startTime);
       }
 
@@ -157,6 +175,7 @@ export async function handleDownloadFile(
         archived: true,
         archive_format: archiveFormat,
         archive_password: archivePassword,
+        ...(formatNote && { note: formatNote }),
       }, startTime);
     }
 
