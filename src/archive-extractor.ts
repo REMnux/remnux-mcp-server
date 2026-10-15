@@ -32,7 +32,7 @@ export function detectArchiveType(filename: string): ArchiveType {
   const lower = filename.toLowerCase();
   // Multi-volume FIRST part: 7z extracts the whole set when pointed at the .001
   // volume (verified for both split .7z and split .zip). A first-part .part1.rar
-  // is caught by the .rar case below and handled by unrar/7z. Only the 3-digit
+  // is caught by the .rar case below and handled by 7zz. Only the 3-digit
   // .001 (7z's default) is recognized; wider padding (.0001) is not.
   if (/\.(7z|zip)\.001$/.test(lower)) {
     return "7z";
@@ -89,7 +89,7 @@ export function describeMultiVolumePart(filename: string): string | null {
   return (
     `This looks like a trailing volume of a multi-volume (split) archive. ` +
     `Make sure every part is present in the same directory, then point extract_archive at the first volume (${firstVolume}). ` +
-    `7z and unrar reassemble the set automatically from the first part.`
+    `7z and 7zz reassemble the set automatically from the first part.`
   );
 }
 
@@ -165,14 +165,12 @@ export function getExtractionCommand(
       return cmdZip;
 
     case "rar":
-      // unrar x -ppassword archive.rar outputdir/
-      // -o+: overwrite existing files
-      const cmdRar = ["unrar", "x", "-o+"];
-      if (password) {
-        cmdRar.push(`-p${password}`);
-      }
-      cmdRar.push(archivePath, outputDir + "/");
-      return cmdRar;
+      // 7zz x archive.rar -ooutputdir -y -ppassword
+      // REMnux's unrar is unrar-free, which rejects -o+ and cannot decrypt.
+      // 7-Zip's own build (7zz, on amd64 and arm64 REMnux) opens RAR4 and RAR5,
+      // encrypted or not. An empty -p when no password is given keeps it from
+      // prompting for one.
+      return ["7zz", "x", archivePath, `-o${outputDir}`, "-y", `-p${password ?? ""}`];
 
     default:
       throw new Error(`Unsupported archive type: ${archiveType}`);
@@ -400,6 +398,7 @@ async function listArchiveEntries(
   connector: Connector,
   archivePath: string,
   archiveType: ArchiveType,
+  password?: string,
 ): Promise<string[]> {
   let cmd: string[];
   switch (archiveType) {
@@ -407,10 +406,10 @@ async function listArchiveEntries(
       cmd = ["zipinfo", "-1", archivePath];
       break;
     case "7z":
-      cmd = ["7z", "l", "-slt", archivePath];
+      cmd = ["7z", "l", "-slt", ...(password ? [`-p${password}`] : []), archivePath];
       break;
     case "rar":
-      cmd = ["unrar", "lb", archivePath];
+      cmd = ["7zz", "l", "-slt", `-p${password ?? ""}`, archivePath];
       break;
     default:
       return [];
@@ -420,11 +419,12 @@ async function listArchiveEntries(
     const result = await connector.execute(cmd, { timeout: 30000 });
     if (result.exitCode !== 0) return [];
 
-    if (archiveType === "7z") {
-      // 7z -slt outputs "Path = filename" lines. For a multi-volume set, 7z also
-      // lists the archive's own volume containers (e.g. "…/name.7z.001" and the
-      // logical "name.7z") as Path entries. Invoked with an absolute archivePath
-      // those come back absolute and would trip the "starts with /" zip-slip
+    if (archiveType === "7z" || archiveType === "rar") {
+      // 7z -slt outputs "Path = filename" lines, and 7zz lists a .rar the same
+      // way. For a multi-volume set, 7z also lists the archive's own volume
+      // containers (e.g. "…/name.7z.001" and the logical "name.7z") as Path
+      // entries. Invoked with an absolute archivePath those come back absolute
+      // and would trip the "starts with /" zip-slip
       // pre-check — a false positive, since they are the container, not content.
       // Drop the self-references, but ONLY genuine ones: the exact archive path,
       // or a bare volume/logical name with no directory component. Never drop an
@@ -550,6 +550,24 @@ export async function extractArchive(
   for (const password of passwordsToTry) {
     try {
       const cmd = getExtractionCommand(archiveType, archivePath, outputDir, password);
+
+      // A .7z or .rar with encrypted file names cannot be listed without its
+      // password, so the pre-check above saw no entries. List again with this
+      // candidate (a wrong one lists nothing) and apply the same check.
+      if (entries.length === 0 && password && (archiveType === "7z" || archiveType === "rar")) {
+        const traversal = checkEntriesForTraversal(
+          await listArchiveEntries(connector, archivePath, archiveType, password),
+        );
+        if (traversal.length > 0) {
+          return {
+            success: false,
+            files: [],
+            error: `Archive contains path traversal entries (zip-slip): ${traversal.slice(0, 3).join(", ")}${traversal.length > 3 ? ` and ${traversal.length - 3} more` : ""}`,
+            outputDir,
+          };
+        }
+      }
+
       let result = await connector.execute(cmd, { timeout: 120000 });
 
       // WinZip AES .zip fallback: unzip cannot decrypt AES entries — it skips
