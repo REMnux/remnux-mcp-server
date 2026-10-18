@@ -9,7 +9,10 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { request } from "node:http";
+import { connect } from "node:net";
+import { networkInterfaces } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { existsSync } from "node:fs";
@@ -41,6 +44,188 @@ async function startsAndStaysUp(
     child.kill("SIGKILL");
   }
 }
+
+/**
+ * POST an MCP initialize to /mcp with the given Host header and resolve the HTTP
+ * status. A DNS-rebinding page reaches a loopback server with its own hostname in
+ * the Host header, so `hostHeader` stands in for that attacker-controlled name.
+ * Retries until the freshly spawned server is listening.
+ */
+async function statusForHostHeader(
+  connectHost: string,
+  port: number,
+  hostHeader: string,
+): Promise<number> {
+  const body = JSON.stringify({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: {
+      protocolVersion: "2025-03-26",
+      capabilities: {},
+      clientInfo: { name: "test-client", version: "1.0.0" },
+    },
+  });
+  const once = () =>
+    new Promise<number>((resolveStatus, reject) => {
+      const req = request(
+        {
+          host: connectHost,
+          port,
+          path: "/mcp",
+          method: "POST",
+          headers: {
+            Host: hostHeader,
+            "Content-Type": "application/json",
+            Accept: "application/json, text/event-stream",
+            "Content-Length": Buffer.byteLength(body),
+          },
+        },
+        (res) => {
+          res.resume();
+          resolveStatus(res.statusCode ?? 0);
+        },
+      );
+      req.setTimeout(5000, () => req.destroy(new Error("request timed out")));
+      req.on("error", reject);
+      req.end(body);
+    });
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await once();
+    } catch (err) {
+      if (attempt >= 30) throw err;
+      await new Promise((r) => setTimeout(r, 200));
+    }
+  }
+}
+
+/**
+ * Spawn the CLI with the HTTP transport and resolve once that child reports it
+ * is listening. Waiting on the child's own startup line, not on the port, keeps
+ * an unrelated listener on the same port from answering in its place: a child
+ * that fails to bind never prints it.
+ */
+async function spawnHttpServer(args: string[]): Promise<ChildProcess> {
+  const child = spawn(process.execPath, [CLI, "--transport=http", ...args], {
+    env: BASE_ENV,
+    stdio: ["ignore", "ignore", "pipe"],
+  });
+  await new Promise<void>((resolveReady, reject) => {
+    let stderr = "";
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      reject(new Error(`server did not start: ${stderr}`));
+    }, 10_000);
+    child.stderr!.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+      if (stderr.includes("REMnux MCP server started")) {
+        clearTimeout(timer);
+        resolveReady();
+      }
+    });
+    child.once("exit", () => {
+      clearTimeout(timer);
+      reject(new Error(`server exited before starting: ${stderr}`));
+    });
+  });
+  return child;
+}
+
+/**
+ * Assert the spawned server is still running. A child that died on EADDRINUSE
+ * would leave some other listener on the port to answer the probe.
+ */
+function expectRunning(child: ChildProcess) {
+  expect(child.exitCode).toBeNull();
+  expect(child.signalCode).toBeNull();
+}
+
+/** Resolve true if a TCP connection to host:port succeeds within 3 seconds. */
+function tcpConnects(host: string, port: number): Promise<boolean> {
+  return new Promise((resolveConnects) => {
+    const socket = connect({ host, port });
+    const done = (ok: boolean) => {
+      socket.destroy();
+      resolveConnects(ok);
+    };
+    socket.setTimeout(3000, () => done(false));
+    socket.once("connect", () => done(true));
+    socket.once("error", () => done(false));
+  });
+}
+
+/** A non-loopback IPv4 address of this machine, or undefined when it has none. */
+const externalIPv4 = Object.values(networkInterfaces())
+  .flat()
+  .find((a) => a && a.family === "IPv4" && !a.internal)?.address;
+
+describe.skipIf(!hasBuild)("CLI HTTP DNS-rebinding protection", () => {
+  // The MCP SDK enables Host-header validation on its own only for the exact
+  // strings "127.0.0.1", "localhost", and "::1". The no-token bind check accepts
+  // other loopback spellings too, so the server has to supply the allowed hosts
+  // itself or those spellings run with no rebinding protection at all.
+  it("rejects a foreign Host header on the default bind (control)", async () => {
+    const child = await spawnHttpServer(["--http-port=39005"]);
+    try {
+      expect(await statusForHostHeader("127.0.0.1", 39005, "attacker.example")).toBe(403);
+      expectRunning(child);
+    } finally {
+      child.kill("SIGKILL");
+    }
+  });
+
+  it("rejects a foreign Host header on a LOCALHOST bind with no token", async () => {
+    const child = await spawnHttpServer(["--http-host=LOCALHOST", "--http-port=39006"]);
+    try {
+      expect(await statusForHostHeader("localhost", 39006, "attacker.example")).toBe(403);
+      expectRunning(child);
+    } finally {
+      child.kill("SIGKILL");
+    }
+  });
+
+  it("still serves a loopback client on a LOCALHOST bind", async () => {
+    const child = await spawnHttpServer(["--http-host=LOCALHOST", "--http-port=39007"]);
+    try {
+      expect(await statusForHostHeader("localhost", 39007, "localhost:39007")).toBe(200);
+      expectRunning(child);
+    } finally {
+      child.kill("SIGKILL");
+    }
+  });
+});
+
+describe.skipIf(!hasBuild || !externalIPv4)("CLI HTTP empty --http-host", () => {
+  // The bind check treats an empty host as the 127.0.0.1 default, but Node binds
+  // an empty host string to every interface. The server has to bind what the
+  // check approved, or an empty value opens an unauthenticated network listener.
+  it("binds loopback only when --http-host is empty and no token is set", async () => {
+    const child = await spawnHttpServer(["--http-host=", "--http-port=39008"]);
+    try {
+      expect(await statusForHostHeader("127.0.0.1", 39008, "localhost:39008")).toBe(200);
+      expect(await tcpConnects(externalIPv4!, 39008)).toBe(false);
+      expectRunning(child);
+    } finally {
+      child.kill("SIGKILL");
+    }
+  });
+
+  it("reaches a wildcard listener through the external address (control)", async () => {
+    const child = await spawnHttpServer([
+      "--http-host=0.0.0.0",
+      "--http-port=39009",
+      "--insecure-no-auth",
+    ]);
+    try {
+      expect(await statusForHostHeader("127.0.0.1", 39009, "localhost:39009")).toBe(200);
+      expect(await tcpConnects(externalIPv4!, 39009)).toBe(true);
+      expectRunning(child);
+    } finally {
+      child.kill("SIGKILL");
+    }
+  });
+});
 
 describe.skipIf(!hasBuild)("CLI HTTP bind guard", () => {
   it("refuses a non-loopback bind with no token", () => {

@@ -1,5 +1,35 @@
 import { describe, it, expect } from "vitest";
-import { isLoopbackHost, httpBindRequiresToken } from "../loopback.js";
+import { isLoopbackHost, httpBindRequiresToken, loopbackAllowedHosts } from "../loopback.js";
+
+describe("loopbackAllowedHosts", () => {
+  const SDK_DEFAULTS = ["localhost", "127.0.0.1", "[::1]"];
+
+  it("matches the SDK's own list for the three hosts the SDK protects", () => {
+    for (const h of ["127.0.0.1", "localhost", "::1", undefined, ""]) {
+      expect(loopbackAllowedHosts(h)).toEqual(SDK_DEFAULTS);
+    }
+  });
+
+  it("adds the configured host in the form a Host header parses to", () => {
+    expect(loopbackAllowedHosts("LOCALHOST")).toEqual(SDK_DEFAULTS);
+    expect(loopbackAllowedHosts("[::1]")).toEqual(SDK_DEFAULTS);
+    expect(loopbackAllowedHosts("127.0.0.2")).toEqual([...SDK_DEFAULTS, "127.0.0.2"]);
+    expect(loopbackAllowedHosts("::ffff:127.0.0.1")).toEqual([...SDK_DEFAULTS, "[::ffff:7f00:1]"]);
+    expect(loopbackAllowedHosts("  127.0.0.3  ")).toEqual([...SDK_DEFAULTS, "127.0.0.3"]);
+  });
+
+  it("never allows a foreign hostname", () => {
+    for (const h of ["LOCALHOST", "127.0.0.2", "::ffff:127.0.0.1"]) {
+      expect(loopbackAllowedHosts(h)).not.toContain("attacker.example");
+    }
+  });
+
+  it("returns undefined for a non-loopback bind", () => {
+    for (const h of ["0.0.0.0", "::", "192.168.1.10", "example.com"]) {
+      expect(loopbackAllowedHosts(h)).toBeUndefined();
+    }
+  });
+});
 
 describe("isLoopbackHost", () => {
   it("treats loopback addresses, localhost, and the default as loopback", () => {

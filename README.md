@@ -225,7 +225,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 - **Generate strong tokens:** `openssl rand -hex 32`
 - **Use `MCP_TOKEN` env var** to avoid exposing the token in process listings.
 - **For HTTPS**, place a reverse proxy (nginx, caddy) in front of the MCP server. The bearer token travels in plaintext over HTTP without this.
-- **DNS rebinding protection** is automatically enabled when binding to localhost.
+- **DNS rebinding protection** is automatically enabled for every loopback bind address, including spellings such as `LOCALHOST` and `127.0.0.2`. The server then accepts only loopback names in the `Host` header.
 
 ## CLI Options
 

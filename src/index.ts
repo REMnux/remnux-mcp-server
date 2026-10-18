@@ -53,7 +53,7 @@ import { handleCompareFiles } from "./handlers/compare-files.js";
 import { toolRegistry } from "./tools/registry.js";
 import { REPORT_TEMPLATE, GUIDELINES_DIGEST, ATTRIBUTION, SOURCE_META } from "./report/content.generated.js";
 import { OPTIONAL_SECTION_CONVENTION } from "./report/optional-sections.js";
-import { httpBindRequiresToken } from "./utils/loopback.js";
+import { httpBindRequiresToken, loopbackAllowedHosts } from "./utils/loopback.js";
 
 export interface ServerConfig extends ConnectorConfig {
   samplesDir: string;
@@ -587,7 +587,10 @@ export function createTokenVerifier(token: string): OAuthTokenVerifier {
 }
 
 async function startHttpServer(config: ServerConfig) {
-  const host = config.httpHost ?? "127.0.0.1";
+  // `||`, not `??`: isLoopbackHost treats an empty or blank host as this default,
+  // but Node binds an empty host string to every interface, which would serve
+  // unauthenticated requests from the network.
+  const host = config.httpHost?.trim() || "127.0.0.1";
   const port = config.httpPort ?? 3000;
   const token = config.httpToken;
 
@@ -604,7 +607,11 @@ async function startHttpServer(config: ServerConfig) {
     process.exit(1);
   }
 
-  const app = createMcpExpressApp({ host });
+  // A loopback bind may run without a token, so it must always get DNS-rebinding
+  // protection. Pass the allowed Host names explicitly: the SDK applies its own
+  // list only for three exact host strings (see loopbackAllowedHosts).
+  const allowedHosts = loopbackAllowedHosts(host);
+  const app = createMcpExpressApp(allowedHosts ? { host, allowedHosts } : { host });
 
   // Bearer token auth middleware
   if (token) {
@@ -712,7 +719,14 @@ async function startHttpServer(config: ServerConfig) {
   const authStatus = token ? "auth enabled" : "NO AUTH";
 
   return new Promise<void>((resolve) => {
-    app.listen(port, host, () => {
+    // Express 5 calls this callback with the error when the bind fails (port in
+    // use, unresolvable host), so check it before announcing a server that is
+    // not listening.
+    app.listen(port, host, (err?: Error) => {
+      if (err) {
+        console.error(`Error: could not listen on ${host}:${port}: ${err.message}`);
+        process.exit(1);
+      }
       console.error(
         `REMnux MCP server started${warnings} — HTTP ${authStatus} at http://${host}:${port}/mcp`
       );
