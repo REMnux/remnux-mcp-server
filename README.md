@@ -434,6 +434,10 @@ Then reference mounted files by absolute path (`vol3 -f` takes the image before 
 | "Command blocked: \<category\>" | Null-byte or catastrophic-command guard triggered (`mkfs`, root-wide `rm -rf /`) | Adjust the command, or target a specific path instead of a root-wide destructive operation |
 | "Invalid file path" | Path traversal or special chars | Use simple relative paths without `..` |
 | "Invalid file path" (with `--sandbox`) | Path outside samples/output dirs | Use a relative path or remove `--sandbox` |
+| "Destination already exists on the host" (`download_file`) | A file with that name is already in `output_path` | Pass `overwrite: true` to replace it, or choose another directory |
+| "Destination is a symlink" (`download_file`) | The entry at the destination is a symbolic link, which the transfer would write through | Remove the link or choose another `output_path` |
+| "Source is not a regular file" (`download_file`) | `file_path` names a directory or a symlink inside REMnux | Archive a directory first with `run_tool` (`zip -r`), or name the link's target |
+| "Output subdirectory must stay inside the samples directory" (`extract_archive`) | `output_subdir` resolves to the samples directory itself or outside it | Use a subdirectory name without `..` segments |
 | "Command timed out" | Tool took too long | Increase `--timeout` value |
 | "[Truncated at ...]" (`analyze_file`) | A tool's output exceeded its per-tool budget | The full output is saved to the output directory and the marker names it as `%OUTPUT%/<file>`; query it with `run_tool` (grep, jq) or fetch it with `download_file` |
 | `truncated: true` (`run_tool`) | stdout over 100 KB or stderr over 50 KB | Follow `truncation_notice`: the captured stdout (up to 500 KB) is saved as `stdout_saved_file` in the output directory, and the notice gives a `sed -n 'N,$p' '%OUTPUT%/<file>'` recipe for the omitted lines (or a `> '%OUTPUT%/<file>'` re-run recipe when it could not be saved). `head` returns another prefix and cannot recover the tail |
