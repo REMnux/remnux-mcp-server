@@ -258,7 +258,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `extract_archive` | Extract .zip, .7z, .rar archives with automatic password detection (`infected`, `malware`, `virus`). Handles WinZip AES-256 .zip and header-encrypted .7z (`-mhe=on`) by routing to 7z automatically |
 | `upload_from_host` | Upload a file from the host to the samples directory (200MB limit) |
 | `download_from_url` | Download a file from a URL into the samples directory |
-| `download_file` | Download a file from the output directory to the host (password-protected archive by default, password `infected`). The server keeps an existing destination file unless `overwrite: true`, and refuses a destination that is a symlink |
+| `download_file` | Download a file from the output directory to the host (password-protected archive by default, password `infected`). The server transfers regular files only, keeps an existing destination file unless `overwrite: true`, and refuses a destination that is a symlink |
 | `analyze_file` | Auto-select and run REMnux tools based on detected file type |
 | `extract_iocs` | Extract IOCs (IPs, domains, URLs, hashes, registry keys, etc.) from text with confidence scoring |
 | `check_behavior_prerequisites` | For a Windows PE, report per-behavior `static_capability` (clipboard, HTTP/WinHTTP C2, injection, persistence, etc.) from the import table; packed/.NET binaries return `analysis_incomplete`, not a false negative |

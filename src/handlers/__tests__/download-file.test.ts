@@ -404,3 +404,56 @@ describe("handleDownloadFile — host destination checks", () => {
     expect(deps.connector.readFileToPath).not.toHaveBeenCalled();
   });
 });
+
+// The container-side source must be a regular file: docker cp copies a whole
+// directory tree and lands a symlink as a symlink on the host.
+describe("handleDownloadFile — source type", () => {
+  it.each([
+    ["4096 directory", "directory"],
+    ["80 symbolic link", "symbolic link"],
+    ["0 fifo", "fifo"],
+  ])("refuses a source that stat reports as %s", async (statLine, kind) => {
+    const deps = sandboxedDeps();
+    const exec = vi.mocked(deps.connector.execute);
+    exec
+      .mockResolvedValueOnce(ok(statLine))                       // stat -c "%s %F"
+      .mockResolvedValueOnce(ok("abc  /output/thing"));          // sha256sum
+
+    const env = parseEnvelope(await handleDownloadFile(deps, {
+      file_path: "thing",
+      output_path: hostDir,
+      archive: false,
+    }));
+    expect(env.success).toBe(false);
+    expect(env.error_code).toBe("INVALID_PATH");
+    expect(env.error).toContain(kind);
+    expect(exec).toHaveBeenCalledTimes(2);
+    expect(deps.connector.readFileToPath).not.toHaveBeenCalled();
+  });
+
+  it("accepts a regular file and a regular empty file (control)", async () => {
+    for (const statLine of ["12 regular file", "0 regular empty file"]) {
+      const deps = sandboxedDeps();
+      vi.mocked(deps.connector.execute)
+        .mockResolvedValueOnce(ok(statLine))
+        .mockResolvedValueOnce(ok("abc  /output/plain.txt"));
+      vi.mocked(deps.connector.readFileToPath).mockResolvedValueOnce(undefined);
+      const env = parseEnvelope(await handleDownloadFile(deps, {
+        file_path: `plain-${statLine.split(" ")[0]}.txt`,
+        output_path: hostDir,
+        archive: false,
+      }));
+      expect(env.success).toBe(true);
+      expect(env.data.size_bytes).toBe(parseInt(statLine, 10));
+    }
+  });
+
+  it("asks stat for size and type in one call", async () => {
+    const deps = sandboxedDeps();
+    const exec = vi.mocked(deps.connector.execute);
+    exec.mockResolvedValueOnce(ok("5 regular file")).mockResolvedValueOnce(ok("abc  x"));
+    vi.mocked(deps.connector.readFileToPath).mockResolvedValueOnce(undefined);
+    await handleDownloadFile(deps, { file_path: "x.txt", output_path: hostDir, archive: false });
+    expect(exec.mock.calls[0][0]).toEqual(["stat", "-c", "%s %F", "/output/x.txt"]);
+  });
+});

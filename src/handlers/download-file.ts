@@ -154,9 +154,14 @@ export async function handleDownloadFile(
   const fullPath = `${config.outputDir}/${args.file_path}`;
 
   try {
-    // Get file size and hash (separate calls to avoid shell interpolation)
+    // Get file size and type in one stat call, then the hash (separate calls
+    // to avoid shell interpolation). The type guards the transfer: docker cp
+    // copies a whole directory tree and lands a symlink as a symlink on the
+    // host, and the archive tools reject both, so a source that is not a
+    // regular file is refused up front. stat without -L reports a symlink as
+    // "symbolic link" rather than describing its target.
     const statResult = await connector.execute(
-      ["stat", "-c", "%s", fullPath],
+      ["stat", "-c", "%s %F", fullPath],
       { timeout: 30000 }
     );
     const hashResult = await connector.execute(
@@ -164,7 +169,23 @@ export async function handleDownloadFile(
       { timeout: 30000 }
     );
 
-    const sizeBytes = parseInt((statResult.stdout || "0").trim(), 10);
+    const [sizeField, ...typeFields] = (statResult.stdout || "0").trim().split(/\s+/);
+    const sizeBytes = parseInt(sizeField, 10);
+    const sourceType = typeFields.join(" ");
+
+    // GNU stat prints "regular file" or "regular empty file" for the files this
+    // tool exists to transfer. Anything else (directory, symbolic link, fifo,
+    // socket, device) is refused. An empty type field cannot come from stat and
+    // is left alone so a transport that reports size only keeps working.
+    if (sourceType && !/^regular (empty )?file$/.test(sourceType)) {
+      return formatError("download_file", new REMnuxError(
+        `Source is not a regular file (${sourceType}): ${args.file_path}`,
+        "INVALID_PATH",
+        "validation",
+        "download_file transfers one regular file. Archive a directory first with run_tool (zip -r), " +
+        "or name the symlink's target instead of the link",
+      ), startTime);
+    }
 
     // Guard against oversized downloads
     if (sizeBytes > MAX_DOWNLOAD_SIZE) {

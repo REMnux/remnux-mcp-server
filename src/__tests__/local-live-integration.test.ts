@@ -12,7 +12,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ToolResponse } from "../response.js";
@@ -123,16 +123,20 @@ describe.skipIf(!runLive)("Local live integration", () => {
     expect(envelope.success).toBe(true);
     expect(envelope.tool).toBe("list_files");
 
-    const files = envelope.data.files as Array<{ name: string }>;
-    const names = files.map((f) => f.name);
+    const entries = envelope.data.entries as Array<{ name: string }>;
+    const names = entries.map((f) => f.name);
     expect(names).toContain("test-sample.txt");
   }, 15_000);
 
   // ─── upload_from_host ──────────────────────────────────────────────
 
   it("upload_from_host uploads a file to samples dir", async () => {
-    // Write a temp file on the host to upload
-    const hostFile = join(tempOutputDir, "host-upload-src.txt");
+    // Write a temp file to upload. With the sandbox on, the source must sit
+    // inside the ingest root, which defaults to the samples directory in local
+    // mode, so stage it in a subdirectory there.
+    const stagingDir = join(tempSamplesDir, "staging");
+    mkdirSync(stagingDir);
+    const hostFile = join(stagingDir, "host-upload-src.txt");
     writeFileSync(hostFile, "uploaded content");
 
     const { envelope, isError } = await callTool("upload_from_host", {
@@ -152,21 +156,31 @@ describe.skipIf(!runLive)("Local live integration", () => {
     // First write a file to the output directory
     writeFileSync(join(tempOutputDir, "result.txt"), "analysis result");
 
+    // In local mode with the sandbox on, the destination must sit inside the
+    // ingest root, which defaults to the samples directory.
+    const downloadDir = join(tempSamplesDir, "downloads");
+    mkdirSync(downloadDir);
+
     const { envelope, isError } = await callTool("download_file", {
       file_path: "result.txt",
+      output_path: downloadDir,
+      archive: false,
     });
 
     expect(isError).toBeFalsy();
     expect(envelope.success).toBe(true);
     expect(envelope.tool).toBe("download_file");
-    expect(envelope.data.content_base64).toBeTruthy();
+    expect(envelope.data.host_path).toBe(join(downloadDir, "result.txt"));
+    expect(readFileSync(join(downloadDir, "result.txt"), "utf-8")).toBe("analysis result");
 
-    // Decode and verify content
-    const decoded = Buffer.from(
-      envelope.data.content_base64 as string,
-      "base64",
-    ).toString("utf-8");
-    expect(decoded).toBe("analysis result");
+    // A second download of the same file is refused until overwrite is passed.
+    const again = await callTool("download_file", {
+      file_path: "result.txt",
+      output_path: downloadDir,
+      archive: false,
+    });
+    expect(again.envelope.success).toBe(false);
+    expect(again.envelope.error_code).toBe("FILE_EXISTS");
   }, 15_000);
 
   // ─── extract_archive ───────────────────────────────────────────────
