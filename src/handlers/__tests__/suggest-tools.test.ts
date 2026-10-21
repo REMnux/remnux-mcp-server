@@ -221,6 +221,29 @@ describe("handleSuggestTools", () => {
     expect(env.data.additional_tools).toBeUndefined();
   });
 
+  it("recommends cilantro for .NET with its case-folder invocation and lists it once", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/test.exe: PE32 executable (console) Intel 80386 Mono/.Net assembly")
+    );
+    const env = parseEnvelope(await handleSuggestTools(deps, { file: "test.exe", depth: "standard" }));
+    const cil = env.data.recommended_tools.find((t: { name: string }) => t.name === "cilantro");
+    expect(cil).toBeDefined();
+    expect(cil.invocation).toBe("cilantro <file> --json -o %OUTPUT%/<case>.cilantro");
+    expect(env.data.analysis_hints).toContain("cilantro removes .NET Reactor");
+    const extras = (env.data.additional_tools ?? []).map((t: { name: string }) => t.name);
+    expect(extras).not.toContain("CILantro");
+  });
+
+  it("does not recommend cilantro for a native PE", async () => {
+    const deps = createMockDeps();
+    vi.mocked(deps.connector.execute).mockResolvedValue(
+      ok("/samples/test.exe: PE32 executable (console) Intel 80386")
+    );
+    const env = parseEnvelope(await handleSuggestTools(deps, { file: "test.exe", depth: "deep" }));
+    expect(env.data.recommended_tools.map((t: { name: string }) => t.name)).not.toContain("cilantro");
+  });
+
   it("recommends r2ghidra for native PE at deep depth and teaches pdg in hints", async () => {
     const deps = createMockDeps();
     vi.mocked(deps.connector.execute).mockResolvedValue(

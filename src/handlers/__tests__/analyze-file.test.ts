@@ -33,6 +33,32 @@ describe("handleAnalyzeFile", () => {
     expect(env.data.tools_run.map((t: { name: string }) => t.name)).not.toContain("r2ghidra");
   });
 
+  it("lists cilantro as a manual step for .NET at standard depth, never running it", async () => {
+    const run = async (depth: "quick" | "standard") => {
+      const deps = createMockDeps();
+      vi.mocked(deps.connector.execute).mockResolvedValue(
+        ok("/samples/test.exe: PE32 executable (console) Intel 80386 Mono/.Net assembly")
+      );
+      vi.mocked(deps.connector.executeShell).mockResolvedValue(ok("tool output"));
+      const env = parseEnvelope(await handleAnalyzeFile(deps, { file: "test.exe", depth }));
+      const ran = vi.mocked(deps.connector.executeShell).mock.calls
+        .some((c) => (c[0] as string).startsWith("cilantro"));
+      return { env, ran };
+    };
+
+    const standard = await run("standard");
+    const skipped = standard.env.data.tools_skipped.find((t: { name: string }) => t.name === "cilantro");
+    expect(skipped).toMatchObject({
+      skip_type: "requires_user_args",
+      invocation: "cilantro <file> --json -o %OUTPUT%/<case>.cilantro",
+    });
+    expect(standard.ran).toBe(false);
+
+    const quick = await run("quick");
+    expect(quick.env.data.tools_skipped.map((t: { name: string }) => t.name)).not.toContain("cilantro");
+    expect(quick.ran).toBe(false);
+  });
+
   it("skips tools with exit code 127 (not installed)", async () => {
     const deps = createMockDeps();
     vi.mocked(deps.connector.execute).mockResolvedValue(

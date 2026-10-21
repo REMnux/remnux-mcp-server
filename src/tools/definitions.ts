@@ -158,6 +158,26 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     tags: ["dotnet", "decompilation"],
     tier: "standard",
   },
+  {
+    name: "cilantro",
+    description:
+      "Deobfuscate and unpack .NET assemblies protected with .NET Reactor, ConfuserEx, Babel .NET, or Dotfuscator, without running them. " +
+      "It also extracts embedded managed stages and cleans each one. Replace <case> with a name not used before, because cilantro " +
+      "rejects an output folder that is not empty (exit 2). Large or virtualized samples can need a run_tool timeout above the default. " +
+      "Read the JSON on stdout: Wrote.Cleaned is the cleaned assembly's path, or null when cilantro wrote no cleaned copy of the input itself. " +
+      "cilantro can exit 1 with Success false and still write cleaned embedded stages, so check Nodes[].Run.Wrote.Cleaned in the file at the Wrote.Embedded path. " +
+      "Decompile a cleaned assembly with ilspycmd, and read Blockers for what cilantro could not resolve.",
+    command: "cilantro",
+    inputStyle: "positional",
+    suffixArgs: ["--json", "-o", "%OUTPUT%/<case>.cilantro"],
+    outputFormat: "json",
+    timeout: 600,
+    tags: ["dotnet", "deobfuscation"],
+    tier: "standard",
+    // Writes a case folder that must be new or empty, so each run needs its own
+    // -o name. analyze_file lists it with this invocation instead of running it.
+    requiresUserArgs: true,
+  },
 
   {
     name: "monodis-presources",

@@ -41,6 +41,29 @@ export const POST_ANALYSIS_ADVISORIES: PostAnalysisAdvisory[] = [
       "Extract inner files: run_tool command='7z x \"<file>\" -oextracted/' then analyze extracted .exe files",
   },
   {
+    name: "dotnet-protector",
+    priority: 9,
+    // Reads diec's parsed "protector: <name>" findings, whose names come from
+    // DiE's signature database rather than from the sample. Plain "Confuser" is
+    // the older protector, which cilantro does not list, so it does not match.
+    shouldApply: (ctx) =>
+      (ctx.category === "DOTNET" || ctx.category === "PE") &&
+      (ctx.toolsRun.find((t) => t.name === "diec")?.findings ?? []).some(
+        (f) =>
+          f.category === "protector" &&
+          /\.NET Reactor|ConfuserEx|\bBabel\b|Dotfuscator/i.test(f.description),
+      ),
+    issue:
+      "diec detected a .NET protector (.NET Reactor, ConfuserEx, Babel .NET, or Dotfuscator). " +
+      "Decompiled code, strings, and capa results from the protected assembly can reflect the " +
+      "protection more than the program.",
+    remediation:
+      "Remove the protection with cilantro: run_tool command='cilantro <file> --json -o %OUTPUT%/<case>.cilantro' " +
+      "with a <case> name not used before. Then decompile the cleaned assembly at the Wrote.Cleaned path, or the " +
+      "embedded stages listed in the Wrote.Embedded file, with ilspycmd. To run analyze_file on a cleaned " +
+      "assembly, copy it into the samples directory first.",
+  },
+  {
     name: "capa-packed",
     priority: 9,
     shouldApply: (ctx) => {

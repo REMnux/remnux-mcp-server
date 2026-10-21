@@ -274,6 +274,56 @@ describe("advisories", () => {
       expect(advisories).toEqual([]);
     });
 
+    describe("dotnet-protector", () => {
+      /** What diec's parser resolves for one detection ("type: name", type lowercased). */
+      const diecFinding = (type: string, name: string) => ({
+        description: `${type}: ${name}`,
+        category: type.toLowerCase(),
+      });
+      const fires = (toolsRun: AdvisoryContext["toolsRun"], category = "DOTNET") =>
+        evaluateAdvisories({ toolsRun, category }).some((a) => a.name === "dotnet-protector");
+
+      // The names DiE's PE signature database uses for the four protectors.
+      it.each([".NET Reactor", "ConfuserEx", "Babel .NET", "Dotfuscator"])(
+        "fires when diec reports the %s protector",
+        (name) => {
+          expect(fires([{ name: "diec", exit_code: 0, findings: [diecFinding("protector", name)] }])).toBe(true);
+        },
+      );
+
+      it("fires on a PE, where a .NET Reactor native wrapper lands", () => {
+        expect(
+          fires([{ name: "diec", exit_code: 0, findings: [diecFinding("protector", ".NET Reactor")] }], "PE"),
+        ).toBe(true);
+      });
+
+      it("points to cilantro with a fresh case folder", () => {
+        const advisory = evaluateAdvisories({
+          toolsRun: [{ name: "diec", exit_code: 0, findings: [diecFinding("protector", "ConfuserEx")] }],
+          category: "DOTNET",
+        }).find((a) => a.name === "dotnet-protector");
+        expect(advisory?.remediation).toContain("cilantro <file> --json -o %OUTPUT%/<case>.cilantro");
+      });
+
+      it("does not fire for the older Confuser, other protectors, or packers", () => {
+        expect(fires([{ name: "diec", exit_code: 0, findings: [diecFinding("protector", "Confuser")] }])).toBe(false);
+        expect(fires([{ name: "diec", exit_code: 0, findings: [diecFinding("protector", "Themida")] }], "PE")).toBe(false);
+        expect(fires([{ name: "diec", exit_code: 0, findings: [diecFinding("packer", "UPX")] }], "PE")).toBe(false);
+      });
+
+      it("does not fire on a protector name outside diec's protector findings", () => {
+        // A name in the sample's strings, or a non-protector diec finding, is not a detection.
+        expect(fires([{ name: "pestr", exit_code: 0, output: "ConfuserEx v1.0.0", findings: [diecFinding("protector", "ConfuserEx")] }])).toBe(false);
+        expect(fires([{ name: "diec", exit_code: 0, output: "ConfuserEx", findings: [diecFinding("library", ".NET Framework")] }])).toBe(false);
+      });
+
+      it("does not fire outside PE and .NET files", () => {
+        expect(
+          fires([{ name: "diec", exit_code: 0, findings: [diecFinding("protector", "ConfuserEx")] }], "ELF"),
+        ).toBe(false);
+      });
+    });
+
     it("does not trigger yara-family-attribution when yara-forge was not run", () => {
       const context: AdvisoryContext = {
         toolsRun: [

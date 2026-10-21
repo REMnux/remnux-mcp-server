@@ -57,6 +57,9 @@ const BASE_HINTS: Record<string, string> = {
     "floss extracts obfuscated strings. yara-forge scans for malware family signatures (matches indicate resemblance, not confirmed attribution). " +
     "yara-rules provides supplementary capability detection. " +
     "ilspycmd decompiles .NET to C# source. " +
+    "cilantro removes .NET Reactor, ConfuserEx, Babel .NET, and Dotfuscator protection and extracts embedded managed stages without running the sample. " +
+    "Run it when diec reports one of those protectors, when ilspycmd output has encrypted strings or meaningless names, or when the assembly contains an embedded stage. " +
+    "Then decompile the cleaned assembly that cilantro reports with ilspycmd. " +
     "monodis --presources lists embedded resources; --mresources extracts them. " +
     "For deep analysis, capa -vv shows matched rule details with addresses.",
   PE:
