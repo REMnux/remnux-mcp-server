@@ -123,7 +123,7 @@ docker run -d --name remnux remnux/remnux-distro:noble
 claude mcp add remnux -- npx @remnux/mcp-server --mode=docker --container=remnux
 ```
 
-To confine `upload_from_host` to a host-side sample directory (so a prompt-injected client cannot read other files off your workstation), add `--sandbox --ingest-root`:
+To confine `upload_from_host` and `download_file` to a host-side staging directory (so a prompt-injected client cannot read other files off your workstation, or write files elsewhere on it), add `--sandbox --ingest-root`:
 
 ```bash
 mkdir -p "$HOME/remnux-samples"
@@ -131,7 +131,7 @@ claude mcp add remnux -- npx @remnux/mcp-server --mode=docker --container=remnux
   --sandbox --ingest-root="$HOME/remnux-samples"
 ```
 
-See [Security Model](#security-model) for the reasoning. This is optional hardening. Without it, `upload_from_host` can read any file your user account can read.
+See [Security Model](#security-model) for the reasoning. This is optional hardening. Without these flags, the server's `upload_from_host` tool can read any file your user account can read, and its `download_file` tool can write into any directory your user account can write to.
 
 **With a VM (SSH):**
 
@@ -241,7 +241,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `--output-dir` | Output directory path inside REMnux | `/home/remnux/files/output` |
 | `--timeout` | Default command timeout in seconds | `300` |
 | `--sandbox` | Enable path sandboxing (restrict files to samples/output dirs) | off |
-| `--ingest-root` | With `--sandbox`, confine `upload_from_host` source reads to this directory (required in docker/ssh mode) | samples dir |
+| `--ingest-root` | With `--sandbox`, confine `upload_from_host` source reads and `download_file` destinations to this directory (required in docker/ssh mode) | samples dir |
 | `--transport` | Transport mode: `stdio` or `http` | `stdio` |
 | `--http-port` | HTTP server port (for http transport) | `3000` |
 | `--http-host` | HTTP bind address (for http transport) | `127.0.0.1` |
@@ -258,7 +258,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 | `extract_archive` | Extract .zip, .7z, .rar archives with automatic password detection (`infected`, `malware`, `virus`). Handles WinZip AES-256 .zip and header-encrypted .7z (`-mhe=on`) by routing to 7z automatically |
 | `upload_from_host` | Upload a file from the host to the samples directory (200MB limit) |
 | `download_from_url` | Download a file from a URL into the samples directory |
-| `download_file` | Download a file from the output directory to the host (password-protected archive by default; password: `infected`) |
+| `download_file` | Download a file from the output directory to the host (password-protected archive by default, password `infected`). The server keeps an existing destination file unless `overwrite: true`, and refuses a destination that is a symlink |
 | `analyze_file` | Auto-select and run REMnux tools based on detected file type |
 | `extract_iocs` | Extract IOCs (IPs, domains, URLs, hashes, registry keys, etc.) from text with confidence scoring |
 | `check_behavior_prerequisites` | For a Windows PE, report per-behavior `static_capability` (clipboard, HTTP/WinHTTP C2, injection, persistence, etc.) from the import table; packed/.NET binaries return `analysis_incomplete`, not a false negative |
@@ -358,9 +358,13 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 | Archive zip-slip (path traversal in archives) | Analysis session | Post-extraction validation rejects path escape attempts |
 | SSH injection | SSH connection | Proper shell escaping using single quotes |
 | Host-side file read via `upload_from_host` (docker/ssh mode) | Analyst's workstation (outside isolation) | Opt-in `--sandbox` confines the source to `--ingest-root` (realpath-resolved). See the disclosure below. |
+| Host-side file write via `download_file` (docker/ssh mode) | Analyst's workstation (outside isolation) | Opt-in `--sandbox` confines the destination directory to `--ingest-root`. In every mode, an existing destination is kept unless `overwrite: true`, and a symlink at the destination is refused. See the disclosure below. |
+| SSH server impersonation (ssh mode) | Commands and transfers between the workstation and the VM | None in the server: the SSH connector accepts any host key, because lab VMs restored from an appliance regenerate their keys and host-only addresses move. Keep the lab network private. An on-path attacker there could read a password and feed tool output and downloads. |
 | Host-side command execution via a file transfer (docker mode) | Analyst's workstation (outside isolation) | Every host-side `docker` invocation runs as an argument vector with no shell, so a path can never be parsed as a command. See "The server process is part of the trusted computing base" below. |
 
 **Where `upload_from_host` reads from, and why it matters.** The relevant boundary is **connector mode (`local` vs `docker`/`ssh`), not transport**. In `local` mode (including HTTP transport with the local connector), the AI already has shell-level read on the REMnux box by design: `run_tool` executes arbitrary commands there, so `upload_from_host` reading a file outside the samples directory adds nothing beyond what the model already grants. In `docker`/`ssh` mode, `upload_from_host` is the one tool that reads from the machine where the server runs, the analyst's workstation, via `docker cp` or SFTP. That read happens outside the container/VM isolation that bounds everything else, so a prompt-injected client could stage a host file such as `~/.ssh/id_rsa` or `~/.aws/credentials` into REMnux. Enable `--sandbox` with `--ingest-root=<host staging dir>` to confine that read. In docker/ssh mode, `--ingest-root` is required when `--sandbox` is set, because the samples directory lives inside REMnux rather than on the host.
+
+**Where `download_file` writes to.** The same boundary applies in the other direction. In `docker`/`ssh` mode, the server's `download_file` tool writes a file whose contents came from inside REMnux to a directory on the analyst's workstation, named by the caller. Without `--sandbox`, that can be any directory the user account can write to, so a prompt-injected client could place a file of its choosing where the workstation will act on it. `--sandbox` confines the destination to `--ingest-root`, the same directory that confines uploads (in `local` mode, where the ingest root defaults to the samples directory, downloads then land inside that tree). In every mode, the server checks the destination before the transfer starts: it refuses to replace an existing file unless the call passes `overwrite: true`, and refuses a destination that is a symlink, since `docker cp` and SFTP would write through it. The check and the transfer are separate steps, the same accepted window the path-validation note below describes.
 
 **The server process is part of the trusted computing base.** Container/VM isolation is the boundary, and in docker/ssh mode this server is the control plane that mediates it: it runs on the analyst's workstation, outside that isolation, and it handles paths and filenames that originate inside REMnux. So the code that invokes `docker` is itself security-relevant, independent of anything the container can or cannot do. Every host-side `docker` call is therefore executed as an argument vector (`execFileSync`, no shell), which is what keeps a filename a filename. Before version 0.1.73, the server built its `docker cp` file-transfer calls as shell command strings. POSIX single-quote escaping is inert under `cmd.exe`, so on a Windows workstation a crafted filename reached by `download_file` became host command execution. The mitigation is removing the shell, not escaping better. Escaping is shell-specific and was silently wrong on one platform, and a filter strict enough to be safe under `cmd.exe` would have to reject characters that are legal in filenames analysts really encounter (`%VAR%` alone is expanded before metacharacters are parsed). Argument-vector execution makes the question moot: a filename stays a filename.
 
@@ -375,7 +379,7 @@ All three connection modes (docker, ssh, local) execute commands inside a dispos
 3. **No host-side shell**: Host-side `docker` invocations (including every `docker cp` file transfer) run as argument vectors with no shell, so paths and filenames cannot be parsed as commands on the analyst's workstation. Single-quote escaping applies only to commands sent to the remote POSIX shell inside REMnux, never to host-side execution
 4. **Timeouts**: Long-running processes terminated (default 5 min)
 5. **Output budgets**: Per-tool (40KB default) and total (120KB) limits prevent AI context exhaustion
-6. **Path sandboxing** (opt-in via `--sandbox`): Restricts file operations to samples/output dirs
+6. **Path sandboxing** (opt-in via `--sandbox`): the server restricts file operations to the samples and output dirs inside REMnux, and both ends of host-side file transfer to `--ingest-root`
 
 The server deliberately allows commands like `rm`, `sudo`, `pip install`, `curl`, `dd`, pipes to interpreters, process substitution, `eval`/`exec`/`source`, and access to `/etc/`, `/proc/`, `/sys/`, `/dev/` — because REMnux is disposable and container-isolated. Beyond the null-byte and catastrophic-command guards listed above, nothing is blocked. See `src/security/blocklist.ts` for the exact patterns.
 

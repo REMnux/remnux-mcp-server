@@ -51,7 +51,9 @@ function target(deps: HandlerDeps, arch: string | null, missing: string[], outpu
 
 describe("download_file re-archives a file extracted from a .rar", () => {
   function depsWithRarProvenance() {
-    const deps = createMockDeps();
+    // These cases cover the rar fallback, not path confinement: without the sandbox the
+    // mocked /tmp output_path needs no ingest root.
+    const deps = createMockDeps({ noSandbox: true });
     deps.sessionState.storeArchiveInfo("sample.rar", ["sample.bin"], "rar", "infected");
     vi.mocked(deps.connector.execute).mockImplementation(async (cmd: string[]) => {
       if (cmd[0] === "stat") return ok("1024");
@@ -128,7 +130,7 @@ describe("download_file re-archives a file extracted from a .rar", () => {
   });
 
   it("does not probe for rar when the format is zip", async () => {
-    const deps = createMockDeps();
+    const deps = createMockDeps({ noSandbox: true });
     target(deps, "arm64", ["rar"]);
     vi.mocked(deps.connector.execute).mockImplementation(async (cmd: string[]) => {
       if (cmd[0] === "stat") return ok("1024");

@@ -12,7 +12,7 @@ vi.mock("../../archive-extractor.js", async (importOriginal) => {
   };
 });
 
-import { extractArchive } from "../../archive-extractor.js";
+import { extractArchive, OUTPUT_DIR_ESCAPE_ERROR } from "../../archive-extractor.js";
 
 describe("handleExtractArchive", () => {
   beforeEach(() => {
@@ -69,6 +69,26 @@ describe("handleExtractArchive", () => {
     const env = parseEnvelope(result);
     expect(env.success).toBe(false);
     expect(env.error_code).toBe("INVALID_SUBDIR");
+  });
+
+  it("reports an output directory that leaves samplesDir as INVALID_SUBDIR, not an archive failure", async () => {
+    const deps = createMockDeps({ noSandbox: true });
+    vi.mocked(extractArchive).mockResolvedValue({
+      success: false,
+      outputDir: "/home/remnux/files",
+      files: [],
+      error: `${OUTPUT_DIR_ESCAPE_ERROR}: ..`,
+    });
+
+    const result = await handleExtractArchive(deps, {
+      archive_file: "test.zip",
+      output_subdir: "..",
+    });
+
+    const env = parseEnvelope(result);
+    expect(env.success).toBe(false);
+    expect(env.error_code).toBe("INVALID_SUBDIR");
+    expect(env.error_category).toBe("validation");
   });
 
   it("returns extraction failure from extractArchive", async () => {

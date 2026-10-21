@@ -54,6 +54,24 @@ async function fetchText(url: string): Promise<string> {
   return res.text();
 }
 
+/**
+ * Render a fetched value for a `//` comment in the generated module. Every
+ * other fetched value is embedded through JSON.stringify as a string literal,
+ * but a comment has no literal: a line break or a U+2028/U+2029 line
+ * separator in the value would end the comment and the rest would compile as
+ * code. JSON.stringify escapes the line break and leaves the separators alone,
+ * so keep printable ASCII only. A URL loses nothing by that. The surrounding
+ * quotes are dropped so the header reads as before and --check stays stable.
+ */
+function commentSafe(value: string): string {
+  return Array.from(JSON.stringify(value).slice(1, -1))
+    .filter((ch) => {
+      const code = ch.charCodeAt(0);
+      return code >= 0x20 && code < 0x7f;
+    })
+    .join("");
+}
+
 function asString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
@@ -125,7 +143,7 @@ async function main() {
 // Re-sync with: pnpm run sync:report-guidance
 //
 // The report template is licensed CC BY 4.0; the writing guidelines are
-// © Lenny Zeltser. Both are by Lenny Zeltser — see ${articleUrl}.
+// © Lenny Zeltser. Both are by Lenny Zeltser — see ${commentSafe(articleUrl)}.
 
 export interface ReportAttribution {
   template: string;

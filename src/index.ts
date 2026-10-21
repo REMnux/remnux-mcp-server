@@ -218,7 +218,8 @@ export async function createServer(config: ServerConfig) {
     "a response budget (run_tool: stdout_saved_file, e.g. run_tool-<tool>-<hash>.stdout.txt; analyze_file: " +
     "<tool>-<sample>.txt). To read such a file in-session instead, use run_tool with grep/sed -n on %OUTPUT%/<file>. " +
     "Files are wrapped in a password-protected archive by default to prevent AV/EDR triggers. " +
-    "Pass archive: false for harmless files like text reports.",
+    "Pass archive: false for harmless files like text reports. An existing destination file is not " +
+    "replaced unless overwrite: true; with --sandbox, output_path must be inside --ingest-root.",
     downloadFileSchema.shape,
     (args) => handleDownloadFile(deps, args)
   );

@@ -8,7 +8,7 @@
  */
 
 import { readFileSync } from "fs";
-import { dirname, join, basename, extname, resolve, normalize } from "path";
+import { dirname, join, basename, extname, resolve, normalize, posix } from "path";
 import { fileURLToPath } from "url";
 import type { Connector, ExecResult } from "./connectors/index.js";
 
@@ -466,6 +466,21 @@ function checkEntriesForTraversal(entries: string[]): string[] {
 }
 
 /**
+ * True when outputDir resolves to a proper descendant of samplesDir (never the
+ * directory itself, never a sibling, never a parent). Lexical arithmetic on the
+ * REMnux-side paths, which are POSIX whatever the host runs, so it uses the
+ * posix functions. A child whose name merely starts with ".." (such as
+ * "..case") is a descendant and stays allowed. Exported for tests.
+ */
+export function isOutputDirInside(outputDir: string, samplesDir: string): boolean {
+  const rel = posix.relative(posix.resolve(samplesDir), posix.resolve(outputDir));
+  return rel !== "" && rel !== ".." && !rel.startsWith("../") && !posix.isAbsolute(rel);
+}
+
+/** Error text the handler matches to report the refusal as a validation error. */
+export const OUTPUT_DIR_ESCAPE_ERROR = "Output subdirectory must stay inside the samples directory";
+
+/**
  * Extract an archive file with automatic password detection
  *
  * @param connector - Connector to execute commands on REMnux
@@ -496,7 +511,24 @@ export async function extractArchive(
   // Determine output directory
   const archiveName = basename(archivePath, extname(archivePath));
   const subdir = outputSubdir || archiveName;
-  const outputDir = join(samplesDir, subdir);
+  // posix.join, not join: this path lives on REMnux, which is POSIX whatever
+  // the host runs, and the containment check below compares it with posix
+  // arithmetic. On a POSIX host the two joins are identical.
+  const outputDir = posix.join(samplesDir, subdir);
+
+  // The output directory must sit strictly inside samplesDir, whatever the
+  // sandbox setting: the zip-slip cleanup below runs `rm -rf` on it, so a
+  // subdir of ".." or "." (or an archive named so that its derived name is one)
+  // would aim that cleanup at the samples directory or its parents. Nested
+  // names such as "case1/stage2" stay allowed.
+  if (!isOutputDirInside(outputDir, samplesDir)) {
+    return {
+      success: false,
+      files: [],
+      error: `${OUTPUT_DIR_ESCAPE_ERROR}: ${subdir}`,
+      outputDir,
+    };
+  }
 
   // Create output directory
   const mkdirResult = await connector.execute(["mkdir", "-p", outputDir], {

@@ -11,6 +11,9 @@
  */
 
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { Connector } from "../connectors/index.js";
@@ -21,7 +24,7 @@ vi.mock("fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("fs")>();
   return {
     ...actual,
-    existsSync: vi.fn((p: string) => typeof p === "string" && p.startsWith("/tmp")),
+    existsSync: vi.fn((p: string) => typeof p === "string" && (p.startsWith("/tmp") || actual.existsSync(p))),
     statSync: vi.fn(() => ({ isDirectory: () => true })),
   };
 });
@@ -73,6 +76,10 @@ vi.mock("../file-upload.js", async (importOriginal) => {
 // Helpers
 // ---------------------------------------------------------------------------
 
+// A real host directory for download_file: with the sandbox on, the
+// destination is confined (by realpath) to the ingest root, so it must exist.
+const hostDir = mkdtempSync(join(tmpdir(), "tool-handlers-test-"));
+
 const testConfig: ServerConfig = {
   mode: "docker",
   container: "test-remnux",
@@ -80,6 +87,7 @@ const testConfig: ServerConfig = {
   outputDir: "/home/remnux/files/output",
   timeout: 300,
   noSandbox: false,
+  ingestRoot: hostDir,
 };
 
 function ok(stdout: string, exitCode = 0) {
@@ -113,6 +121,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await closeTransports?.();
+  rmSync(hostDir, { recursive: true, force: true });
 });
 
 beforeEach(() => {
@@ -428,7 +437,7 @@ describe("download_file", () => {
 
     const { envelope, isError } = await callTool("download_file", {
       file_path: "result.json",
-      output_path: "/tmp/downloads",
+      output_path: hostDir,
     });
 
     expect(isError).toBeFalsy();
@@ -437,7 +446,7 @@ describe("download_file", () => {
     expect(envelope.data.file_path).toBe("result.json");
     expect(envelope.data.size_bytes).toBe(1024);
     expect(envelope.data.sha256).toBe("abc123");
-    expect(envelope.data.host_path).toBe("/tmp/downloads/result.json.zip");
+    expect(envelope.data.host_path).toBe(`${hostDir}/result.json.zip`);
     expect(envelope.data.archived).toBe(true);
     expect(envelope.data.archive_format).toBe("zip");
     expect(envelope.data.archive_password).toBe("infected");
@@ -451,20 +460,20 @@ describe("download_file", () => {
 
     const { envelope, isError } = await callTool("download_file", {
       file_path: "result.json",
-      output_path: "/tmp/downloads",
+      output_path: hostDir,
       archive: false,
     });
 
     expect(isError).toBeFalsy();
     expect(envelope.success).toBe(true);
-    expect(envelope.data.host_path).toBe("/tmp/downloads/result.json");
+    expect(envelope.data.host_path).toBe(`${hostDir}/result.json`);
     expect(envelope.data.archived).toBe(false);
   });
 
   it("rejects path traversal attempts", async () => {
     const { envelope, isError } = await callTool("download_file", {
       file_path: "../../etc/shadow",
-      output_path: "/tmp/downloads",
+      output_path: hostDir,
     });
 
     expect(isError).toBe(true);

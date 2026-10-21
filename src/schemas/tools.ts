@@ -46,10 +46,18 @@ export type UploadFromHostArgs = z.infer<typeof uploadFromHostSchema>;
 
 export const downloadFileSchema = z.object({
   file_path: z.string().describe("File path relative to the output directory"),
-  output_path: z.string().describe("Directory on host to save the downloaded file"),
+  output_path: z.string().describe(
+    "Existing directory on the machine where the MCP server runs, to save the downloaded file in. " +
+    "When the server is started with --sandbox, it must reside inside the configured --ingest-root " +
+    "(defaults to the samples directory)."
+  ),
   archive: z.boolean().optional().default(true).describe(
     "Wrap the file in a password-protected archive before transfer (default: true). " +
     "Protects against AV/EDR triggers on the host. Pass false for harmless files like text reports."
+  ),
+  overwrite: z.boolean().optional().default(false).describe(
+    "Replace an existing file at the destination (default: false). A destination that is a symlink is " +
+    "refused regardless."
   ),
 });
 export type DownloadFileArgs = z.input<typeof downloadFileSchema>;

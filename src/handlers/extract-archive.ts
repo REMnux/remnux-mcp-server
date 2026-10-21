@@ -1,7 +1,12 @@
 import type { HandlerDeps } from "./types.js";
 import type { ExtractArchiveArgs } from "../schemas/tools.js";
 import { validateFilePath } from "../security/blocklist.js";
-import { extractArchive, detectArchiveType, describeMultiVolumePart } from "../archive-extractor.js";
+import {
+  extractArchive,
+  detectArchiveType,
+  describeMultiVolumePart,
+  OUTPUT_DIR_ESCAPE_ERROR,
+} from "../archive-extractor.js";
 import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
@@ -132,6 +137,17 @@ export async function handleExtractArchive(
         password_used: result.password || "(none - archive was not encrypted)",
       }, startTime);
     } else {
+      // The output directory would leave the samples directory (a ".." subdir,
+      // or an archive whose derived name is one): a validation error about the
+      // argument, not an archive failure.
+      if ((result.error ?? "").startsWith(OUTPUT_DIR_ESCAPE_ERROR)) {
+        return formatError("extract_archive", new REMnuxError(
+          result.error!,
+          "INVALID_SUBDIR",
+          "validation",
+          "Choose a subdirectory name inside the samples directory, without '..' segments",
+        ), startTime);
+      }
       // Give a password-specific, actionable suggestion when the failure was a
       // wrong/absent password, rather than the generic "corrupted archive" hint.
       // Match the specific "Incorrect password" reason, not any mention of

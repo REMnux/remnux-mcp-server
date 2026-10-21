@@ -1,9 +1,9 @@
-import { existsSync, statSync } from "fs";
+import { existsSync, lstatSync, statSync } from "fs";
 import { join, basename } from "path";
 import type { HandlerDeps } from "./types.js";
 import type { DownloadFileArgs } from "../schemas/tools.js";
 import { validateFilePath } from "../security/blocklist.js";
-import { validateHostPath } from "../file-upload.js";
+import { validateHostPath, confineHostPath } from "../file-upload.js";
 import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
 import { toREMnuxError } from "../errors/error-mapper.js";
@@ -38,6 +38,58 @@ function getArchiveCommand(
 
 function archiveExtension(format: "zip" | "7z" | "rar"): string {
   return `.${format}`;
+}
+
+/**
+ * Check the host-side destination before the transfer writes it. This is the
+ * one place where download_file touches the machine the server runs on, which
+ * in docker/ssh mode is the analyst's workstation, outside the container/VM
+ * isolation boundary.
+ *
+ * - A symlink at the destination is always refused: docker cp and the SFTP
+ *   write stream both follow it, so a link planted earlier (for example by a
+ *   previous download of a container-side symlink) would redirect the write
+ *   to wherever it points.
+ * - Any other existing entry is refused unless the caller passed
+ *   overwrite: true, so a transfer never replaces a host file by accident.
+ *
+ * Preflight only: the transfer itself is docker cp or SFTP, so the check and
+ * the write are not atomic (the same accepted race the README notes for
+ * path validation).
+ */
+export function checkHostDestination(
+  hostPath: string,
+  overwrite: boolean,
+): { ok: true } | { ok: false; error: REMnuxError } {
+  let existing: ReturnType<typeof lstatSync> | undefined;
+  try {
+    existing = lstatSync(hostPath);
+  } catch {
+    return { ok: true }; // nothing there: the normal case
+  }
+  if (existing.isSymbolicLink()) {
+    return {
+      ok: false,
+      error: new REMnuxError(
+        `Destination is a symlink and the transfer would write through it: ${hostPath}`,
+        "INVALID_PATH",
+        "validation",
+        "Remove the symlink or choose a different output_path",
+      ),
+    };
+  }
+  if (!overwrite) {
+    return {
+      ok: false,
+      error: new REMnuxError(
+        `Destination already exists on the host: ${hostPath}`,
+        "FILE_EXISTS",
+        "validation",
+        "Pass overwrite: true to replace it, or choose a different output_path",
+      ),
+    };
+  }
+  return { ok: true };
 }
 
 export async function handleDownloadFile(
@@ -82,6 +134,23 @@ export async function handleDownloadFile(
     ), startTime);
   }
 
+  // Opt-in confinement (--sandbox): the destination directory must resolve inside
+  // the same ingest root that confines upload_from_host's source, so both ends of
+  // host-side file transfer answer to one flag. Defaults to samplesDir; docker/ssh
+  // deployments set --ingest-root to a host-side dir (enforced at startup).
+  if (!config.noSandbox) {
+    const confinement = confineHostPath(args.output_path, config.ingestRoot ?? config.samplesDir);
+    if (!confinement.valid) {
+      return formatError("download_file", new REMnuxError(
+        confinement.error!.replace("host_path", "output_path"),
+        "INVALID_PATH",
+        "validation",
+        "With --sandbox, output_path must be a directory inside --ingest-root",
+      ), startTime);
+    }
+  }
+
+  const overwrite = args.overwrite === true;
   const fullPath = `${config.outputDir}/${args.file_path}`;
 
   try {
@@ -143,6 +212,12 @@ export async function handleDownloadFile(
       const archiveName = `${filename}${archiveExtension(archiveFormat)}`;
       const remoteTmpArchive = `/tmp/dl_${timestamp}_${archiveName}`;
 
+      // Check the host destination before creating the archive inside REMnux.
+      const destination = checkHostDestination(join(args.output_path, archiveName), overwrite);
+      if (!destination.ok) {
+        return formatError("download_file", destination.error, startTime);
+      }
+
       // Create password-protected archive
       const archiveCmd = getArchiveCommand(archiveFormat, remoteTmpArchive, fullPath, archivePassword);
       const archiveResult = await connector.execute(archiveCmd, {
@@ -181,6 +256,10 @@ export async function handleDownloadFile(
 
     // No archiving — transfer raw file
     const hostPath = join(args.output_path, filename);
+    const destination = checkHostDestination(hostPath, overwrite);
+    if (!destination.ok) {
+      return formatError("download_file", destination.error, startTime);
+    }
     await connector.readFileToPath(fullPath, hostPath);
 
     return formatResponse("download_file", {
