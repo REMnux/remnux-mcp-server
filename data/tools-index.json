@@ -302,11 +302,9 @@
       "description": "Deobfuscate and unpack .NET programs protected with .NET Reactor, ConfuserEx, Babel .NET, or Dotfuscator, without running them.",
       "website": "https://github.com/jgajek/cilantro",
       "architectures": [
-        "amd64"
-      ],
-      "arch_notes": {
-        "arm64": "Use ILSpy to decompile .NET programs, though it doesn't deobfuscate them."
-      }
+        "amd64",
+        "arm64"
+      ]
     },
     {
       "command": "clamav",
