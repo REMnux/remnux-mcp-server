@@ -33,6 +33,7 @@ updates:
         patterns:
           - "@modelcontextprotocol/sdk"
           - "dockerode"
+          - "express"
           - "ioc-extractor"
           - "ssh2"
           - "zod"

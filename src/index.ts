@@ -3,7 +3,8 @@ import { createRequire } from "node:module";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+import express, { type Express } from "express";
+import { hostHeaderValidation } from "@modelcontextprotocol/sdk/server/middleware/hostHeaderValidation.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
@@ -566,8 +567,8 @@ export async function startServer(config: ServerConfig) {
 /**
  * Bearer-token verifier for the HTTP transport.
  *
- * Exported so tests exercise the real verifier rather than a copy — a duplicated
- * verifier in the test helper cannot catch a defect in this one.
+ * Tests exercise this verifier through createHttpApp, since a duplicated
+ * verifier in a test helper cannot catch a defect in this one.
  *
  * Throws InvalidTokenError, not a bare Error: requireBearerAuth maps
  * InvalidTokenError to 401 and *anything else* to 500, so a bare Error reports a
@@ -585,6 +586,46 @@ export function createTokenVerifier(token: string): OAuthTokenVerifier {
       return { token: t, clientId: "remnux-client", scopes: [], expiresAt: Math.floor(Date.now() / 1000) + 86400 };
     },
   };
+}
+
+/**
+ * Express app for the HTTP transport, with its middleware in the order the
+ * security model needs: Host-header check, then token check, then body parsing.
+ *
+ * Built here rather than with the SDK's createMcpExpressApp, which registers
+ * express.json() before any middleware a caller can add. In that order the
+ * server decompressed and parsed the body of a request without a token, so a
+ * body-parser defect such as GHSA-27r3-jxmh-p828 needed no token to trigger.
+ * With the token check first, the server answers an unauthenticated request
+ * with 401 before it reads the body.
+ *
+ * Exported so tests exercise this wiring rather than a copy of it.
+ */
+export function createHttpApp(host: string, token: string | undefined): Express {
+  const app = express();
+
+  // A loopback bind may run without a token, so it must always get DNS-rebinding
+  // protection. Pass the allowed Host names explicitly, because isLoopbackHost
+  // accepts more spellings than the three host strings the SDK checks by default
+  // (see loopbackAllowedHosts).
+  const allowedHosts = loopbackAllowedHosts(host);
+  if (allowedHosts) {
+    app.use(hostHeaderValidation(allowedHosts));
+  } else if (!token && (host === "0.0.0.0" || host === "::")) {
+    // An all-interfaces bind gets no Host-header check, so only a token protects
+    // it from DNS rebinding.
+    console.warn(`Warning: Server is binding to ${host} without a token or DNS rebinding protection.`);
+  }
+
+  if (token) {
+    app.use("/mcp", requireBearerAuth({ verifier: createTokenVerifier(token) }));
+  }
+
+  // Scoped to /mcp, the one path the token check covers and the only path the
+  // server serves. A global parser would read the body of an unauthenticated
+  // request to any other path before that path answered 404.
+  app.use("/mcp", express.json());
+  return app;
 }
 
 async function startHttpServer(config: ServerConfig) {
@@ -608,16 +649,9 @@ async function startHttpServer(config: ServerConfig) {
     process.exit(1);
   }
 
-  // A loopback bind may run without a token, so it must always get DNS-rebinding
-  // protection. Pass the allowed Host names explicitly: the SDK applies its own
-  // list only for three exact host strings (see loopbackAllowedHosts).
-  const allowedHosts = loopbackAllowedHosts(host);
-  const app = createMcpExpressApp(allowedHosts ? { host, allowedHosts } : { host });
+  const app = createHttpApp(host, token);
 
-  // Bearer token auth middleware
-  if (token) {
-    app.use("/mcp", requireBearerAuth({ verifier: createTokenVerifier(token) }));
-  } else {
+  if (!token) {
     console.error(
       "WARNING: No auth token configured. Set --http-token or MCP_TOKEN env var for production use."
     );
@@ -704,8 +738,8 @@ async function startHttpServer(config: ServerConfig) {
     const status = typeof err?.status === "number" ? err.status : 500;
     const code = status === 413 ? -32600 : status === 400 ? -32700 : -32603;
     // Name the recovery path on 413 so an AI client self-heals instead of
-    // dead-ending: the limit is body-parser's 100kb default, applied inside the
-    // SDK's createMcpExpressApp, and large text belongs in a file rather than in
+    // dead-ending: the limit is body-parser's 100kb default, applied by the
+    // express.json() call in createHttpApp, and large text belongs in a file rather than in
     // a request body (or the model's context) anyway.
     const message =
       status === 413 ? "Request entity too large. Write the text to a file in the samples directory, then process it with run_tool instead of sending it inline."

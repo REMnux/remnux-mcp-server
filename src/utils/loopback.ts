@@ -36,11 +36,12 @@ export function isLoopbackHost(host: string | undefined): boolean {
  * non-loopback bind. These are the DNS-rebinding defense for a loopback server
  * running without a token.
  *
- * The MCP SDK's createMcpExpressApp turns on Host-header validation by itself
- * only when the bind host is exactly "127.0.0.1", "localhost", or "::1".
- * isLoopbackHost accepts more spellings than that (LOCALHOST, 127.0.0.2,
- * ::ffff:127.0.0.1), so without an explicit list those binds start with no
- * token and no rebinding protection. The list holds the SDK's own defaults plus
+ * createHttpApp in index.ts turns on Host-header validation only with this
+ * list. The MCP SDK's own createMcpExpressApp, which the server no longer
+ * calls, turned it on by itself only when the bind host was exactly
+ * "127.0.0.1", "localhost", or "::1". isLoopbackHost accepts more spellings
+ * than that (LOCALHOST, 127.0.0.2, ::ffff:127.0.0.1), which is why the list is
+ * explicit. The list holds the SDK's own defaults plus
  * the configured host in the form the SDK compares against: the hostname a URL
  * parse produces, lowercased, with IPv6 in brackets.
  */

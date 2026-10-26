@@ -54,6 +54,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",
     "dockerode": "^5.0.1",
+    "express": "^5.2.1",
     "ioc-extractor": "^8.2.0",
     "ssh2": "^1.15.0",
     "zod": "^3.25.76"
@@ -66,6 +67,7 @@
   },
   "devDependencies": {
     "@types/dockerode": "^4.0.1",
+    "@types/express": "^5.0.6",
     "@types/node": "^20.0.0",
     "@types/ssh2": "^1.15.0",
     "eslint": "^9.0.0",

@@ -1,10 +1,9 @@
 import { describe, it, expect, afterEach } from "vitest";
 import type { Server } from "node:http";
 import { randomUUID } from "node:crypto";
-import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
+import { gzipSync } from "node:zlib";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
-import { createServer, createTokenVerifier } from "../index.js";
+import { createServer, createHttpApp } from "../index.js";
 
 const TEST_TOKEN = "test-token-123";
 
@@ -36,13 +35,9 @@ function makeConfig() {
 }
 
 function createTestApp(options: { token?: string } = {}) {
-  const app = createMcpExpressApp({ host: "127.0.0.1" });
-
-  if (options.token) {
-    // Use the production verifier, not a copy: a duplicated verifier here cannot
-    // catch a defect in the real one.
-    app.use("/mcp", requireBearerAuth({ verifier: createTokenVerifier(options.token) }));
-  }
+  // Use the production app, middleware order and verifier included, not a copy:
+  // a duplicated setup here cannot catch a defect in the real one.
+  const app = createHttpApp("127.0.0.1", options.token);
 
   const sessions = new Map<string, StreamableHTTPServerTransport>();
   const config = makeConfig();
@@ -77,7 +72,7 @@ function createTestApp(options: { token?: string } = {}) {
   return app;
 }
 
-function listenOnFreePort(app: ReturnType<typeof createMcpExpressApp>): Promise<{ server: Server; port: number }> {
+function listenOnFreePort(app: ReturnType<typeof createHttpApp>): Promise<{ server: Server; port: number }> {
   return new Promise((resolve) => {
     const server = app.listen(0, "127.0.0.1", () => {
       const addr = server.address();
@@ -162,6 +157,72 @@ describe("HTTP Transport", () => {
     });
 
     expect(res.status).toBe(401);
+  });
+
+  // The token check must run before body parsing, so body-parser reads only
+  // requests with a valid token. These tests send a body that cannot parse.
+  // With parsing first the server answers 400, and with the token check first
+  // it answers 401.
+  it("checks the token before it parses the body", async () => {
+    const app = createTestApp({ token: TEST_TOKEN });
+    const result = await listenOnFreePort(app);
+    server = result.server;
+
+    const res = await fetch(mcpUrl(result.port), {
+      method: "POST",
+      headers: MCP_HEADERS,
+      body: "{not json",
+    });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("checks the token before it decompresses the body", async () => {
+    const app = createTestApp({ token: TEST_TOKEN });
+    const result = await listenOnFreePort(app);
+    server = result.server;
+
+    // One valid gzip frame followed by bytes that are not gzip, the shape of
+    // GHSA-27r3-jxmh-p828. Decompressing it fails, so a server that parses
+    // first answers 400.
+    const body = Buffer.concat([gzipSync(JSON.stringify(initRequest())), Buffer.from("TRAILING-GARBAGE")]);
+    const res = await fetch(mcpUrl(result.port), {
+      method: "POST",
+      headers: { ...MCP_HEADERS, "Content-Encoding": "gzip" },
+      body,
+    });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("does not parse the body of an unauthenticated request to another path", async () => {
+    const app = createTestApp({ token: TEST_TOKEN });
+    const result = await listenOnFreePort(app);
+    server = result.server;
+
+    // The token check covers /mcp only, so a parser on every path would answer
+    // this with 400 before the missing route answers 404.
+    const res = await fetch(`http://127.0.0.1:${result.port}/other`, {
+      method: "POST",
+      headers: MCP_HEADERS,
+      body: "{not json",
+    });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("still parses the body after a valid token (control)", async () => {
+    const app = createTestApp({ token: TEST_TOKEN });
+    const result = await listenOnFreePort(app);
+    server = result.server;
+
+    const res = await fetch(mcpUrl(result.port), {
+      method: "POST",
+      headers: { ...MCP_HEADERS, "Authorization": `Bearer ${TEST_TOKEN}` },
+      body: "{not json",
+    });
+
+    expect(res.status).toBe(400);
   });
 
   it("accepts valid bearer token", async () => {

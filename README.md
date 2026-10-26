@@ -221,6 +221,7 @@ claude mcp add remnux --transport http http://REMNUX_IP:3000/mcp \
 #### Security Notes (HTTP transport)
 
 - **A token is required for network binds.** The server refuses to start when bound to a non-loopback address (for example `--http-host=0.0.0.0`) without `--http-token` or `MCP_TOKEN`, because that exposes unauthenticated command execution. Pass `--insecure-no-auth` to override on a trusted, isolated network (NOT recommended). A loopback bind with no token still works for local development.
+- **The token check runs before the server reads the request body.** With a token set, a request without a valid token gets a 401 before the server decompresses or parses its body, and the server parses no body on any other path. A defect in the body parser therefore needs a valid token to trigger. Without a token, which the server permits on a loopback bind, the server parses every request body it receives on /mcp.
 - **Default bind is `127.0.0.1`** — set `--http-host=0.0.0.0` to allow network access.
 - **Generate strong tokens:** `openssl rand -hex 32`
 - **Use `MCP_TOKEN` env var** to avoid exposing the token in process listings.
