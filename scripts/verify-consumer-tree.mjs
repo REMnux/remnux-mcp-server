@@ -33,12 +33,24 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
  * actionable. Anything not listed here fails the gate.
  */
 const ALLOWED = new Map([
-  // Empty on purpose. GHSA-w5hq-g745-h8pq (uuid via dockerode) was the sole
-  // entry and was removed when dockerode 5.0.0 dropped its uuid dependency
-  // outright: the edge that carried the advisory no longer exists, so there is
-  // nothing left to accept. An empty list is the desired steady state — add an
-  // entry only for an advisory that is genuinely unreachable AND unfixable, and
-  // delete it the moment the gate reports it STALE.
+  // GHSA-w5hq-g745-h8pq (uuid via dockerode) was the first entry. The authors
+  // removed it after the dockerode maintainers dropped the uuid dependency in
+  // 5.0.0. Without uuid, the tree no longer contains the advisory. An empty list
+  // is the desired steady state. Add an entry only if both are true: only
+  // trusted callers can trigger the advisory, and every fixed release is
+  // outside the declared range. Delete it the moment this script reports it
+  // STALE.
+  [
+    "GHSA-mrhx-c7xc-m3w5",
+    "Every caller that can send input to this code can already run commands through run_tool. " +
+      "The fix is zod 4.6.6, but the zod 4 migration is on hold for a measured reason (see the zod entry in .github/dependabot.yml). " +
+      "That leaves zod 3.25.76 as the last release in range. " +
+      "The vulnerable array parser is the zod/v4 copy bundled in zod 3.25.76, and the MCP SDK calls it on every incoming JSON-RPC message. " +
+      "Over HTTP, body-parser's 100 KB limit caps the worst case at about 43 MB of heap (measured 2026-10-26 with 50,000 failing elements). " +
+      "On a network bind with a token, the bearer-token check also runs before the SDK parses a message. " +
+      "Over stdio, the sender is the parent process that launched the server. " +
+      "Remove this entry after the authors migrate the server to zod 4.",
+  ],
 ]);
 
 function run(cmd, args, cwd) {

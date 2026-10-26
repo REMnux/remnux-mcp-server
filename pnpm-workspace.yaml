@@ -1,6 +1,20 @@
 blockExoticSubdeps: true
 # 10080 minutes = 7 days (pnpm 10.x uses minutes despite docs saying seconds)
 minimumReleaseAge: 10080
+# Exceptions to the 7-day rule, one exact version each. Added 2026-10-26 for two
+# releases in which the maintainers fixed advisories open in this tree. Each was
+# checked by hand in place of the wait. GitHub Actions published it with SLSA
+# provenance from the project's own repository. Its package.json declares the
+# same install scripts as the previous release, and its added code calls no
+# network, process, file, or eval API. fast-uri 3.1.9 changes only the advisory
+# fixes and their tests. body-parser 2.4.0 also adds zstd decompression and
+# raises its qs, iconv-lite, and content-type floors to releases older than 7
+# days. Delete each entry once its release is 7 days old (fast-uri 3.1.9 at
+# 2026-10-26 23:05 UTC, body-parser 2.4.0 at 2026-10-29 11:39 UTC), after which
+# the 7-day rule covers it.
+minimumReleaseAgeExclude:
+  - body-parser@2.4.0
+  - fast-uri@3.1.9
 # Supply chain security policies
 onlyBuiltDependencies:
   - esbuild
@@ -58,12 +72,25 @@ overrides:
   # GHSA-fph4-wmhf-6fwf (>=3.1.2 <3.1.6) and GHSA-jqff-g426-hqxp (>=3.0.0
   # <3.1.6) are all high and all patched at 3.1.6. Checked against every
   # published fast-uri advisory: none affects 3.1.6, so this floor is clean
-  # rather than merely higher.
-  'fast-uri@<3.1.6': '>=3.1.6 <4'
-  # NOTE: no ip-address rule. express-rate-limit declares ^10.2.0 and resolves 10.5.0,
-  # which is clean. The removed 'ip-address@<=10.1.0' rule was actively harmful: both
-  # GHSA-22jq-vg5j-6vgg and GHSA-4xrf-jv44-h6hh affect >=10.1.1, so forcing the tree
-  # off 10.1.0 moved it INTO the vulnerable window.
+  # rather than merely higher. That check was true when written.
+  # Floor RAISED to 3.1.9: GHSA-w74x-v6f9-j3xg, GHSA-xhq7-xmqj-769h and
+  # GHSA-333x-w4r6-6crp (>=3.0.0 <3.1.9) and GHSA-wjr9-j795-jxcr (>=3.1.3 <3.1.9)
+  # are all patched at 3.1.9. Checked on 2026-10-26 against every published
+  # fast-uri advisory: none affects 3.1.9.
+  'fast-uri@<3.1.9': '>=3.1.9 <4'
+  # Bounded to the 2.x line express declares (^2.2.1), with a selector that starts
+  # at 2.0.0 so the rule never moves a 1.x copy across a major. GHSA-27r3-jxmh-p828
+  # (high) affects >=2.0.0 <2.4.0, and ^2.2.1 still permits those versions, so this
+  # rule binds. Checked against every published body-parser advisory: none affects
+  # 2.4.0.
+  'body-parser@>=2.0.0 <2.4.0': '>=2.4.0 <3'
+  # Bounded to the 10.x line express-rate-limit declares (^10.2.0).
+  # GHSA-rxp7-6hxx-x8q5 affects <=10.7.3, which ^10.2.0 allows, so the floor is
+  # needed. Checked against every published ip-address advisory: none affects
+  # 10.7.4. An earlier rule, 'ip-address@<=10.1.0', was actively harmful and was
+  # removed: GHSA-22jq-vg5j-6vgg and GHSA-4xrf-jv44-h6hh affect >=10.1.1 (through
+  # 10.2.1), so forcing the tree off 10.1.0 moved it INTO the vulnerable window.
+  'ip-address@>=10.0.0 <10.7.4': '>=10.7.4 <11'
   # bounded to the 4.x line @eslint/eslintrc declares (^4.3.0). Development-only
   # (eslint), which changes the urgency but not whether an override is the right
   # tool. GHSA-2883-xcg3-v3hh (high) affects >=4.0.0 <4.3.2: maxTotalMergeKeys
