@@ -30,11 +30,16 @@ describe.skipIf(!runLive)("SSH live integration", () => {
   let client: Client;
   let closeTransports: () => Promise<void>;
 
+  // Same client timeout as live-integration.test.ts: the SDK client aborts any
+  // request after 60s unless given one, which capped each test below at 60s
+  // regardless of its own budget (floss on a small PE can run past 60s).
   async function callTool(
     name: string,
     args: Record<string, unknown>,
   ): Promise<{ envelope: ToolResponse; isError?: boolean }> {
-    const result = await client.callTool({ name, arguments: args });
+    const result = await client.callTool({ name, arguments: args }, undefined, {
+      timeout: 300_000,
+    });
     const textContent = (result.content as Array<{ type: string; text: string }>)[0];
     const envelope = JSON.parse(textContent.text) as ToolResponse;
     return { envelope, isError: result.isError as boolean | undefined };
