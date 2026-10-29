@@ -97,15 +97,12 @@ overrides:
   # the previous open-ended '>=7.5.8' both permitted vulnerable 7.x and crossed into
   # 8.x, where all three current advisories live and dockerode declares no support.
   'protobufjs@<7.6.5': '>=7.6.5 <8'
-  # bounded to the 6.x line express declares (^6.14.0); body-parser declares
-  # ^6.15.2, which the floor below also satisfies. GHSA-q8mj-m7cp-5q26 affects
-  # >=6.11.1 <=6.15.1 and GHSA-w7fw-mjwx-w883 affects >=6.7.0 <=6.14.1; 6.15.2
-  # cleared both, and ^6.14.0 still permits affected versions, so this rule binds.
-  # Floor RAISED from 6.15.2: GHSA-x5fp-wj9c-mxmx (array-limit bypass via
-  # bracket-key comma parsing, >=6.14.2 <=6.15.3) and GHSA-4mjr-xmp4-gh2g (DoS
-  # via attacker-controlled isBuffer, >=2.2.5 <6.16.0) both reach past it, and
-  # both are patched at 6.16.0.
-  'qs@<6.16.0': '>=6.16.0 <7'
+  # RESOLVED 2026-10-29: no qs rule. express 5.3.0 declares qs ^6.16.0, which
+  # already excludes every advisory the old rule 'qs@<6.16.0': '>=6.16.0 <7'
+  # guarded against (GHSA-q8mj-m7cp-5q26, GHSA-w7fw-mjwx-w883, GHSA-x5fp-wj9c-mxmx,
+  # GHSA-4mjr-xmp4-gh2g). With no edge left below 6.16.0, audit-overrides failed
+  # the rule as dead. package.json requires express ^5.3.0, so consumers get the
+  # same qs floor. This workspace override never reached them.
   # RESOLVED 2026-08-21: no uuid rule, and no uuid in the graph. dockerode 5.0.0
   # dropped the uuid dependency outright, so GHSA-w5hq-g745-h8pq left the tree
   # with the edge that carried it and `pnpm audit --prod` is now clean.
