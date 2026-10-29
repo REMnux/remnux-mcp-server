@@ -1,20 +1,6 @@
 blockExoticSubdeps: true
 # 10080 minutes = 7 days (pnpm 10.x uses minutes despite docs saying seconds)
 minimumReleaseAge: 10080
-# Exceptions to the 7-day rule, one exact version each. Added 2026-10-26 for two
-# releases in which the maintainers fixed advisories open in this tree. Each was
-# checked by hand in place of the wait. GitHub Actions published it with SLSA
-# provenance from the project's own repository. Its package.json declares the
-# same install scripts as the previous release, and its added code calls no
-# network, process, file, or eval API. fast-uri 3.1.9 changes only the advisory
-# fixes and their tests. body-parser 2.4.0 also adds zstd decompression and
-# raises its qs, iconv-lite, and content-type floors to releases older than 7
-# days. Delete each entry once its release is 7 days old (fast-uri 3.1.9 at
-# 2026-10-26 23:05 UTC, body-parser 2.4.0 at 2026-10-29 11:39 UTC), after which
-# the 7-day rule covers it.
-minimumReleaseAgeExclude:
-  - body-parser@2.4.0
-  - fast-uri@3.1.9
 # Supply chain security policies
 onlyBuiltDependencies:
   - esbuild
