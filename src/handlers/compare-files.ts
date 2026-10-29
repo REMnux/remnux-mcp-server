@@ -98,7 +98,8 @@ async function gatherFileMeta(
   if (runCapa) {
     try {
       const capa = parseCapaOutput((await connector.execute(["capa", "-j", filePath], { timeout: 300000 })).stdout || "");
-      capabilities = capa.findings.map((f) => f.description);
+      // A capa limitation finding is a caveat about the analysis, not a capability.
+      capabilities = capa.findings.filter((f) => f.category !== "limitation").map((f) => f.description);
     } catch { /* best effort */ }
   }
 

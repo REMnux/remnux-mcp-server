@@ -7,6 +7,9 @@
 
 import type { ParsedToolOutput, Finding, EvidenceType } from "./types.js";
 
+/** capa's namespace for rules that make it exit 14 (E_FILE_LIMITATION) without -j/-v/-vv. */
+export const CAPA_STATIC_LIMITATION_NAMESPACE = "internal/limitation/static";
+
 /**
  * Map a capa feature-node type to the kind of evidence it represents.
  *
@@ -163,9 +166,18 @@ export function parseCapaOutput(rawOutput: string): ParsedToolOutput {
         if (!rule || typeof rule !== "object") continue;
         const r = rule as Record<string, unknown>;
         const meta = r.meta;
+        // A rule in capa's static limitation namespace (packer, AutoIt, AutoHotkey,
+        // installer, Visual Basic, .NET single-file deployment) is capa's caveat about
+        // its own results, not a capability of the file. Under -j capa exits 0 rather
+        // than 14 and lists the rule as a match. Compare the namespace exactly, as capa
+        // does: internal/limitation/dynamic also matches ordinary .NET files during
+        // static analysis, and capa does not treat that as a limitation.
+        const isLimitation =
+          !!meta && typeof meta === "object" && !Array.isArray(meta) &&
+          (meta as Record<string, unknown>).namespace === CAPA_STATIC_LIMITATION_NAMESPACE;
         const finding: Finding = {
           description: name,
-          category: "capability",
+          category: isLimitation ? "limitation" : "capability",
           severity: "info",
         };
 
@@ -183,8 +195,9 @@ export function parseCapaOutput(rawOutput: string): ParsedToolOutput {
         // Tag the kind(s) of evidence the rule actually matched on (artifact vs
         // behavior vs structural vs linking). Additive and fail-soft: if this
         // cannot be determined the field is simply omitted — the finding's name
-        // and ATT&CK evidence are never affected.
-        const evidenceTypes = deriveEvidenceTypes(r);
+        // and ATT&CK evidence are never affected. A limitation describes capa, not
+        // the file, so it gets no tag and stays out of capability_evidence.
+        const evidenceTypes = isLimitation ? undefined : deriveEvidenceTypes(r);
         if (evidenceTypes) finding.evidence_types = evidenceTypes;
 
         result.findings.push(finding);

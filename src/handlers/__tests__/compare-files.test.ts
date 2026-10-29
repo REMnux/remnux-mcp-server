@@ -55,6 +55,28 @@ describe("compare_files", () => {
     expect(d.sections.added).toContain(".reloc");
   });
 
+  it("leaves capa's limitation rule out of the capability diff (packed loader vs payload)", async () => {
+    const deps = createMockDeps({ samplesDir: "/s" });
+    mockConn(deps);
+    const packed = JSON.stringify({
+      rules: {
+        "packed with UPX": { meta: { namespace: "anti-analysis/packer/upx" } },
+        "(internal) packer file limitation": { meta: { namespace: "internal/limitation/static" } },
+      },
+    });
+    const base = vi.mocked(deps.connector.execute).getMockImplementation()!;
+    vi.mocked(deps.connector.execute).mockImplementation(async (cmd, opts) => {
+      const c = cmd as string[];
+      if (c[0] === "capa") return ok(c.some((x) => x.includes("a.bin")) ? packed : capa(["inject process"]));
+      return base(cmd, opts);
+    });
+
+    const d = parseEnvelope(await handleCompareFiles(deps, { file_a: "a.bin", file_b: "b.bin" })).data.diff;
+    expect(d.capabilities.removed).toContain("packed with UPX");
+    expect(d.capabilities.removed).not.toContain("(internal) packer file limitation");
+    expect(d.capabilities.added).toContain("inject process");
+  });
+
   it("skips the capability diff at depth='quick'", async () => {
     const deps = createMockDeps({ samplesDir: "/s" });
     mockConn(deps);

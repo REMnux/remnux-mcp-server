@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { evaluateAdvisories, type AdvisoryContext } from "../advisories.js";
+import { parseCapaOutput } from "../../parsers/capa.js";
 
 /** What yara-forge's parser resolves for one matched rule (synthetic rule name). */
 const FAMILY_FINDING = {
@@ -80,17 +81,76 @@ describe("advisories", () => {
       expect(advisories).toEqual([]);
     });
 
-    it("detects capa-packed condition (exit code 14)", () => {
-      const context: AdvisoryContext = {
-        toolsRun: [{ name: "capa", exit_code: 14, output: "Packed file" }],
-        category: "PE",
-      };
+    describe("capa-file-limitation", () => {
+      // What `capa -j` (exit 0) lists for a file that matched a limitation rule: the
+      // limitation rule beside the ordinary rule that triggered it. Rule names and
+      // namespaces are capa-rules' own.
+      function capaRun(rules: Record<string, string>) {
+        const json = JSON.stringify({
+          rules: Object.fromEntries(
+            Object.entries(rules).map(([name, namespace]) => [name, { meta: { namespace } }]),
+          ),
+        });
+        return { name: "capa", exit_code: 0, output: json, findings: parseCapaOutput(json).findings };
+      }
 
-      const advisories = evaluateAdvisories(context);
-      expect(advisories).toHaveLength(1);
-      expect(advisories[0].name).toBe("capa-packed");
-      expect(advisories[0].issue).toContain("packed");
-      expect(advisories[0].remediation).toContain("upx -d");
+      it.each([
+        ["(internal) packer file limitation", "packed with UPX", "anti-analysis/packer/upx"],
+        ["(internal) installer file limitation", "packaged as an NSIS installer", "executable/installer/nsis"],
+        ["(internal) Visual Basic file limitation", "compiled from Visual Basic", "compiler/vb"],
+        ["(internal) autoit file limitation", "compiled with AutoIt", "compiler/autoit"],
+      ])("fires when capa -j lists %s", (limitation, trigger, triggerNs) => {
+        const context: AdvisoryContext = {
+          toolsRun: [capaRun({ [trigger]: triggerNs, [limitation]: "internal/limitation/static" })],
+          category: "PE",
+        };
+
+        const advisories = evaluateAdvisories(context);
+        expect(advisories.map((a) => a.name)).toEqual(["capa-file-limitation"]);
+        // The issue covers every limitation kind, so it must not assert that the file is packed.
+        expect(advisories[0].issue).not.toMatch(/file is packed/i);
+        expect(advisories[0].issue).toContain("(internal) packer file limitation");
+      });
+
+      it("does not fire on the dynamic .NET rule that capa -j lists for ordinary .NET files", () => {
+        const context: AdvisoryContext = {
+          toolsRun: [
+            capaRun({
+              "(internal) .NET file limitation": "internal/limitation/dynamic",
+              "compiled to the .NET platform": "runtime/dotnet",
+            }),
+          ],
+          category: "DOTNET",
+        };
+
+        expect(evaluateAdvisories(context)).toEqual([]);
+      });
+
+      it("fires on exit code 14, capa's E_FILE_LIMITATION without -j", () => {
+        const context: AdvisoryContext = {
+          toolsRun: [{ name: "capa", exit_code: 14, output: "" }],
+          category: "PE",
+        };
+
+        const advisories = evaluateAdvisories(context);
+        expect(advisories.map((a) => a.name)).toEqual(["capa-file-limitation"]);
+      });
+
+      it("does not fire on a limitation finding from a tool other than capa", () => {
+        const context: AdvisoryContext = {
+          toolsRun: [
+            {
+              name: "capa-vv",
+              exit_code: 0,
+              output: "",
+              findings: [{ description: "(internal) packer file limitation", category: "limitation" }],
+            },
+          ],
+          category: "PE",
+        };
+
+        expect(evaluateAdvisories(context)).toEqual([]);
+      });
     });
 
     it("returns advisories sorted by priority (highest first)", () => {
@@ -106,9 +166,9 @@ describe("advisories", () => {
 
       const advisories = evaluateAdvisories(context);
       expect(advisories).toHaveLength(3);
-      // autoit-wrapper=10, capa-packed=9, yara-family-attribution=7
+      // autoit-wrapper=10, capa-file-limitation=9, yara-family-attribution=7
       expect(advisories[0].name).toBe("autoit-wrapper");
-      expect(advisories[1].name).toBe("capa-packed");
+      expect(advisories[1].name).toBe("capa-file-limitation");
       expect(advisories[2].name).toBe("yara-family-attribution");
     });
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseCapaOutput, deriveEvidenceTypes } from "../capa.js";
+import { summarizeCapabilityEvidence } from "../../analysis/summarizer.js";
 
 // --- Synthetic capa match-node builders (shape mirrors `capa -j` output) ---
 function feat(type: string, success = true, value?: string) {
@@ -92,6 +93,44 @@ describe("parseCapaOutput", () => {
     const behavior = result.findings.find((f) => f.description === "create HTTP request");
     expect(artifact?.evidence_types).toEqual(["artifact"]);
     expect(behavior?.evidence_types).toEqual(["behavior"]);
+  });
+
+  describe("limitation rules", () => {
+    // capa inlines the sub-rule a limitation rule matched, so its match tree carries
+    // the sub-rule's features (here an api feature, which would read as behavior).
+    const inlined = stmt("and", true, [feat("api")]);
+    const input = JSON.stringify({
+      rules: {
+        "(internal) packer file limitation": rule(inlined, { namespace: "internal/limitation/static" }),
+        "packed with generic packer": rule(inlined, { namespace: "anti-analysis/packer/generic" }),
+        "(internal) .NET file limitation": rule(inlined, { namespace: "internal/limitation/dynamic" }),
+        "lookalike rule": rule(inlined, { namespace: "internal/limitation/static/extra" }),
+      },
+    });
+    const findings = parseCapaOutput(input).findings;
+    const byName = (n: string) => findings.find((f) => f.description === n);
+
+    it("marks a static limitation rule as a limitation with no evidence_types", () => {
+      const lim = byName("(internal) packer file limitation");
+      expect(lim?.category).toBe("limitation");
+      expect(lim?.evidence_types).toBeUndefined();
+    });
+
+    it("keeps the dynamic .NET rule and namespace lookalikes as capabilities", () => {
+      for (const n of ["packed with generic packer", "(internal) .NET file limitation", "lookalike rule"]) {
+        expect(byName(n)?.category).toBe("capability");
+        expect(byName(n)?.evidence_types).toEqual(["behavior"]);
+      }
+    });
+
+    it("leaves the limitation out of capability_evidence", () => {
+      const ce = summarizeCapabilityEvidence([
+        { name: "capa", command: "capa -j x", output: "", exit_code: 0, findings },
+      ]);
+      expect(ce?.behavior_capable).toContain("packed with generic packer");
+      expect(ce?.behavior_capable).not.toContain("(internal) packer file limitation");
+      expect(ce?.artifact_only).not.toContain("(internal) packer file limitation");
+    });
   });
 });
 

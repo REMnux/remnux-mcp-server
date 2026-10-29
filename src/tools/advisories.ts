@@ -64,15 +64,30 @@ export const POST_ANALYSIS_ADVISORIES: PostAnalysisAdvisory[] = [
       "assembly, copy it into the samples directory first.",
   },
   {
-    name: "capa-packed",
+    name: "capa-file-limitation",
     priority: 9,
+    // capa's limitation rules cover more than packers. analyze_file runs `capa -j`,
+    // which exits 0 and lists the matched rule as a finding the parser marks
+    // "limitation"; exit 14 (E_FILE_LIMITATION) appears only without -j/-v/-vv.
     shouldApply: (ctx) => {
       const capa = ctx.toolsRun.find((t) => t.name === "capa");
-      return capa?.exit_code === 14; // Packed file exit code
+      return (
+        capa?.exit_code === 14 ||
+        (capa?.findings ?? []).some((f) => f.category === "limitation")
+      );
     },
-    issue: "File is packed. Capa analysis is limited.",
+    issue:
+      "capa matched one of its file-limitation rules, which it applies to packed files, installers, " +
+      ".NET single-file deployments, and programs compiled from AutoIt, AutoHotkey, or Visual Basic. " +
+      "capa reports the matching rule among its findings, under a name such as " +
+      "\"(internal) packer file limitation\", and in a warning on stderr. For such files, capa warns that " +
+      "\"the results may be misleading or incomplete\": the matched capabilities can belong to the packer, " +
+      "runtime, or installer instead of the program inside.",
     remediation:
-      "Unpack with upx -d (if UPX) or specialized unpacker, then re-analyze for better coverage.",
+      "Unpack or extract the program and analyze that. For UPX, upx-decompress unpacks the sample in place " +
+      "when it succeeds, so run analyze_file again. For AutoIt, autoit-ripper recovers the script. For an " +
+      "installer, try 7z x, which opens some installer formats but not all. In the other cases, treat capa's " +
+      "capabilities for this file as leads to confirm with other tools.",
   },
   {
     name: "box-js-stall",

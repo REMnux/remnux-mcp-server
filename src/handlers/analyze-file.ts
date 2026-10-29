@@ -8,6 +8,7 @@ import type { DepthTier } from "../file-type-mappings.js";
 import { toolRegistry, exitCodeIsFailure } from "../tools/registry.js";
 import { buildCommandFromDefinition, resolveOutputPath, buildInvocationTemplate } from "../tools/invoker.js";
 import { parseToolOutput } from "../parsers/index.js";
+import { CAPA_STATIC_LIMITATION_NAMESPACE } from "../parsers/capa.js";
 import type { Finding } from "../parsers/types.js";
 import { formatResponse, formatError } from "../response.js";
 import { REMnuxError } from "../errors/remnux-error.js";
@@ -624,16 +625,28 @@ export async function handleAnalyzeFile(
         try {
           const capaData = JSON.parse(result.stdout);
           if (capaData.rules) {
-            const rules = capaData.rules as Record<string, { attack?: Array<{ technique: string }> }>;
+            // capa keeps ATT&CK mappings under each rule's meta. A static limitation rule
+            // is capa's caveat about its results, not a capability (see the capa parser).
+            // Skip what the parser skips (non-object rules, malformed ATT&CK entries), so
+            // the summary and the findings count the same rules.
+            const rules = capaData.rules as Record<
+              string,
+              { meta?: { namespace?: string; attack?: unknown } } | null
+            >;
+            const capabilities = Object.entries(rules).filter(
+              ([, r]) =>
+                !!r && typeof r === "object" && r.meta?.namespace !== CAPA_STATIC_LIMITATION_NAMESPACE,
+            );
             const attackTechniques = [...new Set(
-              Object.values(rules)
-                .flatMap((r) => r.attack || [])
+              capabilities
+                .flatMap(([, r]) => (Array.isArray(r?.meta?.attack) ? r.meta.attack : []))
+                .filter((a): a is { technique: string } => !!a && typeof a === "object" && typeof a.technique === "string")
                 .map((a) => a.technique)
             )];
             extraMetadata.capa_summary = {
-              capability_count: Object.keys(rules).length,
+              capability_count: capabilities.length,
               attack_techniques: attackTechniques,
-              top_capabilities: Object.keys(rules).slice(0, 10),
+              top_capabilities: capabilities.slice(0, 10).map(([name]) => name),
             };
           }
         } catch {

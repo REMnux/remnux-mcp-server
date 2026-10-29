@@ -40,7 +40,14 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 300,
     tags: ["pe", "dotnet", "elf", "capabilities"],
     tier: "standard",
-    exitCodeHints: { 14: "Packed file detected — capabilities analysis may be incomplete. Consider unpacking first." },
+    // capa exits 14 (E_FILE_LIMITATION) only without -j/-v/-vv, so with these flags the
+    // hint is dormant; the capa-file-limitation advisory reads the JSON finding instead.
+    exitCodeHints: {
+      14:
+        "capa reported a file limitation: a packed file, an installer, a .NET single-file deployment, or a " +
+        "program compiled from AutoIt, AutoHotkey, or Visual Basic. capa reports which case on stderr and " +
+        "warns that \"the results may be misleading or incomplete.\"",
+    },
   },
   {
     name: "capa-vv",
@@ -52,7 +59,14 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     timeout: 300,
     tags: ["pe", "dotnet", "elf", "capabilities"],
     tier: "deep",
-    exitCodeHints: { 14: "Packed file detected — capabilities analysis may be incomplete. Consider unpacking first." },
+    // capa exits 14 (E_FILE_LIMITATION) only without -j/-v/-vv, so with these flags the
+    // hint is dormant; the capa-file-limitation advisory reads the JSON finding instead.
+    exitCodeHints: {
+      14:
+        "capa reported a file limitation: a packed file, an installer, a .NET single-file deployment, or a " +
+        "program compiled from AutoIt, AutoHotkey, or Visual Basic. capa reports which case on stderr and " +
+        "warns that \"the results may be misleading or incomplete.\"",
+    },
   },
   {
     name: "floss",
