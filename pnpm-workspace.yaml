@@ -7,10 +7,11 @@ onlyBuiltDependencies:
   - workerd
   - cpu-features
 overrides:
-  # bounded to the 1.x line the sdk declares (^1.19.9). GHSA-frvp-7c67-39w9 affects
-  # BOTH >=2.0.0 <2.0.5 AND <1.19.15, so the previous open-ended '>=1.19.13' was
-  # doubly wrong: it sat inside the vulnerable 1.x range, and it crossed into 2.x
-  # where the sdk never declared support.
+  # bounded to the 1.x line. Since 1.31.0 the sdk declares '^1.19.9 || ^2.0.5',
+  # and its 2.x arm already starts at the patched 2.0.5. GHSA-frvp-7c67-39w9
+  # affects BOTH >=2.0.0 <2.0.5 AND <1.19.15, so the previous open-ended
+  # '>=1.19.13' was wrong twice. It sat inside the vulnerable 1.x range, and it
+  # crossed into 2.x, which the sdk did not declare until 1.31.0.
   '@hono/node-server@<1.19.15': '>=1.19.15 <2'
   # NOTE: no @protobufjs/utf8 rule. protobufjs declares ^1.1.1, which already
   # excludes everything GHSA-q6x5-8v7m-xcrf affects (<=1.1.0); the rule could
